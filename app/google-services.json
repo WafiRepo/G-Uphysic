@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "602030706614",
+    "project_id": "phyphox-34aed",
+    "storage_bucket": "phyphox-34aed.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:602030706614:android:c2b0980615476acb9b3b17",
+        "android_client_info": {
+          "package_name": "de.rwth_aachen.phyphox"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxQCxx9gOWcKqDBBrR6UKWhnXmBAYYvRQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

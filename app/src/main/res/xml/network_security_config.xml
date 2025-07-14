@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Konfigurasi untuk domain tertentu atau alamat IP, ganti dengan domain atau IP server Anda -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Ganti 'api.example.com' dengan IP atau domain server yang digunakan oleh perangkat fisik -->
+        <domain includeSubdomains="true">api.example.com</domain>
+        <!-- Tambahkan IP host jika menggunakan IP lokal, misalnya untuk komputer dalam jaringan yang sama -->
+        <domain includeSubdomains="true">192.168.1.5</domain> <!-- Ganti dengan IP dari komputer Anda -->
+    </domain-config>
+
+    <!-- Konfigurasi untuk akses dari emulator Android -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">140.115.126.107</domain>
+    </domain-config>
+
+</network-security-config>

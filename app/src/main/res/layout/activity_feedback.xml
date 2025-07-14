@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#6A5AE0"
+    android:theme="@style/Theme.Material3.Dark.NoActionBar"
+    tools:context=".activity.FeedbackActivity">
+
+    <ImageView
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/ic_arrow_back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/iv_setting"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/ic_settings"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/sheet"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="40dp"
+        android:background="@drawable/bg_sheet"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/iv_setting" />
+
+<!--    <ImageView-->
+<!--        android:id="@+id/iv_avatar"-->
+<!--        android:layout_width="80dp"-->
+<!--        android:layout_height="80dp"-->
+<!--        android:background="@drawable/ic_avatar"-->
+<!--        app:layout_constraintBottom_toTopOf="@id/sheet"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintTop_toTopOf="@id/sheet" />-->
+
+    <!-- <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_generates"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:text="Feedback"
+        android:textColor="@color/phyphox_white_100"
+        app:backgroundTint="@color/phyphox_purple"
+        app:layout_constraintStart_toStartOf="@id/sheet"
+        app:layout_constraintTop_toTopOf="@id/sheet" /> -->
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_margin="16dp"
+        android:background="#DFD7F6"
+        app:layout_constraintBottom_toTopOf="@id/btn_next"
+        app:layout_constraintEnd_toEndOf="@id/sheet"
+        app:layout_constraintStart_toStartOf="@id/sheet"
+        app:layout_constraintTop_toBottomOf="@id/btn_generates" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_next"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:text="Next"
+        android:textColor="@color/phyphox_white_100"
+        app:backgroundTint="@color/phyphox_purple"
+        app:layout_constraintBottom_toBottomOf="@id/sheet"
+        app:layout_constraintEnd_toEndOf="@id/sheet" />
+
+    <!-- Tempat fragment yang akan diganti -->
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

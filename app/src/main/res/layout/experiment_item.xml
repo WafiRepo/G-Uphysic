@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clickable="false"
+    android:clipToPadding="false"
+    android:paddingTop="@dimen/expElementMargin">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="false"
+        android:elevation="1dp"
+        android:paddingRight="0dp"
+        android:paddingEnd="@dimen/activity_horizontal_padding"
+        android:background="?attr/selectableItemBackground">
+
+        <ImageView
+            android:id="@+id/expIcon"
+
+            android:layout_width="0dp"
+            android:layout_height = "0dp"
+            android:minHeight="@dimen/expElementIconSize"
+            android:minWidth="@dimen/expElementIconSize"
+            android:scaleType="fitXY"
+
+            app:layout_constraintDimensionRatio="H,1:1"
+            app:layout_constraintTop_toTopOf="@id/expTitle"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="@id/expInfo"
+
+            />
+
+        <TextView
+            android:id="@+id/expTitle"
+
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/activity_horizontal_padding"
+            android:layout_marginStart="@dimen/activity_horizontal_padding"
+
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@id/expIcon"
+            app:layout_constraintEnd_toStartOf="@id/menuButton"
+
+            style="@style/TextAppearance.Phyphox.Medium"
+            android:text="Medium Text"
+            android:singleLine="true"
+            />
+
+        <TextView
+            android:id="@+id/expInfo"
+
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/activity_horizontal_padding"
+            android:layout_marginStart="@dimen/activity_horizontal_padding"
+
+            app:layout_constraintTop_toBottomOf="@id/expTitle"
+            app:layout_constraintStart_toEndOf="@id/expIcon"
+            app:layout_constraintEnd_toStartOf="@id/menuButton"
+
+            style="@style/TextAppearance.Phyphox.Small"
+            android:text="Small Text"
+            android:singleLine="true"
+             />
+
+        <ImageButton
+            android:id="@+id/menuButton"
+
+            android:layout_width="@dimen/expElementIconSize"
+            android:layout_height="@dimen/expElementIconSize"
+
+            app:layout_constraintTop_toTopOf="@id/expTitle"
+            app:layout_constraintBottom_toBottomOf="@id/expInfo"
+            app:layout_constraintEnd_toEndOf="parent"
+
+            android:background="@android:color/transparent"
+            app:srcCompat="@drawable/more"
+            android:clickable="true"
+            android:focusable="true"
+            />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>

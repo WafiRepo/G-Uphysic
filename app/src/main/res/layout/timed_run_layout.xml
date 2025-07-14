@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layout_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp"
+    style="@style/Theme.Phyphox.DayNight">
+
+    <CheckBox
+        android:id="@+id/timedRunEnabled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/enableTimedRun"
+        android:checked="false">
+    </CheckBox>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:stretchColumns="0"
+        android:shrinkColumns="1"
+        android:id="@+id/timedRunTimeOptions">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignTop="@id/timedRunStartDelay"
+            android:layout_alignBottom="@id/timedRunStartDelay"
+            android:layout_toStartOf="@id/timedRunStartDelay"
+            android:layout_toLeftOf="@id/timedRunStartDelay"
+            android:gravity="center_vertical"
+            android:text="@string/timedRunStartDelay"
+            android:id="@+id/textView"
+            android:maxLines="2"
+            android:labelFor="@+id/timedRunStartDelay" />
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:gravity="center_vertical"
+            android:inputType="numberDecimal"
+            android:digits="0123456789.,"
+            android:minEms="5"
+            android:ems="10"
+            android:id="@id/timedRunStartDelay"
+            android:editable="false"
+            android:enabled="true"
+            android:text="" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignTop="@id/timedRunStopDelay"
+            android:layout_alignBottom="@id/timedRunStopDelay"
+            android:layout_toStartOf="@id/timedRunStopDelay"
+            android:layout_toLeftOf="@id/timedRunStopDelay"
+            android:gravity="center_vertical"
+            android:text="@string/timedRunStopDelay"
+            android:id="@+id/textView2"
+            android:maxLines="2"
+            android:labelFor="@+id/timedRunStopDelay" />
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_below="@id/timedRunStartDelay"
+            android:gravity="center_vertical"
+            android:inputType="numberDecimal"
+            android:digits="0123456789.,"
+            android:minEms="5"
+            android:ems="10"
+            android:id="@id/timedRunStopDelay"
+            android:editable="false"
+            android:enabled="true"
+            android:text="" />
+
+
+        <TextView
+            android:layout_alignParentStart="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignTop="@id/timedRunBeepAll"
+            android:layout_alignBottom="@id/timedRunBeepAll"
+            android:layout_toStartOf="@id/timedRunBeepAll"
+            android:layout_toLeftOf="@id/timedRunBeepAll"
+            android:gravity="center_vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/timedRunBeeps"
+            android:labelFor="@+id/timedRunBeepAll" />
+
+        <Button
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:gravity="center_vertical"
+            android:layout_below="@id/timedRunStopDelay"
+            android:layout_marginTop="36dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@id/timedRunBeepAll" />
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignTop="@id/timedRunBeepCountdown"
+                android:layout_alignBottom="@id/timedRunBeepCountdown"
+                android:layout_toStartOf="@id/timedRunBeepCountdown"
+                android:layout_toLeftOf="@id/timedRunBeepCountdown"
+                android:gravity="center_vertical"
+                android:layout_marginLeft="32dp"
+                android:layout_marginStart="32dp"
+                android:text="@string/beeperCountdown"
+                android:labelFor="@+id/timedRunBeepCountdown" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentRight="true"
+                android:layout_below="@id/timedRunBeepAll"
+                android:layout_marginTop="18dp"
+                android:gravity="center_vertical"
+                android:id="@id/timedRunBeepCountdown"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignTop="@id/timedRunBeepStart"
+                android:layout_alignBottom="@id/timedRunBeepStart"
+                android:layout_toStartOf="@id/timedRunBeepStart"
+                android:layout_toLeftOf="@id/timedRunBeepStart"
+                android:gravity="center_vertical"
+                android:layout_marginLeft="32dp"
+                android:layout_marginStart="32dp"
+                android:text="@string/beeperStart"
+                android:labelFor="@+id/timedRunBeepStart" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentRight="true"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:layout_below="@id/timedRunBeepCountdown"
+                android:id="@id/timedRunBeepStart"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignTop="@id/timedRunBeepRunning"
+                android:layout_alignBottom="@id/timedRunBeepRunning"
+                android:layout_toStartOf="@id/timedRunBeepRunning"
+                android:layout_toLeftOf="@id/timedRunBeepRunning"
+                android:gravity="center_vertical"
+                android:layout_marginLeft="32dp"
+                android:layout_marginStart="32dp"
+                android:text="@string/beeperRunning"
+                android:labelFor="@id/timedRunBeepRunning" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentRight="true"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:layout_below="@id/timedRunBeepStart"
+                android:id="@+id/timedRunBeepRunning"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignTop="@id/timedRunBeepStop"
+                android:layout_alignBottom="@id/timedRunBeepStop"
+                android:layout_toStartOf="@id/timedRunBeepStop"
+                android:layout_toLeftOf="@id/timedRunBeepStop"
+                android:gravity="center_vertical"
+                android:layout_marginLeft="32dp"
+                android:layout_marginStart="32dp"
+                android:text="@string/beeperStop"
+                android:labelFor="@+id/timedRunBeepStop" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentRight="true"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:layout_below="@id/timedRunBeepRunning"
+                android:id="@id/timedRunBeepStop"/>
+
+    </RelativeLayout>
+
+</LinearLayout>

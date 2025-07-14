@@ -1,0 +1,2419 @@
+package de.rwth_aachen.phyphox;
+
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.content.res.Configuration;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.PorterDuff;
+import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
+import android.location.LocationManager;
+import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.PowerManager;
+import android.provider.MediaStore;
+import android.util.Base64;
+import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
+import android.widget.ScrollView;
+import android.widget.TableLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.NavUtils;
+import androidx.core.app.ShareCompat;
+import androidx.core.app.TaskStackBuilder;
+import androidx.core.content.FileProvider;
+import androidx.core.widget.TextViewCompat;
+import androidx.fragment.app.FragmentManager;
+import androidx.preference.PreferenceManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
+
+import com.google.android.material.tabs.TabLayout;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.journeyapps.barcodescanner.BarcodeEncoder;
+
+import org.json.JSONObject;
+import org.json.JSONArray;
+
+import java.util.Arrays;
+
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+
+import de.rwth_aachen.phyphox.Bluetooth.Bluetooth;
+import de.rwth_aachen.phyphox.Bluetooth.BluetoothInput;
+import de.rwth_aachen.phyphox.Bluetooth.BluetoothOutput;
+import de.rwth_aachen.phyphox.Bluetooth.ConnectedBluetoothDeviceInfoAdapter;
+import de.rwth_aachen.phyphox.Bluetooth.ConnectedDeviceInfo;
+import de.rwth_aachen.phyphox.Bluetooth.UpdateConnectedDeviceDelegate;
+import de.rwth_aachen.phyphox.Camera.DepthInput;
+import de.rwth_aachen.phyphox.Helper.DecimalTextWatcher;
+import de.rwth_aachen.phyphox.Helper.Helper;
+import de.rwth_aachen.phyphox.NetworkConnection.NetworkConnection;
+import de.rwth_aachen.phyphox.NetworkConnection.RadiusResponse;
+import de.rwth_aachen.phyphox.activity.DrawActivity;
+import de.rwth_aachen.phyphox.NetworkConnection.BufferData;
+import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
+import de.rwth_aachen.phyphox.NetworkConnection.RetrofitClient;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+import java.util.Arrays;
+import java.util.List;
+
+// Experiments are performed in this activity, which reacts to various intents.
+// The intent has to provide a *.phyphox file which defines the experiment
+public class Experiment extends AppCompatActivity implements View.OnClickListener,
+//        InteractiveGraphView.buttonClick,
+        NetworkConnection.ScanDialogDismissedDelegate,
+        NetworkConnection.NetworkConnectionDataPolicyInfoDelegate, UpdateConnectedDeviceDelegate {
+
+    //String constants to identify values saved in onSaveInstanceState
+    private static final String STATE_CURRENT_VIEW = "current_view"; //Which experiment view is selected?
+    private static final String STATE_REMOTE_SERVER = "remote_server"; //Is the remote server activated?
+    private static final String STATE_REMOTE_SESSION_ID = "remote_session_id"; //The session ID of the remote server
+    private static final String STATE_BEFORE_START = "before_start"; //Has the experiment been started?
+    private static final String STATE_TIMED_RUN = "timed_run"; //Are timed runs activated?
+    private static final String STATE_TIMED_RUN_START_DELAY = "timed_run_start_delay"; //The start delay for a timed run
+    private static final String STATE_TIMED_RUN_STOP_DELAY = "timed_run_stop_delay"; //The stop delay for a timed run
+    private static final String STATE_TIMED_RUN_BEEP_COUNTDOWN = "timed_run_beep_countdown";
+    private static final String STATE_TIMED_RUN_BEEP_START = "timed_run_beep_start";
+    private static final String STATE_TIMED_RUN_BEEP_RUNNING = "timed_run_beep_running";
+    private static final String STATE_TIMED_RUN_BEEP_STOP = "timed_run_beep_stop";
+    private static final String STATE_MENU_HINT_DISMISSED = "menu_hint_dismissed";
+    private static final String STATE_START_HINT_DISMISSED = "start_hint_dismissed";
+    private static final String STATE_SAVE_LOCALLY_DISMISSED = "save_locally_dismissed";
+    private static final String STATE_BLUETOOTH_SCAN_DISMISSED = "bluetooth_scan_dismissed";
+    private static final String STATE_NETWORK_SCAN_DISMISSED = "network_scan_dismissed";
+    private static final String STATE_DATA_POLICY_DISMISSED = "data_policy_dismissed";
+    private static final String STATE_SENSOR_WARNING_DISMISSED = "sensor_warning_dismissed";
+
+    //This handler creates the "main loop" as it is repeatedly called using postDelayed
+    //Not a real loop to keep some resources available
+    final Handler updateViewsHandler = new Handler();
+
+    //Status variables
+    boolean measuring = false; //Measurement running?
+    boolean loadCompleted = false; //Set to true when an experiment has been loaded successfully
+    boolean shutdown = false; //The activity should be stopped. Used to escape the measurement loop.
+    boolean beforeStart = true; //Experiment has not yet been started even once
+    boolean menuHintDismissed = false; //Remember that the user has clicked away the hint to the menu
+    boolean startHintDismissed = false; //Remember that the user has clicked away the hint to the start button
+    boolean saveLocallyDismissed = false; //Remember that the user did not want to save this experiment locally
+    boolean bluetoothScanDismissed = false;
+    boolean networkScanDismissed = false;
+    boolean dataPolicyDismissed = false;
+    boolean sensorWarningDismissed = false;
+
+    //Remote server
+    private RemoteServer remote = null; //The remote server (see remoteServer class)
+    private boolean serverEnabled = false; //Is the remote server activated?
+    boolean remoteIntentMeasuring = false; //Is the remote interface expecting that the measurement is running?
+    boolean updateState = false; //This is set to true when a state changed is initialized remotely. The measurement state will then be set to remoteIntentMeasuring.
+    public boolean remoteInput = false; //Has there been an data input (inputViews for now) from the remote server that should be processed?
+    public boolean shouldDefocus = false; //Should the current view loose focus? (Neccessary to remotely edit an input view, which has focus on this device)
+    private String sessionID = "";
+
+    //Timed run status
+    boolean timedRun = false; //Timed run enabled?
+    double timedRunStartDelay = 3.; //Start delay for timed runs
+    double timedRunStopDelay = 10.; //Stop delay for timed runs
+    boolean timedRunBeepCountdown = false;
+    boolean timedRunBeepStart = false;
+    boolean timedRunBeepRunning = false;
+    boolean timedRunBeepStop = false;
+    CountDownTimer cdTimer = null; //This holds the timer used for timed runs. If it is not null, a timed run is running and at the end of the countdown the measurement state will change
+    long millisUntilFinished = 0; //This variable is used to cache the remaining countdown, so it is available outside the onTick-callback of the timer
+
+    //The experiment
+    PhyphoxExperiment experiment; //The experiment (definition and functionality) after it has been loaded.
+    TabLayout tabLayout;
+    ViewPager pager;
+    ExpViewPagerAdapter adapter;
+
+    //Others...
+    private Resources res; //Helper to easily access resources
+    public SensorManager sensorManager; //The sensor manager
+    Intent intent; //Another helper to easily access the data of the intent that triggered this activity
+    ProgressDialog progress; //Holds a progress dialog when a file is being loaded
+    Bundle savedInstanceState = null; //Holds the saved instance state, so it can be handled outside onCreate
+    MenuItem startMenuItem = null; //Reference to play-hint button
+    ImageView hintAnimation = null; //Reference to the animated part of the play-hint button
+
+    boolean proximityLock = false;
+    PowerManager.WakeLock wakeLock = null;
+
+    PopupWindow popupWindow = null;
+    AudioOutput audioOutput = null;
+
+
+    private void doLeaveExperiment() {
+        Intent upIntent = NavUtils.getParentActivityIntent(this);
+        if (NavUtils.shouldUpRecreateTask(this, upIntent)) {
+            TaskStackBuilder.create(this)
+                    .addNextIntent(upIntent)
+                    .startActivities();
+        }
+        finish();
+    }
+
+    private void leaveExperiment() {
+        if (experiment != null && experiment.analysisTime > 10.0) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage(res.getString(R.string.leave_experiment_question))
+                    .setPositiveButton(R.string.leave, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            doLeaveExperiment();
+                        }
+                    })
+                    .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+
+                        }
+                    });
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        } else {
+            doLeaveExperiment();
+        }
+    }
+
+    @Override
+    //Where it all begins...
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (adapter != null && pager != null) {
+                    ExpViewFragment f = (ExpViewFragment) getSupportFragmentManager().findFragmentByTag("android:switcher:" + pager.getId() + ":" + adapter.getItemId(pager.getCurrentItem()));
+                    if (f != null && f.hasExclusive()) {
+                        f.leaveExclusive();
+                        return;
+                    }
+                }
+                leaveExperiment();
+            }
+        });
+
+        updateConnectedDeviceDelegate = this;
+
+        intent = getIntent(); //Store the intent for easy access
+        res = getResources(); //The same for resources
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE); //The sensor manager will probably be needed...
+
+        this.savedInstanceState = savedInstanceState; //Store savedInstanceState so it can be accessed after loading the experiment in a second thread
+        setContentView(R.layout.activity_experiment); //Setup the views...
+
+        //Set our custom action bar
+        Toolbar toolbar = (Toolbar) findViewById(R.id.customActionBar);
+        setSupportActionBar(toolbar);
+
+        //We want to get the back-button in the actionbar (even on old Android versions)
+        ActionBar ab = getSupportActionBar();
+        if (ab != null) {
+            ab.setDisplayHomeAsUpEnabled(true);
+            ab.setDisplayShowTitleEnabled(false);
+        }
+
+        if (savedInstanceState != null) {
+            App app = (App) this.getApplicationContext();
+            experiment = app.experiment;
+            //experiment = (phyphoxExperiment) savedInstanceState.getSerializable(STATE_EXPERIMENT);
+        }
+        ;
+        if (experiment != null) {
+            //We saved our experiment. Lets just retrieve it and continue
+            onExperimentLoaded(experiment);
+        } else {
+            //Start loading the experiment in a second thread (mostly for network loading, but it won't hurt in any case...)
+            //So display a ProgressDialog and instantiate and execute loadXMLAsyncTask (see phyphoxFile class)
+            progress = ProgressDialog.show(this, res.getString(R.string.loadingTitle), res.getString(R.string.loadingText), true);
+            (new PhyphoxFile.loadXMLAsyncTask(intent, this)).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
+    }
+
+    File imagePaths;
+
+    public Bitmap takeScreenshot() {
+        View rootView = this.findViewById(R.id.rootLayout).getRootView();
+        rootView.setDrawingCacheEnabled(true);
+        return rootView.getDrawingCache();
+    }
+
+    private void saveBitmap(Bitmap bitmap) {
+        imagePaths = new File(Environment.getExternalStorageDirectory() + "/scrnshot.png");
+        FileOutputStream fos;
+        try {
+            fos = new FileOutputStream(imagePaths);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, fos);
+            fos.flush();
+            fos.close();
+        } catch (FileNotFoundException e) {
+            Log.e("GREC", e.getMessage(), e);
+        } catch (IOException e) {
+            Log.e("GREC", e.getMessage(), e);
+        }
+    }
+
+//    @Override
+//    public void buttonClicked(View v) {
+//        Bitmap bitmap = takeScreenshot();
+//        saveBitmap(bitmap);
+//        Intent intent = new Intent(Experiment.this, DrawActivity.class);
+//        intent.putExtra("Uri Image", imagePaths);
+//        startActivity(intent);
+//    }
+
+    @Override
+    //onPause event
+    public void onStop() {
+        super.onStop();
+        hidePlayHintAnimation();
+
+        try {
+            progress.dismiss(); //Close progress display
+        } catch (Exception e) {
+            //This should only fail if the window has already been destroyed. Ignore.
+        } finally {
+            progress = null;
+        }
+
+        stopRemoteServer(); //Remote server should stop when the app is not active
+        shutdown = true; //Stop the loop
+        stopMeasurement(); //Stop the measurement
+
+        if (experiment != null && experiment.loaded) {
+            for (NetworkConnection networkConnection : experiment.networkConnections) {
+                networkConnection.disconnect();
+                networkConnection.specificAddress = null;
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                //Close all bluetooth connections, when the activity is recreated, they will be reestablished while initializing the experiment
+                for (BluetoothInput bti : experiment.bluetoothInputs)
+                    bti.closeConnection();
+                for (BluetoothOutput bti : experiment.bluetoothOutputs)
+                    bti.closeConnection();
+            }
+            if (experiment.depthInput != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                experiment.depthInput.stopCameras();
+        }
+
+        if (popupWindow != null)
+            popupWindow.dismiss();
+
+        overridePendingTransition(R.anim.hold, R.anim.exit_experiment); //Make a nice animation...
+    }
+
+    private Bitmap screenShot(View view) {
+        Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        view.draw(canvas);
+        return bitmap;
+    }
+
+    private Bitmap capture() {
+        View customActionBar = findViewById(R.id.customActionBar);
+        View actContent = findViewById(android.R.id.content);
+
+        Bitmap result = Bitmap.createBitmap(actContent.getWidth(),
+                actContent.getHeight() - customActionBar.getHeight(),
+                Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(result);
+
+        actContent.setDrawingCacheEnabled(true);
+        Rect src = new Rect(0, customActionBar.getHeight(), actContent.getWidth(), actContent.getHeight());
+        Rect dest = new Rect(0, 0, result.getWidth(), result.getHeight());
+        canvas.drawBitmap(actContent.getDrawingCache(), src, dest, null);
+        actContent.setDrawingCacheEnabled(false);
+
+        return result;
+    }
+
+    private void share(Bitmap bitmap) {
+        String pathofBmp =
+                MediaStore.Images.Media.insertImage(this.getContentResolver(),
+                        bitmap, "title", null);
+        Uri uri = Uri.parse(pathofBmp);
+        Intent intent = new Intent(Experiment.this, DrawActivity.class);
+        intent.putExtra("Uri Image", uri);
+        startActivity(intent);
+    }
+
+    @Override
+    //Let's start again
+    public void onRestart() {
+        super.onRestart();
+
+        shutdown = false; //Deactivate shutdown variable
+
+        if (experiment != null && experiment.depthInput != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                experiment.depthInput.startCameras();
+            } catch (Exception e) {
+                Toast.makeText(this, "DepthPreview: setCamera could not restart depthInput: " + e.getMessage(), Toast.LENGTH_LONG).show(); //Present message
+            }
+        }
+        updateViewsHandler.postDelayed(updateViews, 40); //Start the "main loop" again
+        startRemoteServer();  //Restart the remote server (if it is activated)
+        //We do not start the measurement again automatically. If the user switched away, this might
+        //   be confusing otherwise.
+
+        invalidateOptionsMenu();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }
+
+    @Override
+    //Callback for premission requests done during the activity. (since Android 6 / Marshmallow)
+    //If a new permission has been granted, we will just restart the activity to reload the experiment
+    //   with the formerly missing permission
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            this.recreate();
+        }
+    }
+
+    //This is called from the CopyXML thread in onPostExecute, so the copying process of a remote
+    //   experiment to the local collection has been completed
+    public void onCopyXMLCompleted(String result) {
+        try {
+            progress.dismiss(); //Close progress display
+        } catch (Exception e) {
+            //This should only fail if the window has already been destroyed. Ignore.
+        } finally {
+            progress = null;
+        }
+        if (result.equals("")) { //No error
+            experiment.isLocal = true;
+            Toast.makeText(this, R.string.save_locally_done, Toast.LENGTH_LONG).show(); //Present message
+        } else // There has been an error
+            Toast.makeText(this, result, Toast.LENGTH_LONG).show(); //Show error to user
+    }
+
+    void showInitialDialogs() {
+        if (experiment == null || !experiment.loaded)
+            return;
+
+        //Privacy policy
+        if (!dataPolicyDismissed && experiment.networkConnections.size() > 0) {
+            Set<String> sensors = new HashSet<>();
+            for (int i = 0; i < experiment.inputSensors.size(); i++) {
+                sensors.add(res.getString(experiment.inputSensors.get(i).getDescriptionRes()));
+            }
+            if (experiment.depthInput != null) {
+                sensors.add(res.getString(R.string.sensorDepth));
+            }
+            experiment.networkConnections.get(0).getDataAndPolicyDialog(experiment.audioRecord != null, experiment.gpsIn != null, experiment.inputSensors.size() > 0, sensors, this, this).show();
+            return;
+        }
+
+        //Warning about vendor sensors
+        if (!sensorWarningDismissed) {
+            for (SensorInput sensor : experiment.inputSensors) {
+                if (sensor.vendorSensor) {
+                    showSensorWarning(sensor);
+                    sensorWarningDismissed = true;
+                    return;
+                }
+            }
+        }
+
+        //Save locally
+        if (!saveLocallyDismissed && !experiment.isLocal) { //If this experiment has been loaded from a external source, we offer to save it locally
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage(res.getString(R.string.save_locally_message))
+                    .setTitle(R.string.save_locally)
+                    .setPositiveButton(R.string.save_locally_button, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            progress = ProgressDialog.show(Experiment.this, res.getString(R.string.loadingTitle), res.getString(R.string.loadingText), true);
+                            new PhyphoxFile.CopyXMLTask(intent, Experiment.this).execute();
+                            saveLocallyDismissed = true;
+                            experiment.isLocal = true;
+                            showInitialDialogs();
+                        }
+                    })
+                    .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            saveLocallyDismissed = true;
+                            showInitialDialogs();
+                        }
+                    }).setOnCancelListener(new DialogInterface.OnCancelListener() {
+                        @Override
+                        public void onCancel(DialogInterface dialog) {
+                            saveLocallyDismissed = true;
+                            showInitialDialogs();
+                        }
+                    });
+            AlertDialog dialog = builder.create();
+            dialog.show();
+            return;
+        }
+
+        //Network scan dialog
+        if (!networkScanDismissed) {
+            networkScanDismissed = true;
+            connectNetworkConnections();
+            return;
+        }
+
+        //Bluetooth scan dialog
+        if (!bluetoothScanDismissed) {
+            bluetoothScanDismissed = true;
+            connectBluetoothDevices(false, false);
+            return;
+        }
+    }
+
+    void setupTabLayout() {
+        tabLayout = ((TabLayout) findViewById(R.id.tab_layout));
+        if (Helper.isDarkTheme(getResources())) {
+            tabLayout.setBackgroundColor(getResources().getColor(R.color.phyphox_black_40));
+        } else {
+            tabLayout.setBackgroundColor(getResources().getColor(R.color.phyphox_white_90));
+        }
+        pager = ((ViewPager) findViewById(R.id.view_pager));
+        FragmentManager manager = getSupportFragmentManager();
+        adapter = new ExpViewPagerAdapter(manager, this.experiment);
+        pager.setAdapter(adapter);
+        tabLayout.setupWithViewPager(pager);
+        pager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
+
+        for (int i = 0; i < adapter.getCount(); i++) {
+            ExpViewFragment f = (ExpViewFragment) getSupportFragmentManager().findFragmentByTag("android:switcher:" + pager.getId() + ":" + adapter.getItemId(i));
+            if (f != null)
+                f.recreateView();
+        }
+
+        if (adapter.getCount() < 2)
+            tabLayout.setVisibility(View.GONE);
+
+        try {
+            experiment.init(sensorManager, (LocationManager) this.getSystemService(Context.LOCATION_SERVICE));
+        } catch (Exception e) {
+            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    //This is called from the experiment loading thread in onPostExecute, so the experiment should
+    //   be ready and can be presented to the user
+    public void onExperimentLoaded(PhyphoxExperiment experiment) {
+        try {
+            progress.dismiss(); //Close progress display
+        } catch (Exception e) {
+            //This should only fail if the window has already been destroyed. Ignore.
+        } finally {
+            progress = null;
+        }
+        this.experiment = experiment; //Store the loaded experiment
+        if (experiment.loaded) { //Everything went fine, no errors
+            if (experiment.gpsIn != null) {
+                experiment.gpsIn.prepare(res);
+            }
+
+            timedRun = experiment.timedRun;
+            timedRunStartDelay = experiment.timedRunStartDelay;
+            timedRunStopDelay = experiment.timedRunStopDelay;
+
+            //If the experiment has been launched from a Bluetooth scan, we need to set the bluetooth device in the experiment so it does not ask the user again
+            String btAddress = intent.getStringExtra(ExperimentList.EXPERIMENT_PRESELECTED_BLUETOOTH_ADDRESS);
+            if (btAddress != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                for (Bluetooth bt : this.experiment.bluetoothInputs)
+                    bt.deviceAddress = btAddress;
+                for (Bluetooth bt : this.experiment.bluetoothOutputs)
+                    bt.deviceAddress = btAddress;
+            }
+
+            //We should set the experiment title....
+            TextView titleText = ((TextView) findViewById(R.id.titleText));
+            titleText.setText(experiment.title);
+            float defaultSize = titleText.getTextSize();
+            TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(titleText, (int) (defaultSize * 0.49), Math.round(defaultSize), 1, TypedValue.COMPLEX_UNIT_PX);
+
+
+            int startView = 0;
+
+            //If we have a savedInstanceState, it would be a good time to interpret it...
+            if (savedInstanceState != null) {
+                //Reload the states that the user can control
+                serverEnabled = savedInstanceState.getBoolean(STATE_REMOTE_SERVER, false); //Remote server activated?
+                sessionID = savedInstanceState.getString(STATE_REMOTE_SESSION_ID, ""); //Remote server session id?
+                beforeStart = savedInstanceState.getBoolean(STATE_BEFORE_START, false); //Has the experiment ever been started?
+                timedRun = savedInstanceState.getBoolean(STATE_TIMED_RUN, false); //timed run activated?
+                timedRunStartDelay = savedInstanceState.getDouble(STATE_TIMED_RUN_START_DELAY); //start elay of timed run
+                timedRunStopDelay = savedInstanceState.getDouble(STATE_TIMED_RUN_STOP_DELAY); //stop delay of timed run
+                timedRunBeepCountdown = savedInstanceState.getBoolean(STATE_TIMED_RUN_BEEP_COUNTDOWN);
+                timedRunBeepStart = savedInstanceState.getBoolean(STATE_TIMED_RUN_BEEP_START);
+                timedRunBeepRunning = savedInstanceState.getBoolean(STATE_TIMED_RUN_BEEP_RUNNING);
+                timedRunBeepStop = savedInstanceState.getBoolean(STATE_TIMED_RUN_BEEP_STOP);
+                menuHintDismissed = savedInstanceState.getBoolean(STATE_MENU_HINT_DISMISSED);
+                startHintDismissed = savedInstanceState.getBoolean(STATE_START_HINT_DISMISSED);
+                saveLocallyDismissed = savedInstanceState.getBoolean(STATE_SAVE_LOCALLY_DISMISSED);
+                bluetoothScanDismissed = savedInstanceState.getBoolean(STATE_BLUETOOTH_SCAN_DISMISSED);
+                networkScanDismissed = savedInstanceState.getBoolean(STATE_NETWORK_SCAN_DISMISSED);
+                sensorWarningDismissed = savedInstanceState.getBoolean(STATE_SENSOR_WARNING_DISMISSED);
+                dataPolicyDismissed = savedInstanceState.getBoolean(STATE_DATA_POLICY_DISMISSED);
+
+
+                //Which view was active when we were stopped?
+                startView = savedInstanceState.getInt(STATE_CURRENT_VIEW);
+            }
+
+            setupTabLayout();
+            tabLayout.getTabAt(startView).select();
+
+            //Everything is ready. Let's start the "main loop"
+            loadCompleted = true;
+
+            updateViewsHandler.postDelayed(updateViews, 40);
+
+            //Also invalidate the options menu, so it can activate any controls, that are valid for a loaded experiment
+            invalidateOptionsMenu();
+
+            if (experiment.depthInput != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                try {
+                    experiment.depthInput.startCameras();
+                } catch (Exception e) {
+                    Toast.makeText(this, "DepthPreview: setCamera could not restart depthInput: " + e.getMessage(), Toast.LENGTH_LONG).show(); //Present message
+                }
+            }
+            //Start the remote server if activated
+            startRemoteServer();
+        } else {
+            //There has been an error. Show the error to the user and leave the activity in its
+            //   non-interactive state...
+
+            //Append TextView with error message to the base linear layout
+            TextView tv = (TextView) findViewById(R.id.errorMessage);
+            tv.setText(experiment.message);
+            tv.setVisibility(View.VISIBLE);
+            this.experiment = null;
+        }
+
+        //Check if experiment is already in list and if so, flag it as local.
+        if (experiment.source != null && Helper.experimentInCollection(experiment.crc32, this)) {
+            experiment.isLocal = true;
+        }
+
+        //An explanation is not necessary for raw sensors and of course we don't want it if there is an error
+        if (experiment.category.equals(res.getString(R.string.categoryRawSensor)) || !experiment.loaded)
+            menuHintDismissed = true;
+
+        if (!experiment.loaded)
+            startHintDismissed = true;
+
+        //If the hint has been shown a few times, we do not show it again
+        SharedPreferences settings = getSharedPreferences(ExperimentList.PREFS_NAME, 0);
+        int menuHintDismissCount = settings.getInt("menuHintDismissCount", 0);
+        if (menuHintDismissCount >= 3)
+            menuHintDismissed = true;
+        if (!experiment.isLocal && experiment.loaded)
+            menuHintDismissed = true; //Do not show menu startMenuItem for external experiments
+
+        //If the start button has been used a few times, we do not show its hint again
+        int startHintDismissCount = settings.getInt("startHintDismissCount", 0);
+        if (startHintDismissCount >= 3)
+            startHintDismissed = true;
+
+        if (!menuHintDismissed)
+            showMenuHint();
+        else if (!startHintDismissed)
+            showStartHint();
+
+        settings = PreferenceManager.getDefaultSharedPreferences(this);
+        proximityLock = settings.getBoolean("proximityLock", false);
+        if (proximityLock && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            PowerManager powerManager = (PowerManager) getBaseContext().getSystemService(Context.POWER_SERVICE);
+            if (powerManager.isWakeLockLevelSupported(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK))
+                wakeLock = powerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "phyphox:measuring");
+        }
+
+        //All done. Almost. Now let's resolve anything the user needs to know or needs to decide
+        showInitialDialogs();
+    }
+
+    private void showSensorWarning(SensorInput sensor) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(res.getString(R.string.vendorSensorWarning1) + " " + res.getString(sensor.getDescriptionRes()) + " " + res.getString(R.string.vendorSensorWarning2))
+                .setTitle(R.string.vendorSensorTitle)
+                .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialogInterface) {
+                        showInitialDialogs();
+                    }
+                })
+                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        showInitialDialogs();
+                    }
+                });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    public void connectNetworkConnections() {
+        for (NetworkConnection networkConnection : experiment.networkConnections) {
+            if (networkConnection.specificAddress == null) {
+                networkConnection.connect(this);
+                return;
+            }
+        }
+        networkScanDismissed = true;
+        showInitialDialogs();
+    }
+
+    public void networkScanDialogDismissed() {
+        networkScanDismissed = true;
+        showInitialDialogs();
+    }
+
+    public void dataPolicyInfoDismissed() {
+        dataPolicyDismissed = true;
+        showInitialDialogs();
+    }
+
+    public static boolean isBluetoothConnectionSuccessful = false;
+
+    // connects to the bluetooth devices in an async task
+    // if startMeasurement is true the measurement will be started automatically once all devices are connected
+    public void connectBluetoothDevices(boolean startMeasurement, final boolean timed) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            if (!(experiment.bluetoothInputs.isEmpty() && experiment.bluetoothOutputs.isEmpty())) {
+                isBluetoothConnectionSuccessful = false;
+                // connect all bluetooth devices with an asyncTask
+                final Bluetooth.ConnectBluetoothTask btTask = new Bluetooth.ConnectBluetoothTask();
+                btTask.progress = ProgressDialog.show(Experiment.this, getResources().getString(R.string.loadingTitle), getResources().getString(R.string.loadingBluetoothConnectionText), true);
+
+                // define onSuccess
+                btTask.onSuccess = () -> {
+                    isBluetoothConnectionSuccessful = true;
+                    showBluetoothConnectedDeviceInfo();
+
+                    if (startMeasurement) {
+                        if (timed) {
+                            startTimedMeasurement();
+                        } else {
+                            startMeasurement();
+                        }
+                    }
+                };
+
+                // set attributes of errorDialog
+                Bluetooth.errorDialog.context = Experiment.this;
+                Bluetooth.errorDialog.cancel = () -> btTask.progress.dismiss();
+                Bluetooth.errorDialog.tryAgain = () -> {
+                    // start a new task with the same attributes
+                    Bluetooth.ConnectBluetoothTask newBtTask = new Bluetooth.ConnectBluetoothTask();
+                    newBtTask.progress = btTask.progress;
+                    newBtTask.onSuccess = btTask.onSuccess;
+                    // show ProgressDialog again
+                    if (btTask.progress != null) {
+                        btTask.progress.show();
+                    }
+                    newBtTask.onSuccess = () -> {
+                        isBluetoothConnectionSuccessful = true;
+                        showBluetoothConnectedDeviceInfo();
+                    };
+                    newBtTask.execute(experiment.bluetoothInputs, experiment.bluetoothOutputs);
+
+                };
+                btTask.execute(experiment.bluetoothInputs, experiment.bluetoothOutputs);
+            }
+        }
+    }
+
+    public static boolean bluetoothConnectionSuccessful = false;
+    ConnectedBluetoothDeviceInfoAdapter deviceInfoAdapter;
+    ArrayList<ConnectedDeviceInfo> connectedDevices = new ArrayList<>();
+
+    public static UpdateConnectedDeviceDelegate updateConnectedDeviceDelegate;
+    private RecyclerView recyclerView;
+
+    private void showBluetoothConnectedDeviceInfo() {
+
+        recyclerView = (RecyclerView) findViewById(R.id.recycler_view_battery);
+        if (Helper.isDarkTheme(getResources())) {
+            recyclerView.setBackgroundColor(getResources().getColor(R.color.phyphox_black_40));
+        } else {
+            recyclerView.setBackgroundColor(getResources().getColor(R.color.phyphox_white_90));
+        }
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        deviceInfoAdapter = new ConnectedBluetoothDeviceInfoAdapter(connectedDevices);
+        recyclerView.setAdapter(deviceInfoAdapter);
+        bluetoothConnectionSuccessful = true;
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void showHint(int textRessource, PopupWindow.OnDismissListener dismissListener, final int gravity, final int fromRight) {
+        if (popupWindow != null)
+            return;
+        LayoutInflater inflater = (LayoutInflater) this.getSystemService(LAYOUT_INFLATER_SERVICE);
+        View hintView;
+        if (Helper.isDarkTheme(getResources())) {
+            hintView = inflater.inflate(R.layout.menu_hint, null);
+        } else {
+            hintView = inflater.inflate(R.layout.menu_hint_light, null);
+        }
+
+        TextView text = (TextView) hintView.findViewById(R.id.hint_text);
+        text.setText(textRessource);
+        ImageView iv = ((ImageView) hintView.findViewById(R.id.hint_arrow));
+        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) iv.getLayoutParams();
+        lp.gravity = gravity;
+        iv.setLayoutParams(lp);
+
+        popupWindow = new PopupWindow(hintView, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+
+        if (Build.VERSION.SDK_INT >= 21) {
+            popupWindow.setElevation(4.0f);
+        }
+
+        popupWindow.setOutsideTouchable(false);
+        popupWindow.setTouchable(false);
+        popupWindow.setFocusable(false);
+        LinearLayout ll = (LinearLayout) hintView.findViewById(R.id.hint_root);
+
+        ll.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (popupWindow != null)
+                    popupWindow.dismiss();
+                return true;
+            }
+        });
+
+        popupWindow.setOnDismissListener(dismissListener);
+
+
+        findViewById(R.id.rootLayout).post(new Runnable() {
+            public void run() {
+                View viewItem = findViewById(R.id.customActionBar);
+                if (viewItem == null) {
+                    return;
+                }
+                int pos[] = new int[2];
+                viewItem.getLocationOnScreen(pos);
+                if (isFinishing())
+                    return;
+                try {
+                    popupWindow.showAtLocation(viewItem, Gravity.TOP | gravity, pos[0] + fromRight * viewItem.getHeight(), pos[1] + (int) (viewItem.getHeight() * 0.8));
+                } catch (WindowManager.BadTokenException e) {
+                    Log.e("showHint", "Bad token when showing hint. This is not unusual when app is rotating while showing the hint.");
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onUserInteraction() {
+        if (popupWindow != null)
+            popupWindow.dismiss();
+    }
+
+    private void showMenuHint() {
+        showHint(R.string.experimentinfo_hint, new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                popupWindow = null;
+                menuHintDismissed = true;
+                SharedPreferences settings = getSharedPreferences(ExperimentList.PREFS_NAME, 0);
+                int menuHintDismissCount = settings.getInt("menuHintDismissCount", 0);
+                settings.edit().putInt("menuHintDismissCount", menuHintDismissCount + 1).apply();
+            }
+        }, Gravity.RIGHT, 0);
+    }
+
+    private void showStartHint() {
+        showHint(R.string.start_hint, new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                popupWindow = null;
+                startHintDismissed = true;
+            }
+        }, Gravity.RIGHT, 2);
+    }
+
+    @Override
+    //Create options menu from our layout
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_experiment, menu);
+        return true;
+    }
+
+    //Create an animation to guide the inexperienced user to the start button.
+    private void showPlayHintAnimation() {
+        LayoutInflater inflater = (LayoutInflater) this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        hintAnimation = (ImageView) inflater.inflate(R.layout.play_animated, null);
+
+        Animation anim = AnimationUtils.loadAnimation(this, R.anim.play_highlight);
+        anim.setRepeatCount(Animation.INFINITE);
+        anim.setRepeatMode(Animation.REVERSE);
+        if (!BuildConfig.FLAVOR.equals("screenshot")) {
+            hintAnimation.startAnimation(anim); //Do not animate while taking screenshots
+        }
+
+        hintAnimation.setContentDescription(res.getString(R.string.start));
+
+        startMenuItem.setActionView(hintAnimation);
+    }
+
+    //Hide the start button hint animation
+    private void hidePlayHintAnimation() {
+        if (hintAnimation != null) {
+            hintAnimation.clearAnimation();
+            hintAnimation.setVisibility(View.GONE);
+            hintAnimation = null;
+            startMenuItem.setActionView(null);
+            startMenuItem = null;
+        }
+    }
+
+    @Override
+    //Refresh the options menu
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        //Do we have a valid experiment?
+        if (experiment == null || !experiment.loaded) {
+            for (int i = 0; i < menu.size(); i++)
+                menu.getItem(i).setVisible(false);
+            return true; //Even though there are no menu elements, we need to enable the menu to allow up navigation through the back button
+        }
+        //Get all the menu items we want to manipulate
+        MenuItem timed_play = menu.findItem(R.id.action_timed_play);
+        MenuItem timed_pause = menu.findItem(R.id.action_timed_pause);
+        MenuItem play = menu.findItem(R.id.action_play);
+        MenuItem pause = menu.findItem(R.id.action_pause);
+        MenuItem timer = menu.findItem(R.id.timer);
+//        MenuItem timed_run = menu.findItem(R.id.action_timedRun);
+//        MenuItem remote = menu.findItem(R.id.action_remoteServer);
+//        MenuItem saveLocally = menu.findItem(R.id.action_saveLocally);
+//        MenuItem calibratedMagnetometer = menu.findItem(R.id.action_calibrated_magnetometer);
+//        MenuItem forceGNSSItem = menu.findItem(R.id.action_force_gnss);
+
+        Iterator it = experiment.highlightedLinks.entrySet().iterator();
+        for (int i = 1; i <= 5; i++) {
+            MenuItem link;
+//            switch (i) {
+//                case 1: link = menu.findItem(R.id.action_link1);
+//                    break;
+//                case 2: link = menu.findItem(R.id.action_link2);
+//                    break;
+//                case 3: link = menu.findItem(R.id.action_link3);
+//                    break;
+//                case 4: link = menu.findItem(R.id.action_link4);
+//                    break;
+//                case 5: link = menu.findItem(R.id.action_link5);
+//                    break;
+//                default: link = menu.findItem(R.id.action_link5);
+//                    break;
+//            }
+//            if (it.hasNext()) {
+//                link.setVisible(true);
+//                Map.Entry entry = (Map.Entry)it.next();
+//                link.setTitle((String)entry.getKey());
+//            } else
+//                link.setVisible(false);
+        }
+
+        //If a timed run timer is active, we show either timed_play or timed_pause. otherwise we show play or pause
+        //The pause version is shown when we are measuring, the play version otherwise
+        timed_play.setVisible(!measuring && cdTimer != null);
+        timed_pause.setVisible(measuring && cdTimer != null);
+        play.setVisible(!measuring && cdTimer == null);
+        pause.setVisible(measuring && cdTimer == null);
+
+        //If the experiment has not yet been started, highlight the play button
+        if (beforeStart) {
+            //Create an animation to guide the inexperienced user.
+            if (startMenuItem != null) {
+                //We have already created an animation, which we need to remove first.
+                hidePlayHintAnimation();
+            }
+            startMenuItem = menu.findItem(R.id.action_play);
+            showPlayHintAnimation();
+            startMenuItem.getActionView().setOnClickListener(this);
+        } else { //Either we cannot show the anymation or we should not show it as the start button has already been used. Hide the animation
+            startMenuItem = menu.findItem(R.id.action_play);
+            hidePlayHintAnimation();
+        }
+
+        //the timer is shown if the timed run mode is active at all. In this case the timed run option is also checked
+        timer.setVisible(timedRun);
+//        timed_run.setChecked(timedRun);
+
+        //The save locally option (copy to collection) is only available for experiments that are not already in the collection
+//        saveLocally.setVisible(!experiment.isLocal);
+//
+        //The remote server option is checked if activated
+//        remote.setChecked(serverEnabled);
+
+        //The calibrated magnetometer entry is only shown if the experiment uses a magnetometer and if the API level is high enough to offer an uncalibrated alternative
+        boolean magnetometer = false;
+        boolean calibrated = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED) != null) {
+            for (SensorInput sensor : experiment.inputSensors) {
+                if (sensor.type == Sensor.TYPE_MAGNETIC_FIELD || sensor.type == Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED) {
+                    magnetometer = true;
+                    calibrated = sensor.calibrated;
+                }
+            }
+        }
+//        calibratedMagnetometer.setVisible(magnetometer);
+//        calibratedMagnetometer.setChecked(calibrated);
+
+        boolean gps = false;
+        boolean forceGNSS = false;
+        if (experiment.gpsIn != null) {
+            gps = true;
+            forceGNSS = experiment.gpsIn.forceGNSS;
+        }
+//        forceGNSSItem.setVisible(gps);
+//        forceGNSSItem.setChecked(forceGNSS);
+
+        //If the timedRun is active, we have to set the value of the countdown
+        if (timedRun) {
+            if (cdTimer != null) { //Timer running? Show the last known value of millisUntilFinished
+                timer.setTitle(String.format(Locale.getDefault(), "%.1f", millisUntilFinished / 1000.0));
+            } else { //No timer running? Show the start value of the next timer, which is...
+                if (measuring) //...the stop delay if we are already measuring
+                    timer.setTitle(String.format(Locale.getDefault(), "%.1f", timedRunStopDelay));
+                else //...the start delay if we are paused
+                    timer.setTitle(String.format(Locale.getDefault(), "%.1f", timedRunStartDelay));
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void onClick(View v) {
+        if (popupWindow != null)
+            popupWindow.dismiss();
+        if (v == hintAnimation) {
+            if (timedRun) {
+                startTimedMeasurement();
+            } else {
+                SharedPreferences settings = getSharedPreferences(ExperimentList.PREFS_NAME, 0);
+                int startHintDismissCount = settings.getInt("startHintDismissCount", 0);
+                settings.edit().putInt("startHintDismissCount", startHintDismissCount + 1).apply();
+                startMeasurement();
+            }
+        }
+    }
+
+    @Override
+    //the user has clicked an option.
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        //Home-button. Back to the Experiment List
+        if (id == android.R.id.home) {
+            leaveExperiment();
+            return true;
+        }
+
+        //Play button. Start a measurement
+        if (id == R.id.action_play) {
+            SharedPreferences settings = getSharedPreferences(ExperimentList.PREFS_NAME, 0);
+            int startHintDismissCount = settings.getInt("startHintDismissCount", 0);
+            settings.edit().putInt("startHintDismissCount", startHintDismissCount + 1).apply();
+
+            if (timedRun) {
+                startTimedMeasurement();
+            } else
+                startMeasurement();
+            return true;
+        }
+
+        //Pause button. Stop the measurement
+        if (id == R.id.action_pause) {
+            stopMeasurement();
+            return true;
+        }
+
+        //Timed play button. Abort the start count-down (by stopping the measurement)
+        if (id == R.id.action_timed_play) {
+            stopMeasurement();
+            return true;
+        }
+
+        //Timed stop button. Stop the running measurement
+        if (id == R.id.action_timed_pause) {
+            stopMeasurement();
+            return true;
+        }
+
+        //Timed Run button. Show the dialog to set up the timed run
+//        if (id == R.id.action_timedRun) {
+//            final MenuItem itemRef = item;
+//            LayoutInflater inflater = (LayoutInflater) this.getSystemService(LAYOUT_INFLATER_SERVICE);
+//            View vLayout = inflater.inflate(R.layout.timed_run_layout, null);
+//            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//
+//            final CheckBox cbTimedRunEnabled = (CheckBox) vLayout.findViewById(R.id.timedRunEnabled);
+//            final RelativeLayout tTimedRunTimeOptions = (RelativeLayout) vLayout.findViewById(R.id.timedRunTimeOptions);
+//
+//            cbTimedRunEnabled.setChecked(timedRun);
+//
+//            final CompoundButton.OnCheckedChangeListener enabledChanged = new CompoundButton.OnCheckedChangeListener() {
+//                  @Override
+//                  public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+//                      tTimedRunTimeOptions.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+//                  }
+//
+//            };
+//
+//            cbTimedRunEnabled.setOnCheckedChangeListener(enabledChanged);
+//            enabledChanged.onCheckedChanged(cbTimedRunEnabled, timedRun);
+//
+//            final EditText etTimedRunStartDelay = (EditText) vLayout.findViewById(R.id.timedRunStartDelay);
+//            etTimedRunStartDelay.addTextChangedListener(new DecimalTextWatcher());
+//            etTimedRunStartDelay.setText(String.valueOf(timedRunStartDelay));
+//            final EditText etTimedRunStopDelay = (EditText) vLayout.findViewById(R.id.timedRunStopDelay);
+//            etTimedRunStopDelay.addTextChangedListener(new DecimalTextWatcher());
+//            etTimedRunStopDelay.setText(String.valueOf(timedRunStopDelay));
+//
+//            final class IgnoreChanges {
+//                boolean ignore = true;
+//            }
+//            final IgnoreChanges ignoreChanges = new IgnoreChanges();
+//            final Button cbTimedRunBeeperAll = (Button) vLayout.findViewById(R.id.timedRunBeepAll);
+//            final class AllButtonOn {
+//                boolean on = false;
+//            }
+//            final AllButtonOn allButtonOn = new AllButtonOn();
+//            final SwitchCompat cbTimedRunBeeperCountdown = (SwitchCompat) vLayout.findViewById(R.id.timedRunBeepCountdown);
+//            final SwitchCompat cbTimedRunBeeperStart = (SwitchCompat) vLayout.findViewById(R.id.timedRunBeepStart);
+//            final SwitchCompat cbTimedRunBeeperRunning = (SwitchCompat) vLayout.findViewById(R.id.timedRunBeepRunning);
+//            final SwitchCompat cbTimedRunBeeperStop = (SwitchCompat) vLayout.findViewById(R.id.timedRunBeepStop);
+//
+//            final View.OnClickListener allButtonClicked;
+//
+//            final CompoundButton.OnCheckedChangeListener updateAllButton = new CompoundButton.OnCheckedChangeListener() {
+//                @Override
+//                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+//                    if (ignoreChanges.ignore)
+//                        return;
+//
+//                    allButtonOn.on = (cbTimedRunBeeperCountdown.isChecked() || cbTimedRunBeeperStart.isChecked() || cbTimedRunBeeperRunning.isChecked() || cbTimedRunBeeperStop.isChecked());
+//                    cbTimedRunBeeperAll.setText(allButtonOn.on ? R.string.deactivate_all : R.string.activate_all);
+//                }
+//            };
+//
+//            allButtonClicked = new View.OnClickListener() {
+//                @Override
+//                public void onClick(View view) {
+//                    ignoreChanges.ignore = true;
+//
+//                    allButtonOn.on = !allButtonOn.on;
+//                    cbTimedRunBeeperAll.setText(allButtonOn.on ? R.string.deactivate_all : R.string.activate_all);
+//                    cbTimedRunBeeperCountdown.setChecked(allButtonOn.on);
+//                    cbTimedRunBeeperStart.setChecked(allButtonOn.on);
+//                    cbTimedRunBeeperRunning.setChecked(allButtonOn.on);
+//                    cbTimedRunBeeperStop.setChecked(allButtonOn.on);
+//
+//                    ignoreChanges.ignore = false;
+//                }
+//            };
+//
+//            cbTimedRunBeeperAll.setOnClickListener(allButtonClicked);
+//            cbTimedRunBeeperCountdown.setOnCheckedChangeListener(updateAllButton);
+//            cbTimedRunBeeperStart.setOnCheckedChangeListener(updateAllButton);
+//            cbTimedRunBeeperRunning.setOnCheckedChangeListener(updateAllButton);
+//            cbTimedRunBeeperStop.setOnCheckedChangeListener(updateAllButton);
+//
+//            cbTimedRunBeeperCountdown.setChecked(timedRunBeepCountdown);
+//            cbTimedRunBeeperStart.setChecked(timedRunBeepStart);
+//            cbTimedRunBeeperRunning.setChecked(timedRunBeepRunning);
+//            cbTimedRunBeeperStop.setChecked(timedRunBeepStop);
+//            ignoreChanges.ignore = false;
+//            updateAllButton.onCheckedChanged(cbTimedRunBeeperStop, timedRunBeepStop);
+//
+//            builder.setView(vLayout)
+//                    .setTitle(R.string.timedRunDialogTitle)
+//                    .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+//                        public void onClick(DialogInterface dialog, int id) {
+//                            timedRun = cbTimedRunEnabled.isChecked();
+//                            itemRef.setChecked(timedRun);
+//
+//                            String startDelayRaw = etTimedRunStartDelay.getText().toString().replace(",",".");
+//                            try {
+//                                timedRunStartDelay = Double.valueOf(startDelayRaw);
+//                            } catch (Exception e) {
+//                                timedRunStartDelay = 0.;
+//                            }
+//
+//                            String stopDelayRaw = etTimedRunStopDelay.getText().toString().replace(",", ".");
+//                            try {
+//                                timedRunStopDelay = Double.valueOf(stopDelayRaw);
+//                            } catch (Exception e) {
+//                                timedRunStopDelay = 0.;
+//                            }
+//
+//                            timedRunBeepCountdown = cbTimedRunBeeperCountdown.isChecked();
+//                            timedRunBeepStart = cbTimedRunBeeperStart.isChecked();
+//                            timedRunBeepRunning = cbTimedRunBeeperRunning.isChecked();
+//                            timedRunBeepStop = cbTimedRunBeeperStop.isChecked();
+//
+//                            if (timedRun && measuring)
+//                                stopMeasurement();
+//                            else
+//                                invalidateOptionsMenu();
+//                        }
+//                    })
+//                    .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+//                        public void onClick(DialogInterface dialog, int id) {
+//
+//                        }
+//                    });
+//            AlertDialog dialog = builder.create();
+//            dialog.show();
+//            return true;
+//        }
+
+        //Clear data button. Clear the data :)
+        if (id == R.id.action_clear) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage(res.getString(R.string.clear_data_question))
+                    .setPositiveButton(R.string.clear_data, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            clearData();
+                        }
+                    })
+                    .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+
+                        }
+                    });
+            AlertDialog dialog = builder.create();
+            dialog.show();
+            return true;
+        }
+
+        //Export button. Call the export function of the DataExport class
+        if (id == R.id.action_export) {
+            if (experiment.exporter.exportSets.size() == 0) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setMessage(res.getString(R.string.export_empty))
+                        .setTitle(R.string.export)
+                        .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+
+                            }
+                        });
+                AlertDialog dialog = builder.create();
+                dialog.show();
+            } else {
+                experiment.export(this);
+            }
+            return true;
+        }
+
+        //Saving the state - either locally or through a share intent
+        if (id == R.id.action_saveState) {
+            stopMeasurement();
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            final View dialogView = this.getLayoutInflater().inflate(R.layout.savestate_dialog, null);
+            builder.setView(dialogView);
+            final EditText customTitleET = (EditText) dialogView.findViewById(R.id.customTitle);
+            DateFormat df = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
+            final Date now = Calendar.getInstance().getTime();
+            customTitleET.setText(getString(R.string.save_state_default_title) + " " + df.format(now));
+            builder.setMessage(res.getString(R.string.save_state_message))
+                    .setTitle(R.string.save_state)
+                    .setPositiveButton(R.string.save_state_save, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            try {
+                                String file = UUID.randomUUID().toString().replaceAll("-", "") + ".phyphox"; //Random file name
+                                FileOutputStream output = openFileOutput(file, Activity.MODE_PRIVATE);
+                                String result = experiment.writeStateFile(customTitleET.getText().toString(), output);
+                                output.close();
+                                if (result != null) {
+                                    Toast.makeText(getBaseContext(), "Error: " + result, Toast.LENGTH_LONG).show();
+                                    return;
+                                }
+                            } catch (Exception e) {
+                                Toast.makeText(getBaseContext(), "Error wirting state file: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                Log.e("updateData", "Unhandled exception.", e);
+                                return;
+                            }
+                            Toast.makeText(getBaseContext(), getString(R.string.save_state_success), Toast.LENGTH_LONG).show();
+                        }
+                    })
+                    .setNeutralButton(R.string.save_state_share, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+
+                            final String fileName = experiment.title.replaceAll("[^0-9a-zA-Z \\-_]", "");
+                            String filename = fileName.isEmpty() ? getString(R.string.save_state_default_title) : fileName + " " + (new SimpleDateFormat("yyyy-MM-dd HH-mm-ss")).format(now) + ".phyphox";
+                            File file = new File(getCacheDir(), "/" + filename);
+                            try {
+                                FileOutputStream output = new FileOutputStream(file);
+                                String result = experiment.writeStateFile(customTitleET.getText().toString(), output);
+                                output.close();
+                                if (result != null) {
+                                    Toast.makeText(getBaseContext(), "Error: " + result, Toast.LENGTH_LONG).show();
+                                    return;
+                                }
+                            } catch (Exception e) {
+                                Toast.makeText(getBaseContext(), "Error wirting state file: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                Log.e("updateData", "Unhandled exception.", e);
+                                return;
+                            }
+
+                            final Uri uri = FileProvider.getUriForFile(getBaseContext(), getPackageName() + ".exportProvider", file);
+                            final Intent intent = ShareCompat.IntentBuilder.from(Experiment.this)
+                                    .setType("application/octet-stream") //mime type from the export filter
+                                    .setSubject(getString(R.string.save_state_subject))
+                                    .setStream(uri)
+                                    .getIntent()
+                                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET)
+                                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+                            List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(intent, 0);
+                            for (ResolveInfo ri : resInfoList) {
+                                grantUriPermission(ri.activityInfo.packageName, uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            }
+
+
+                            //Create chooser
+                            Intent chooser = Intent.createChooser(intent, getString(R.string.share_pick_share));
+                            //And finally grant permissions again for any activities created by the chooser
+                            resInfoList = getPackageManager().queryIntentActivities(chooser, 0);
+                            for (ResolveInfo ri : resInfoList) {
+                                if (ri.activityInfo.packageName.equals(BuildConfig.APPLICATION_ID
+                                ))
+                                    continue;
+                                grantUriPermission(ri.activityInfo.packageName, uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            }
+                            //Execute this intent
+                            startActivity(chooser);
+                        }
+                    })
+                    .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+
+                        }
+                    });
+            AlertDialog dialog = builder.create();
+            dialog.show();
+            return true;
+        }
+
+        //The share button. Take a screenshot and send a share intent to all those social media apps...
+
+        if (id == R.id.action_share) {
+
+            final String fileName = experiment.title.replaceAll("[^0-9a-zA-Z \\-_]", "");
+            File file = new File(this.getCacheDir(), "/" + (fileName.isEmpty() ? "phyphox" : fileName) + " " + (new SimpleDateFormat("yyyy-MM-dd HH-mm-ss")).format(new Date()) + ".png");
+            final Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".exportProvider", file);
+
+            final Intent intent = ShareCompat.IntentBuilder.from(this)
+                    .setType("image/png")
+                    .setSubject(getString(R.string.share_subject))
+                    .setStream(uri)
+                    .getIntent()
+                    .setFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET)
+                    .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            Helper.ScreenshotCallback callback = new Helper.ScreenshotCallback() {
+                @Override
+                public void onSuccess(Bitmap bitmap) {
+                    try {
+                        FileOutputStream out = new FileOutputStream(file);
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out);
+                        out.flush();
+                        out.close();
+                        String path = file.getPath();
+                        bitmap.recycle();
+
+                        List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(intent, 0);
+                        for (ResolveInfo ri : resInfoList) {
+                            grantUriPermission(ri.activityInfo.packageName, uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        }
+
+                        //Create chooser
+                        Intent chooser = Intent.createChooser(intent, getString(R.string.share_pick_share));
+                        //And finally grant permissions again for any activities created by the chooser
+                        resInfoList = getPackageManager().queryIntentActivities(chooser, 0);
+                        for (ResolveInfo ri : resInfoList) {
+                            if (ri.activityInfo.packageName.equals(BuildConfig.APPLICATION_ID
+                            ))
+                                continue;
+                            grantUriPermission(ri.activityInfo.packageName, uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        }
+//                        //Execute this intent
+//                        Intent intent = new Intent(Experiment.this, DrawActivity.class);
+//                        intent.putExtra("Bitmap Image", bitmap);
+                        startActivity(chooser);
+                    } catch (Exception e) {
+                        Log.e("action_share", "Unhandled exception", e);
+                    }
+                }
+            };
+
+            View screenView = findViewById(R.id.rootLayout).getRootView();
+            Helper.getScreenshot(screenView, this.getWindow(), callback);
+        }
+
+//        if (id == R.id.action_next) {
+//            final String fileName = experiment.title.replaceAll("[^0-9a-zA-Z \\-_]", "");
+//            File file = new File(this.getCacheDir(), "/"+ (fileName.isEmpty() ? "phyphox" : fileName) + " " + (new SimpleDateFormat("yyyy-MM-dd HH-mm-ss")).format(new Date())+".png");
+//            final Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".exportProvider", file);
+//
+//
+//            Helper.ScreenshotCallback callback = new Helper.ScreenshotCallback() {
+//                @Override
+//                public void onSuccess(Bitmap bitmap) {
+//                    try {
+//                        FileOutputStream out = new FileOutputStream(file);
+//                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+//                        out.flush();
+//                        out.close();
+//                        String path = file.getPath();
+//                        bitmap.recycle();
+//
+//                        Intent intent = new Intent(Experiment.this, DrawActivity.class);
+//                        intent.putExtra("Uri Image", path);
+//                        startActivity(intent);
+//                    } catch (Exception e) {
+//                        Log.e("action_share", "Unhandled exception", e);
+//                    }
+//                }
+//            };
+//
+//            View screenView = findViewById(R.id.rootLayout).getRootView();
+//            Helper.getScreenshot(screenView, this.getWindow(), callback);
+//        }
+
+        if (id == R.id.action_next) {
+            // Debug: Log status measurement dan data
+            Log.d("SCREENSHOT_DEBUG", "[DRAW] Measuring: " + measuring);
+            Log.d("SCREENSHOT_DEBUG", "[DRAW] Experiment loaded: " + (experiment != null));
+            if (experiment != null) {
+                Log.d("SCREENSHOT_DEBUG", "[DRAW] New data: " + experiment.newData);
+                Log.d("SCREENSHOT_DEBUG", "[DRAW] Data buffers count: " + experiment.dataBuffers.size());
+                for (DataBuffer buffer : experiment.dataBuffers) {
+                    Log.d("SCREENSHOT_DEBUG", "[DRAW] Buffer " + buffer.name + ": " + buffer.getFilledSize() + " values");
+                }
+            }
+
+            // Ambil screenshot dan buka DrawActivity, tanpa harus menunggu measurement
+            takeScreenshotWithData();
+            return true;
+        }
+
+
+//        if (id == R.id.action_calibrated_magnetometer) {
+//            stopMeasurement();
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+//                for (SensorInput sensor : experiment.inputSensors) {
+//                    if (sensor.type == Sensor.TYPE_MAGNETIC_FIELD || sensor.type == Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED) {
+//                        sensor.calibrated = !item.isChecked();
+//                    }
+//                }
+//            }
+//        }
+
+//        if (id == R.id.action_force_gnss) {
+//            stopMeasurement();
+//            if (experiment.gpsIn != null) {
+//                experiment.gpsIn.forceGNSS= !item.isChecked();
+//            }
+//        }
+
+        //The remote server button. Show a warning with IP information and start the server if confirmed.
+        //or: stop the server if it was active before.
+//        if (id == R.id.action_remoteServer) {
+//            if (item.isChecked()) {
+//                item.setChecked(false);
+//                serverEnabled = false;
+//                stopRemoteServer();
+//            } else {
+//                final MenuItem itemRef = item;
+//                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//                builder.setMessage(res.getString(R.string.remoteServerWarning))
+//                        .setTitle(R.string.remoteServerWarningTitle)
+//                        .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+//                            public void onClick(DialogInterface dialog, int id) {
+//                                itemRef.setChecked(true);
+//                                serverEnabled = true;
+//                                startRemoteServer();
+//                            }
+//                        })
+//                        .setNeutralButton(R.string.hotspotSettings, new DialogInterface.OnClickListener() {
+//                            public void onClick(DialogInterface dialog, int id) {
+//                                final Intent intent = new Intent(Intent.ACTION_MAIN, null);
+//                                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+//                                final ComponentName cn = new ComponentName("com.android.settings", "com.android.settings.TetherSettings");
+//                                intent.setComponent(cn);
+//                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                                startActivity( intent);
+//                            }
+//                        })
+//                        .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+//                            public void onClick(DialogInterface dialog, int id) {
+//
+//                            }
+//                        });
+//                AlertDialog dialog = builder.create();
+//                dialog.show();
+//            }
+//            return true;
+//        }
+
+        //Desciption-button. Show the experiment description
+//        if (id == R.id.action_description) {
+//            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//            builder.setTitle(experiment.title);
+//
+//            LinearLayout ll = new LinearLayout(builder.getContext());
+//            ll.setOrientation(LinearLayout.VERTICAL);
+//            int marginX = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, res.getDimension(R.dimen.activity_horizontal_padding), res.getDisplayMetrics());
+//            int marginY = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, res.getDimension(R.dimen.activity_vertical_padding), res.getDisplayMetrics());
+//            ll.setPadding(marginX, marginY, marginX, marginY);
+//
+//            if (!experiment.stateTitle.isEmpty()) {
+//                TextView stateLabel = new TextView(builder.getContext());
+//                stateLabel.setText(experiment.stateTitle);
+//                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+//                lp.setMargins(0,0,0,Math.round(res.getDimension(R.dimen.font)));
+//                stateLabel.setLayoutParams(lp);
+//                ll.addView(stateLabel);
+//            }
+//
+//            TextView description = new TextView(builder.getContext());
+//            description.setText(experiment.description);
+//
+//            ll.addView(description);
+//
+//            for (String label : experiment.links.keySet()) {
+//                Button btn = new Button(builder.getContext());
+//                btn.setText(label);
+//                final String url = experiment.links.get(label);
+//                btn.setOnClickListener(new View.OnClickListener() {
+//                    public void onClick(View view) {
+//                        Uri uri = Uri.parse(url);
+//                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+//                        if (intent.resolveActivity(getPackageManager()) != null) {
+//                            startActivity(intent);
+//                        }
+//                    }
+//                });
+//                ll.addView(btn);
+//            }
+//
+//            ScrollView sv = new ScrollView(builder.getContext());
+//            sv.setHorizontalScrollBarEnabled(false);
+//            sv.setVerticalScrollBarEnabled(true);
+//            sv.addView(ll);
+//
+//            builder.setView(sv);
+//
+//            builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+//                public void onClick(DialogInterface dialog, int id) {
+//                }
+//            });
+//            AlertDialog dialog = builder.create();
+//            dialog.show();
+//            return true;
+//        }
+
+        int highlightLink = -1;
+        switch (id) {
+//            case R.id.action_link1: highlightLink = 0;
+//                break;
+//            case R.id.action_link2: highlightLink = 1;
+//                break;
+//            case R.id.action_link3: highlightLink = 2;
+//                break;
+//            case R.id.action_link4: highlightLink = 3;
+//                break;
+//            case R.id.action_link5: highlightLink = 4;
+//                break;
+            default:
+                highlightLink = -1;
+                break;
+        }
+        if (highlightLink >= 0) {
+            Map.Entry entry = (Map.Entry) experiment.highlightedLinks.entrySet().toArray()[highlightLink];
+            Uri uri = Uri.parse((String) entry.getValue());
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivity(intent);
+            }
+        }
+
+
+        //Save locally button (copy to collection). Instantiate and start the copying thread.
+//        if (id == R.id.action_saveLocally) {
+//            progress = ProgressDialog.show(this, res.getString(R.string.loadingTitle), res.getString(R.string.loadingText), true);
+//            new PhyphoxFile.CopyXMLTask(intent, this).execute();
+//        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    //Below follow two runnable, which act as our "main loop" (although this feels like a function,
+    //   technically these are instances of the Runnable class with our function being the
+    //   overridden version of the run() function. But it feels better to write the whole thing down
+    //   like a function...
+
+    //The updateData runnable runs on a second thread and performs the heavy math (if defined in the
+    // experiment)
+    Runnable updateData = new Runnable() {
+        @Override
+        public void run() {
+            //Do the analysis. All of these elements might fire exceptions,
+            // especially on badly defined experiments. So let's be save and catch anything that
+            // gets through to here.
+            while (measuring && !shutdown) {
+                if (experiment != null) { //This only makes sense if there is an experiment
+                    try {
+                        //time for some analysis?
+                        if (measuring) {
+                            experiment.processAnalysis(true); //Do the math.
+                        }
+                    } catch (Exception e) {
+                        Log.e("updateData", "Unhandled exception.", e);
+                    }
+                }
+                try {
+                    Thread.sleep(10);
+                } catch (Exception e) {
+                    Log.w("updateData", "Sleep interrupted");
+                }
+            }
+        }
+    };
+
+    //The updateViews runnable does everything UI related and hence runs on the UI thread
+    Runnable updateViews = new Runnable() {
+        @Override
+        public void run() {
+            updateViewsHandler.removeCallbacksAndMessages(null);
+
+            //If a defocus has been requested (on another thread), do so.
+            if (shouldDefocus) {
+                defocus();
+                shouldDefocus = false;
+            }
+
+            //If a state change has been requested (on another thread, i.e. remote server), do so
+            if (updateState) {
+                if (remoteIntentMeasuring) {
+                    if (timedRun)
+                        startTimedMeasurement();
+                    else
+                        startMeasurement();
+                } else
+                    stopMeasurement();
+                updateState = false;
+            }
+
+            if (experiment != null) {
+                try {
+                    //Get values from input views only if there isn't fresh data from the remote server which might get overridden
+                    if (!remoteInput) {
+                        experiment.handleInputViews(measuring);
+                    }
+                    //Update all the views currently visible
+                    if (experiment.updateViews(tabLayout.getSelectedTabPosition(), false)) {
+                        if (remoteInput) {
+                            //If there has been remote input, we may reset it as updateViews will have taken care of this
+                            //This also means, that there is new input from the user
+                            remoteInput = false;
+                            experiment.newUserInput = true;
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e("updateViews", "Unhandled exception.", e);
+                } finally {
+                    //If we are not supposed to stop, let's do it again in a short while
+                    if (!shutdown) {
+                        if (measuring)
+                            updateViewsHandler.postDelayed(this, 40);
+                        else
+                            updateViewsHandler.postDelayed(this, 400); //As there is no experiment running, we can take our time and maybe save some battery
+                    }
+                }
+            }
+        }
+    };
+
+
+    //Start a measurement
+    public void startMeasurement() {
+        //Disable play-button highlight
+        beforeStart = false;
+
+        //Start the sensors
+        try {
+            experiment.startAllIO();
+        } catch (Bluetooth.BluetoothException e) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                stopMeasurement(); // stop experiment
+                // show an error dialog
+                Bluetooth.errorDialog.message = e.getMessage();
+                Bluetooth.errorDialog.context = Experiment.this;
+                // try to connect the bluetooth devices again when the user clicks "try again"
+                Bluetooth.errorDialog.tryAgain = new Runnable() {
+                    @Override
+                    public void run() {
+                        connectBluetoothDevices(true, false);
+                    }
+                };
+                Bluetooth.errorDialog.run();
+                return;
+            }
+        } catch (DepthInput.DepthInputException e) {
+            stopMeasurement(); // stop experiment
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage(e.getMessage())
+                    .setPositiveButton(R.string.ok, null);
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        }
+
+        //Set measurement state
+        measuring = true;
+
+        //No more turning off during the measurement
+        setKeepScreenOn(true);
+
+        //Start the analysis "loop"
+        Thread t = new Thread(updateData);
+        t.start();
+
+        //If this is a timed run, we have to start the countdown which stops it again later.
+        if (timedRun) {
+
+            millisUntilFinished = Math.round(timedRunStopDelay * 1000);
+            cdTimer = new CountDownTimer(millisUntilFinished, 20) {
+
+                int nextBeep = -1;
+                boolean relative = false;
+
+                public void onTick(long muf) {
+                    //On each tick update the menu to show the remaining time
+                    if (timedRunBeepRunning || timedRunBeepStop) {
+                        if (nextBeep < 0)
+                            nextBeep = (int) (Math.floor(muf / 1000. - 0.6));
+                        if (muf / 1000. < nextBeep + 0.4) {
+                            if (nextBeep == 0 && timedRunBeepStop) {
+                                if (relative)
+                                    audioOutput.beepRelative(800, 0.5, 1.0);
+                                else {
+                                    audioOutput.beep(800, 0.5, muf / 1000. - nextBeep);
+                                    relative = true;
+                                }
+                            } else if (nextBeep > 0 && timedRunBeepRunning) {
+                                if (relative)
+                                    audioOutput.beepRelative(1000, 0.1, 1.0);
+                                else {
+                                    audioOutput.beep(1000, 0.1, muf / 1000. - nextBeep);
+                                    relative = true;
+                                }
+                            }
+                            nextBeep--;
+                        }
+                    }
+                    millisUntilFinished = muf;
+                    invalidateOptionsMenu();
+                }
+
+                public void onFinish() {
+                    stopMeasurement();
+                }
+            }.start();
+        }
+        invalidateOptionsMenu();
+    }
+
+    //Start a timed measurement
+    public void startTimedMeasurement() {
+        //No more turning off during the measurement
+        setKeepScreenOn(true);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            // check if all Bluetooth devices are connected and display an errorDialog if not
+            Bluetooth notConnectedDevice = null;
+            for (Bluetooth b : experiment.bluetoothInputs) {
+                if (!b.isConnected()) {
+                    notConnectedDevice = b;
+                    break;
+                }
+            }
+            if (notConnectedDevice == null) {
+                for (Bluetooth b : experiment.bluetoothOutputs) {
+                    if (!b.isConnected()) {
+                        notConnectedDevice = b;
+                        break;
+                    }
+                }
+            }
+            if (notConnectedDevice != null) {
+                // show an error dialog
+                Bluetooth.errorDialog.message = getResources().getString(R.string.bt_exception_no_connection) + Bluetooth.BluetoothException.getMessage(notConnectedDevice);
+                Bluetooth.errorDialog.context = Experiment.this;
+                // try to connect the bluetooth devices again when the user clicks "try again"
+                Bluetooth.errorDialog.tryAgain = new Runnable() {
+                    @Override
+                    public void run() {
+                        connectBluetoothDevices(true, true);
+                    }
+                };
+                Bluetooth.errorDialog.run();
+                return;
+            }
+        }
+
+        if (timedRunBeepCountdown || timedRunBeepStart || timedRunBeepRunning || timedRunBeepStop) {
+            if (experiment.audioOutput == null) {
+                if (audioOutput == null) {
+                    audioOutput = new AudioOutput(false, 48000, true);
+                    try {
+                        audioOutput.init();
+                    } catch (Exception e) {
+                        return;
+                    }
+                }
+            } else
+                audioOutput = experiment.audioOutput;
+            audioOutput.start(true);
+            audioOutput.play();
+        }
+
+        //Not much more to do here. Just set up a countdown that will start the measurement
+        millisUntilFinished = Math.round(timedRunStartDelay * 1000);
+        cdTimer = new CountDownTimer(millisUntilFinished, 20) {
+            int nextBeep = -1;
+            boolean relative = false;
+
+            public void onTick(long muf) {
+                //On each tick update the menu to show the remaining time
+                if (timedRunBeepCountdown || timedRunBeepStart) {
+                    if (nextBeep < 0)
+                        nextBeep = (int) (Math.floor(muf / 1000. - 0.5));
+                    if (muf / 1000. < nextBeep + 0.4) {
+                        if (nextBeep == 0 && timedRunBeepStart) {
+                            if (relative)
+                                audioOutput.beepRelative(1000, 0.5, 1.0);
+                            else {
+                                audioOutput.beep(1000, 0.5, muf / 1000. - nextBeep);
+                                relative = true;
+                            }
+                        } else if (nextBeep > 0 && timedRunBeepCountdown) {
+                            if (relative)
+                                audioOutput.beepRelative(800, 0.1, 1.0);
+                            else {
+                                audioOutput.beep(800, 0.1, muf / 1000. - nextBeep);
+                                relative = true;
+                            }
+                        }
+                        nextBeep--;
+                    }
+                }
+                millisUntilFinished = muf;
+                invalidateOptionsMenu();
+            }
+
+            public void onFinish() {
+                startMeasurement();
+            }
+        }.start();
+        invalidateOptionsMenu();
+    }
+
+
+    // Method untuk mengirim data buffer ke server
+    private void sendBufferData(List<Double> acc, List<Double> gyr, List<Double> gyrSquared, List<Double> t) {
+        // Ambil user_id dari SessionManager
+        String userId = de.rwth_aachen.phyphox.Helper.SessionManager.getId(this);
+        // Buat objek BufferData dengan data buffer yang akan dikirim
+        BufferData bufferData = new BufferData(acc, gyr, gyrSquared, t, userId);
+
+        // Dapatkan instance ApiService dari Retrofit
+        ApiService apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
+
+        // Panggil endpoint addBufferData
+        Call<Void> call = apiService.addBufferData(bufferData);
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Log.d("Experiment", "Data berhasil dikirim ke server");
+                } else {
+                    Log.e("Experiment", "Gagal mengirim data. Kode respons: " + response.code());
+                }
+                getRadius();
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Log.e("Experiment", "Error: " + t.getMessage());
+            }
+        });
+    }
+
+    // Stop the measurement
+//    public void stopMeasurement() {
+//        measuring = false;
+//
+//        // Define the specific buffer names you want to log
+//        List<String> targetBufferNames = Arrays.asList("acc", "gyr", "gyr_squared", "t");
+//
+//        // Data lists for buffers
+//        List<Double> accData = new ArrayList<>();
+//        List<Double> gyrData = new ArrayList<>();
+//        List<Double> gyrSquaredData = new ArrayList<>();
+//        List<Double> tData = new ArrayList<>();
+//
+//        // Collect buffer data
+//        if (experiment != null) {
+//            for (DataBuffer buffer : experiment.dataBuffers) {
+//                if (targetBufferNames.contains(buffer.name)) {
+//                    try {
+//                        // Get data as a list
+//                        List<Double> dataList = buffer.getDataAsList();
+//
+//                        // Add data to the corresponding list based on buffer name
+//                        switch (buffer.name) {
+//                            case "acc":
+//                                accData.addAll(dataList);
+//                                break;
+//                            case "gyr":
+//                                gyrData.addAll(dataList);
+//                                break;
+//                            case "gyr_squared":
+//                                gyrSquaredData.addAll(dataList);
+//                                break;
+//                            case "t":
+//                                tData.addAll(dataList);
+//                                break;
+//                        }
+//
+//                        Log.d("DataBuffer JSON", "Data for buffer " + buffer.name + ": " + dataList.toString());
+//
+//                    } catch (Exception e) {
+//                        Log.e("DataBuffer JSON", "Error processing buffer " + buffer.name, e);
+//                    }
+//                }
+//            }
+//        }
+//
+//        // Kirim data ke server
+//        sendBufferData(accData, gyrData, gyrSquaredData, tData);
+//
+//        // Lanjutkan proses stopMeasurement lainnya
+//        if (!serverEnabled) {
+//            setKeepScreenOn(false);
+//        }
+//
+//        if (cdTimer != null) {
+//            cdTimer.cancel();
+//            cdTimer = null;
+//            millisUntilFinished = 0;
+//        }
+//
+//        if (experiment != null) {
+//            experiment.stopAllIO();
+//        }
+//
+//        invalidateOptionsMenu();
+//    }
+    public void stopMeasurement() {
+        measuring = false;
+
+        // No buffer data collection or sendBufferData call here
+
+        // Continue with the rest of the method
+        setKeepScreenOn(false);
+
+        if (cdTimer != null) {
+            cdTimer.cancel();
+            cdTimer = null;
+            millisUntilFinished = 0;
+        }
+
+        if (experiment != null) {
+            experiment.stopAllIO();
+        }
+
+        invalidateOptionsMenu();
+    }
+
+    // Contoh method untuk mendapatkan data buffer sesuai nama buffer (misalnya, dari objek DataBuffer)
+    private List<Double> getBufferData(String bufferName) {
+        DataBuffer buffer = experiment.getDataBufferByName(bufferName);
+        if (buffer != null) {
+            return buffer.getDataAsList();
+        }
+        return new ArrayList<>();
+    }
+
+    public void clearData() {
+        //Clear the buffers
+
+        stopMeasurement();
+
+        experiment.dataLock.lock(); //Synced, do not allow another thread to meddle here...
+        try {
+            for (DataBuffer buffer : experiment.dataBuffers)
+                if (!buffer.linkedToUserInput)
+                    buffer.clear(true);
+        } finally {
+            experiment.dataLock.unlock();
+        }
+        experiment.experimentTimeReference.reset();
+        experiment.newData = true;
+        experiment.newUserInput = true;
+        if (remote != null && serverEnabled)
+            remote.forceFullUpdate = true;
+    }
+
+    //Start the remote server (see remoteServer class)
+    private void startRemoteServer() {
+        TextView tv_announcer = (TextView) findViewById(R.id.remoteInfo);
+        ImageView btn_moreInfo = (ImageView) findViewById(R.id.iv_remoteInfo);
+        FrameLayout fl_announcer = (FrameLayout) findViewById(R.id.fl_remoteInfo);
+        if (Helper.isDarkTheme(res)) {
+            fl_announcer.setBackgroundColor(getResources().getColor(R.color.phyphox_black_50));
+        } else {
+            fl_announcer.setBackgroundColor(getResources().getColor(R.color.phyphox_white_80));
+        }
+
+        if (remote != null || !serverEnabled) { //Check if it is actually activated. If not, just stop
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                tv_announcer.animate().translationY(tv_announcer.getMeasuredHeight());
+                btn_moreInfo.animate().translationY(btn_moreInfo.getMeasuredHeight());
+            } else
+                fl_announcer.setVisibility(View.INVISIBLE);
+            return;
+        }
+
+        //Instantiate and start the server
+        if (sessionID.isEmpty()) {
+            remote = new RemoteServer(experiment, this);
+            sessionID = remote.sessionID;
+        } else
+            remote = new RemoteServer(experiment, this, sessionID);
+        remote.start();
+
+        //Announce this to the user as there are security concerns.
+        final String addressList = RemoteServer.getAddresses(getBaseContext()).replaceAll("\\s+$", "");
+        if (addressList.isEmpty())
+            tv_announcer.setText(res.getString(R.string.remoteServerNoNetwork));
+        else
+            tv_announcer.setText(res.getString(R.string.remoteServerActive, addressList));
+        fl_announcer.setVisibility(View.VISIBLE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            btn_moreInfo.animate().translationY(0).alpha(1.0f);
+            tv_announcer.animate().translationY(0).alpha(1.0f);
+        }
+
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        lp.addRule(RelativeLayout.BELOW, R.id.tab_layout);
+        lp.addRule(RelativeLayout.ABOVE, R.id.fl_remoteInfo);
+        ((ViewPager) findViewById(R.id.view_pager)).setLayoutParams(lp);
+
+        btn_moreInfo.setOnClickListener(v -> openDialogWithQrCode(addressList));
+
+        //Also we want to keep the device active for remote access
+        setKeepScreenOn(true);
+    }
+
+    private void openDialogWithQrCode(String serverAddress) {
+        Bitmap bitmap = null;
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater layoutInflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+
+        View view = layoutInflater.inflate(R.layout.dialog_show_qrcode, null);
+
+        ImageView ivServerAddressQr = (ImageView) view.findViewById(R.id.img_qr_code);
+        BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
+        try {
+            bitmap = barcodeEncoder.encodeBitmap(serverAddress, BarcodeFormat.QR_CODE, 400, 400);
+        } catch (WriterException e) {
+            Log.e("Error in QrCode", e.getMessage());
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            ivServerAddressQr.setBackground(new BitmapDrawable(getResources(), bitmap));
+        }
+
+        //TODO: Translate the text
+        builder.setTitle("For easy URL access, scan the QR code from your device.");
+        builder.setView(view).setPositiveButton("Ok", (dialog, which) -> dialog.dismiss());
+
+        builder.show();
+
+    }
+
+    //Stop the remote server (see remoteServer class)
+    private void stopRemoteServer() {
+        if (!measuring) {
+            setKeepScreenOn(false);
+        }
+        //Announce this to the user, so he knows why the webinterface stopped working.
+        TextView announcer = (TextView) findViewById(R.id.remoteInfo);
+        ImageView btn_moreInfo = (ImageView) findViewById(R.id.iv_remoteInfo);
+        FrameLayout fl_announcer = (FrameLayout) findViewById(R.id.fl_remoteInfo);
+        if (Helper.isDarkTheme(res)) {
+            fl_announcer.setBackgroundColor(getResources().getColor(R.color.phyphox_black_60));
+        } else {
+            fl_announcer.setBackgroundColor(getResources().getColor(R.color.phyphox_white_100));
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            btn_moreInfo.animate().translationY(btn_moreInfo.getMeasuredHeight()).alpha(0.0f);
+            announcer.animate().translationY(announcer.getMeasuredHeight()).alpha(0.0f);
+            fl_announcer.setVisibility(View.GONE);
+        } else {
+            btn_moreInfo.setVisibility(View.INVISIBLE);
+            announcer.setVisibility(View.INVISIBLE);
+            fl_announcer.setVisibility(View.GONE);
+        }
+
+
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        lp.addRule(RelativeLayout.BELOW, R.id.tab_layout);
+        lp.addRule(RelativeLayout.ABOVE, R.id.recycler_view_battery);
+        ((ViewPager) findViewById(R.id.view_pager)).setLayoutParams(lp);
+
+        if (remote == null) //no server there? never mind.
+            return;
+
+        //Stop it!
+        remote.stopServer();
+
+        //Wait for the second thread and remove the instance
+        try {
+            remote.join();
+        } catch (Exception e) {
+            Log.e("stopRemoteServer", "Exception on join.", e);
+        }
+        remote = null;
+
+    }
+
+    //Called by remote server to stop the measurement from other thread
+    public void remoteStopMeasurement() {
+        remoteIntentMeasuring = false;
+        updateState = true;
+    }
+
+    //Called by remote server to start the measurement from other thread
+    public void remoteStartMeasurement() {
+        remoteIntentMeasuring = true;
+        updateState = true;
+    }
+
+    //Called by remote server request a defocus from other thread
+    public void requestDefocus() {
+        shouldDefocus = true;
+    }
+
+    //Defocus helper function. Moves the focus to the experiment view linear layout to remove the
+    //   focus from input view text fields. (The focus would prevent an update of this view)
+    public void defocus() {
+        findViewById(R.id.experimentView).requestFocus();
+    }
+
+    @Override
+    //store our data if the activity gets destroyed or recreated (device rotation!)
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (!loadCompleted) { //the experiment is not even ready yet?
+            //If we have an old state (activity closed before completely loaded), we may save this again.
+            if (savedInstanceState != null)
+                outState.putAll(savedInstanceState);
+            return;
+        }
+        try {
+            outState.putInt(STATE_CURRENT_VIEW, tabLayout.getSelectedTabPosition()); //Save current experiment view
+            experiment.dataLock.lock(); //Save dataBuffers (synchronized, so no other thread alters them while we access them)
+            try {
+                App app = (App) getApplicationContext();
+                app.experiment = experiment;
+                //outState.putSerializable(STATE_EXPERIMENT, (Serializable)experiment);
+            } finally {
+                experiment.dataLock.unlock();
+            }
+            outState.putBoolean(STATE_REMOTE_SERVER, serverEnabled); //remote server status
+            outState.putString(STATE_REMOTE_SESSION_ID, sessionID); //remote server status
+            outState.putBoolean(STATE_BEFORE_START, beforeStart); //Has the experiment ever been started
+            outState.putBoolean(STATE_TIMED_RUN, timedRun); //timed run status
+            outState.putDouble(STATE_TIMED_RUN_START_DELAY, timedRunStartDelay); //timed run start delay
+            outState.putDouble(STATE_TIMED_RUN_STOP_DELAY, timedRunStopDelay); //timed run stop delay
+            outState.putBoolean(STATE_TIMED_RUN_BEEP_COUNTDOWN, timedRunBeepCountdown);
+            outState.putBoolean(STATE_TIMED_RUN_BEEP_START, timedRunBeepStart);
+            outState.putBoolean(STATE_TIMED_RUN_BEEP_RUNNING, timedRunBeepRunning);
+            outState.putBoolean(STATE_TIMED_RUN_BEEP_STOP, timedRunBeepStop);
+            outState.putBoolean(STATE_MENU_HINT_DISMISSED, menuHintDismissed);
+            outState.putBoolean(STATE_START_HINT_DISMISSED, startHintDismissed);
+            outState.putBoolean(STATE_SAVE_LOCALLY_DISMISSED, saveLocallyDismissed);
+            outState.putBoolean(STATE_BLUETOOTH_SCAN_DISMISSED, bluetoothScanDismissed);
+            outState.putBoolean(STATE_NETWORK_SCAN_DISMISSED, networkScanDismissed);
+            outState.putBoolean(STATE_SENSOR_WARNING_DISMISSED, sensorWarningDismissed);
+            outState.putBoolean(STATE_DATA_POLICY_DISMISSED, dataPolicyDismissed);
+        } catch (Exception e) {
+            //Something went wrong?
+            //Discard all the data to get a clean new activity and start fresh.
+            e.printStackTrace();
+            outState.clear();
+        }
+    }
+
+    private void setKeepScreenOn(boolean keepOn) {
+        if (keepOn) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            if (proximityLock) {
+                if (wakeLock != null && !wakeLock.isHeld()) {
+                    wakeLock.acquire();
+                }
+            }
+        } else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            if (proximityLock && wakeLock.isHeld()) {
+                if (wakeLock != null)
+                    wakeLock.release();
+            }
+        }
+    }
+
+    Runnable runDeviceUpdate = new Runnable() {
+        @Override
+        public void run() {
+            Log.d("ConnectedDeivce", "runDeviceUpdate: " + connectedDevices);
+            if (deviceInfoAdapter != null) {
+                Log.d("ConnectedDeivce", "runDeviceUpdate: deviceInfoAdapter:  " + connectedDevices);
+                deviceInfoAdapter.update(connectedDevices);
+            }
+        }
+    };
+
+    @Override
+    public void updateConnectedDevice(ArrayList<ConnectedDeviceInfo> connectedDeviceInfos) {
+        connectedDevices = connectedDeviceInfos;
+        Log.d("ConnectedDeivce", "updateConnectedDevice: " + connectedDeviceInfos);
+        runOnUiThread(runDeviceUpdate);
+    }
+
+    private void getRadius() {
+        ApiService apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
+
+        // Ambil user_id dari SessionManager
+        String userId = de.rwth_aachen.phyphox.Helper.SessionManager.getId(this);
+
+        // Make the GET request
+        apiService.calculateRadius(userId).enqueue(new Callback<RadiusResponse>() {
+            @Override
+            public void onResponse(Call<RadiusResponse> call, Response<RadiusResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    float radius = response.body().getRadius();
+                    Log.d("getRadius", "Calculated Radius: " + radius);
+                } else {
+                    Log.e("getRadius", "Response unsuccessful: " + response.message());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<RadiusResponse> call, Throwable t) {
+                Log.e("getRadius", "API call failed: " + t.getMessage());
+            }
+        });
+    }
+
+    // Method untuk mengambil screenshot dengan data yang benar
+    private void takeScreenshotWithData() {
+        // Debug: Log status measurement dan data
+        Log.d("SCREENSHOT_DEBUG", "Taking screenshot with data...");
+        Log.d("SCREENSHOT_DEBUG", "Measuring: " + measuring);
+        Log.d("SCREENSHOT_DEBUG", "Experiment loaded: " + (experiment != null));
+        if (experiment != null) {
+            Log.d("SCREENSHOT_DEBUG", "New data: " + experiment.newData);
+            Log.d("SCREENSHOT_DEBUG", "Data buffers count: " + experiment.dataBuffers.size());
+            for (DataBuffer buffer : experiment.dataBuffers) {
+                Log.d("SCREENSHOT_DEBUG", "Buffer " + buffer.name + ": " + buffer.getFilledSize() + " values");
+            }
+        }
+
+        // Collect buffer data
+        List<String> targetBufferNames = Arrays.asList("acc", "gyr", "gyr_squared", "t");
+
+        // Data lists for buffers
+        List<Double> accData = new ArrayList<>();
+        List<Double> gyrData = new ArrayList<>();
+        List<Double> gyrSquaredData = new ArrayList<>();
+        List<Double> tData = new ArrayList<>();
+
+        // Collect buffer data
+        if (experiment != null) {
+            for (DataBuffer buffer : experiment.dataBuffers) {
+                if (targetBufferNames.contains(buffer.name)) {
+                    try {
+                        // Get data as a list
+                        List<Double> dataList = buffer.getDataAsList();
+
+                        // Add data to the corresponding list based on buffer name
+                        switch (buffer.name) {
+                            case "acc":
+                                accData.addAll(dataList);
+                                break;
+                            case "gyr":
+                                gyrData.addAll(dataList);
+                                break;
+                            case "gyr_squared":
+                                gyrSquaredData.addAll(dataList);
+                                break;
+                            case "t":
+                                tData.addAll(dataList);
+                                break;
+                        }
+
+                        Log.d("DataBuffer JSON", "Data for buffer " + buffer.name + ": " + dataList.toString());
+
+                    } catch (Exception e) {
+                        Log.e("DataBuffer JSON", "Error processing buffer " + buffer.name, e);
+                    }
+                }
+            }
+        }
+
+        // Kirim data ke server
+        sendBufferData(accData, gyrData, gyrSquaredData, tData);
+
+        // Tunggu sebentar agar UI ter-update dengan data terbaru
+        new Handler().postDelayed(() -> {
+            // Existing Screenshot and Intent code
+            final String fileName = experiment != null ? experiment.title.replaceAll("[^0-9a-zA-Z \\-_]", "") : "phyphox";
+            File file = new File(this.getCacheDir(), "/" + (fileName.isEmpty() ? "phyphox" : fileName) + " " + (new SimpleDateFormat("yyyy-MM-dd HH-mm-ss")).format(new Date()) + ".png");
+            final Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".exportProvider", file);
+
+            Helper.ScreenshotCallback callback = new Helper.ScreenshotCallback() {
+                @Override
+                public void onSuccess(Bitmap bitmap) {
+                    try {
+                        FileOutputStream out = new FileOutputStream(file);
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out);
+                        out.flush();
+                        out.close();
+                        String path = file.getPath();
+                        bitmap.recycle();
+
+                        Log.d("SCREENSHOT_DEBUG", "Screenshot saved to: " + path);
+
+                        Intent intent = new Intent(Experiment.this, DrawActivity.class);
+                        intent.putExtra("Uri Image", path);
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        Log.e("action_share", "Unhandled exception", e);
+                    }
+                }
+            };
+
+            // Coba screenshot dari view yang berbeda untuk mendapatkan data yang benar
+            View screenView = null;
+            
+            // Coba dari view_pager terlebih dahulu
+            if (pager != null) {
+                screenView = pager.getRootView();
+                Log.d("SCREENSHOT_DEBUG", "Using pager root view for screenshot");
+            }
+            
+            // Jika pager null, coba dari root layout
+            if (screenView == null) {
+                screenView = findViewById(android.R.id.content);
+                Log.d("SCREENSHOT_DEBUG", "Using content root view for screenshot");
+            }
+            
+            // Jika masih null, gunakan root view
+            if (screenView == null) {
+                screenView = findViewById(R.id.rootLayout);
+                if (screenView != null) {
+                    screenView = screenView.getRootView();
+                    Log.d("SCREENSHOT_DEBUG", "Using rootLayout root view for screenshot");
+                }
+            }
+
+            if (screenView != null) {
+                Helper.getScreenshot(screenView, this.getWindow(), callback);
+                Log.d("SCREENSHOT_DEBUG", "Screenshot process started");
+            } else {
+                Log.e("SCREENSHOT_DEBUG", "No suitable view found for screenshot");
+            }
+        }, 500); // Tunggu 500ms agar UI ter-update
+    }
+}

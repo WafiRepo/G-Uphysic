@@ -1,0 +1,121 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:id="@+id/rlView"
+    tools:context=".activity.DrawActivity">
+
+    <!-- Drawing pad -->
+    <LinearLayout
+        android:id="@+id/iv_screenshot"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        tools:background="@drawable/iv_answer"
+        android:gravity="bottom"
+        android:orientation="vertical"
+        android:weightSum="1.0">
+
+        <LinearLayout
+            android:id="@+id/view_drawing_pad"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:orientation="horizontal"></LinearLayout>
+    </LinearLayout>
+
+    <!-- Top background for Undo, Redo, Clear buttons, and Calculator button -->
+    <LinearLayout
+        android:id="@+id/top_button_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/phyphox_white_100"
+        android:layout_alignParentTop="true"
+        android:padding="27dp"
+        android:gravity="start">
+
+        <!-- Undo Button -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_undo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:backgroundTint="@color/phyphox_purple"
+            android:src="@drawable/ic_undo"
+            android:layout_marginEnd="16dp" />
+
+        <!-- Redo Button -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_redo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:backgroundTint="@color/phyphox_purple"
+            android:src="@drawable/ic_redo"
+            android:layout_marginEnd="16dp" />
+
+        <!-- Clear Button -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_clear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:backgroundTint="@color/phyphox_purple"
+            android:src="@drawable/ic_delete_outline"
+            android:layout_marginEnd="16dp" />
+
+        <!-- Calculator Button -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_calculator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:backgroundTint="@color/phyphox_purple"
+            android:src="@drawable/ic_calculator"
+            android:layout_marginEnd="16dp" />
+    </LinearLayout>
+
+    <!-- Bottom container with Next button and input form -->
+    <LinearLayout
+        android:id="@+id/bottom_button_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/phyphox_white_100"
+        android:layout_alignParentBottom="true"
+        android:padding="20dp"
+        android:gravity="center_vertical">
+
+        <!-- Input box for entering a value -->
+        <EditText
+            android:id="@+id/input_value"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Enter value"
+            android:inputType="numberDecimal"
+            android:padding="10dp"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:background="@drawable/custom_edittext_background"
+            android:layout_marginEnd="16dp"/>
+
+        <!-- Next Button -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_next"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:backgroundTint="@color/phyphox_purple"
+            android:src="@drawable/ic_next"/>
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/ivSign"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:background="@drawable/ic_sign"
+        android:contentDescription="Introduction Info"
+        android:elevation="10dp" />
+
+</RelativeLayout>

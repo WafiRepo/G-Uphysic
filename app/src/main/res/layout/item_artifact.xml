@@ -1,0 +1,64 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="top"
+    android:background="#FFDDDD">
+
+    <ImageView
+        android:id="@+id/imgArtifact"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scaleType="centerCrop"/>
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tvLocationLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Alamat:"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:gravity="start"
+            android:layout_marginTop="8dp"/>
+        <TextView
+            android:id="@+id/tvLocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Location"
+            android:textColor="@android:color/black"
+            android:gravity="start"
+            android:layout_marginTop="2dp"/>
+        <TextView
+            android:id="@+id/tvUserLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="User:"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:gravity="start"
+            android:layout_marginTop="8dp"/>
+        <TextView
+            android:id="@+id/tvUserName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="User Name"
+            android:textColor="@android:color/black"
+            android:gravity="start"
+            android:layout_marginTop="2dp"/>
+        <TextView
+            android:id="@+id/tvProvince"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Provinsi"
+            android:textColor="@android:color/black"
+            android:gravity="start"
+            android:layout_marginTop="2dp"/>
+    </LinearLayout>
+</LinearLayout>
