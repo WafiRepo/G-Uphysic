@@ -3,7 +3,9 @@ package de.rwth_aachen.phyphox.activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.android.material.button.MaterialButton;
 
 import de.rwth_aachen.phyphox.App;
@@ -35,10 +37,10 @@ public class QuestionActivity extends AppCompatActivity {
         View.OnClickListener setOnClickListener = v -> {
             App app = (App) getApplication();
             DataModel dataModel = app.getDataModel();
-            if(!dataModel.getTypeQuestion().isEmpty()){
-                if(isClassQuestion){
+            if (!dataModel.getTypeQuestion().isEmpty()) {
+                if (isClassQuestion) {
                     startActivity(new Intent(QuestionActivity.this, GeneratesClassQuestionActivity.class));
-                }else{
+                } else {
                     startActivity(new Intent(QuestionActivity.this, GeneratesActivity.class));
                 }
             }
@@ -46,6 +48,16 @@ public class QuestionActivity extends AppCompatActivity {
 
         };
         binding.btnAiBased.setOnClickListener(setOnClickListener);
+        binding.btnUserBased.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                App app = (App) getApplication();
+                DataModel dataModel = app.getDataModel();
+                if (!dataModel.getTypeQuestion().isEmpty()) {
+                    startActivity(new Intent(QuestionActivity.this, UserGeneratesQuestionActivity.class));
+                }
+            }
+        });
     }
 
     // Method to handle the level button clicks and change colors

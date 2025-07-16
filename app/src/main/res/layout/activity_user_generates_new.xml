@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#6A5AE0"
+
+    android:theme="@style/Theme.Material3.Dark.NoActionBar"
+    tools:context=".activity.GeneratesClassQuestionActivity">
+    <View
+        android:id="@+id/sheet"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="40dp"
+        android:background="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+<!--    <ImageView-->
+<!--        android:id="@+id/iv_avatar"-->
+<!--        android:layout_width="80dp"-->
+<!--        android:layout_height="80dp"-->
+<!--        android:background="@drawable/ic_avatar"-->
+<!--        app:layout_constraintBottom_toTopOf="@id/sheet"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintTop_toTopOf="@id/sheet" />-->
+
+    <TextView
+        android:id="@+id/btn_generates"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Create Problem"
+        android:textColor="@color/phyphox_black_100"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="@id/sheet"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5" />
+
+    <ScrollView
+        android:id="@+id/scroll_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintBottom_toTopOf="@id/btn_next"
+        app:layout_constraintTop_toBottomOf="@id/btn_generates"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <EditText
+                android:layout_marginHorizontal="16dp"
+                android:hint="Input Questions"
+                android:id="@+id/tvQuestion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/custom_edittext_background_2"
+                android:textSize="16sp"
+                android:textColorHint="@color/phyphox_white_50_black_50"
+                android:minLines="8"
+                android:padding="16dp"
+                android:textColor="@color/phyphox_black_100" />
+
+            <LinearLayout
+                android:id="@+id/button_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                app:layout_constraintTop_toBottomOf="@id/scroll_view"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp">
+
+                <!-- Undo button -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btn_undo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="Undo"
+                    app:srcCompat="@drawable/ic_undo"
+                    android:backgroundTint="@color/phyphox_purple"
+                    android:tint="@color/phyphox_white_100" />
+
+                <!-- Redo button -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btn_redo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="Redo"
+                    app:srcCompat="@drawable/ic_redo"
+                    android:backgroundTint="@color/phyphox_purple"
+                    android:tint="@color/phyphox_white_100"
+                    android:layout_marginStart="16dp" />
+
+                <!-- Clear button -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btn_clear"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="Clear"
+                    app:srcCompat="@drawable/ic_delete_outline"
+                    android:backgroundTint="@color/phyphox_purple"
+                    android:tint="@color/phyphox_white_100"
+                    android:layout_marginStart="16dp" />
+            </LinearLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTakePhoto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Take Photo"
+                android:layout_marginBottom="16dp"
+                android:layout_marginStart="16dp"
+                android:textColor="@color/phyphox_white_100"
+                android:backgroundTint="@color/phyphox_purple"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+            <de.rwth_aachen.phyphox.activity.DrawView
+                android:id="@+id/drawView"
+                android:layout_width="match_parent"
+                android:layout_height="700dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginBottom="24dp"
+                android:background="#FFFACD"
+                app:layout_constraintBottom_toTopOf="@id/btn_next"
+                app:layout_constraintTop_toBottomOf="@id/button_container"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+            <ImageView
+                android:id="@+id/ivPhoto"
+                android:scaleType="fitXY"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+    </ScrollView>
+
+
+
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_upload"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Save"
+        android:layout_marginBottom="16dp"
+        android:layout_marginStart="16dp"
+        android:textColor="@color/phyphox_white_100"
+        android:backgroundTint="@color/phyphox_purple"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_next"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Next"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:textColor="@color/phyphox_white_100"
+        android:backgroundTint="@color/phyphox_purple"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+    <ImageView
+        android:id="@+id/ivSign"
+        android:layout_margin="16dp"
+        app:layout_constraintEnd_toEndOf="@id/sheet"
+        app:layout_constraintTop_toTopOf="@+id/sheet"
+        android:background="@drawable/ic_sign"
+        android:layout_width="24dp"
+        android:layout_height="24dp"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

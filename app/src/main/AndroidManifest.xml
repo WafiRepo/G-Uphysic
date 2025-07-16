@@ -257,6 +257,10 @@
             android:name=".activity.CameraDetectionActivity"
             android:screenOrientation="unspecified"
             tools:replace="screenOrientation" />
+        <activity
+            android:name=".activity.UserGeneratesQuestionActivity"
+            android:screenOrientation="unspecified"
+            tools:replace="screenOrientation" />
 
  <activity
             android:name=".activity.GeneratesClassQuestionActivity"
