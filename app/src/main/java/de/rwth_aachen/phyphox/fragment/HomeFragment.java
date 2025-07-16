@@ -21,6 +21,7 @@ import de.rwth_aachen.phyphox.activity.GeneratesActivity;
 import de.rwth_aachen.phyphox.activity.HistoryRecordActivity;
 import de.rwth_aachen.phyphox.activity.IntroductionClassActivity;
 import de.rwth_aachen.phyphox.activity.LinearActivity;
+import de.rwth_aachen.phyphox.activity.ListUserQuestionsActivity;
 import de.rwth_aachen.phyphox.activity.QuestionActivity;
 import de.rwth_aachen.phyphox.model.DataModel;
 

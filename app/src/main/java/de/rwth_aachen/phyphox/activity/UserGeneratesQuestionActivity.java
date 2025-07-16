@@ -312,7 +312,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
 
             App app = (App) getApplication();
             DataModel dataModel = app.getDataModel();
-            dataModel.setPhotoAnswer(base64Image);
+//            dataModel.setPhotoAnswer(base64Image);
             app.setDataModel(dataModel);
         }
     }
