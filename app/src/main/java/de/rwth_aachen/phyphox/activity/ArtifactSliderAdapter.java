@@ -1,6 +1,7 @@
 package de.rwth_aachen.phyphox.activity;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,9 +9,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
+
 import java.util.List;
 
 import de.rwth_aachen.phyphox.R;
@@ -39,9 +44,7 @@ public class ArtifactSliderAdapter extends RecyclerView.Adapter<ArtifactSliderAd
         holder.tvUserName.setText(item.userName);
         holder.tvProvince.setText(item.province);
         Log.d("Slider", "Image URL: " + item.imageUrl);
-        Glide.with(context)
-            .load("https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png")
-            .into(holder.imgArtifact);
+        holder.loadImageWithGlide(item.imageUrl);
     }
 
     @Override
@@ -61,6 +64,21 @@ public class ArtifactSliderAdapter extends RecyclerView.Adapter<ArtifactSliderAd
             tvUserName = itemView.findViewById(R.id.tvUserName);
             tvProvince = itemView.findViewById(R.id.tvProvince);
         }
+        private void loadImageWithGlide(String url) {
+            Glide.with(itemView.getContext())
+                    .load(url)
+                    .into(new CustomTarget<Drawable>() {
+                        @Override
+                        public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                            imgArtifact.setBackground(resource); // Set as background
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+                            // Handle case when the image is cleared
+                        }
+                    });
+        }
     }
 
     // Data model untuk item
@@ -76,4 +94,4 @@ public class ArtifactSliderAdapter extends RecyclerView.Adapter<ArtifactSliderAd
             this.province = province;
         }
     }
-} 
+}

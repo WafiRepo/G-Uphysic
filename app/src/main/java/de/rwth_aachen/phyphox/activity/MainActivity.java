@@ -13,11 +13,13 @@ import com.google.android.material.textfield.TextInputLayout;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.DocumentSnapshot;
 
@@ -25,6 +27,7 @@ import de.rwth_aachen.phyphox.R;
 import de.rwth_aachen.phyphox.databinding.ActivityMainBinding;
 import de.rwth_aachen.phyphox.fragment.HistoryRecordFragment;
 import de.rwth_aachen.phyphox.fragment.HomeFragment;
+import de.rwth_aachen.phyphox.fragment.ListUserQuestionsFragment;
 import de.rwth_aachen.phyphox.fragment.SearchFragment;
 import de.rwth_aachen.phyphox.fragment.ShareLocationFragment;
 import de.rwth_aachen.phyphox.Helper.SessionManager;
@@ -48,6 +51,8 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     private ArtifactSliderAdapter adapter;
     private String filterUserName = "";
     private static final int MENU_FILTER = 1001;
+    private final android.os.Handler autoScrollHandler = new android.os.Handler();
+    private Runnable autoScrollRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,9 +72,11 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         BottomNavigationView bottomNavigationView = binding.bottomNavigationView;
         bottomNavigationView.setOnNavigationItemSelectedListener(this);
         bottomNavigationView.setSelectedItemId(R.id.home);
+
     }
 
     HomeFragment homeFragment = new HomeFragment();
+    ListUserQuestionsFragment listUserQuestionsFragment = new ListUserQuestionsFragment();
     ShareLocationFragment searchFragment = new ShareLocationFragment();
     HistoryRecordFragment historyRecordFragment = new HistoryRecordFragment();
 
@@ -78,6 +85,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     onNavigationItemSelected(@NonNull MenuItem item) {
         Toolbar toolbar = findViewById(R.id.toolbar);
         ViewPager2 artifactSlider = findViewById(R.id.artifactSlider);
+        ConstraintLayout clBanner = findViewById(R.id.clBanner);
         switch (item.getItemId()) {
             case R.id.home:
                 getSupportFragmentManager()
@@ -86,7 +94,16 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                         .commit();
                 // Tampilkan toolbar dan slider
                 toolbar.setVisibility(View.VISIBLE);
-                artifactSlider.setVisibility(View.VISIBLE);
+                clBanner.setVisibility(View.VISIBLE);
+                return true;
+            case R.id.search:
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.flFragment, listUserQuestionsFragment)
+                        .commit();
+                // Tampilkan toolbar dan slider
+                toolbar.setVisibility(View.GONE);
+                clBanner.setVisibility(View.GONE);
                 return true;
             case R.id.leaderboard:
                 getSupportFragmentManager()
@@ -95,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                         .commit();
                 // Sembunyikan toolbar dan slider
                 toolbar.setVisibility(View.GONE);
-                artifactSlider.setVisibility(View.GONE);
+                clBanner.setVisibility(View.GONE);
                 return true;
         }
         return false;
@@ -172,48 +189,92 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         allArtifacts.clear();
         ViewPager2 artifactSlider = findViewById(R.id.artifactSlider);
-        // Selalu set adapter, meskipun data kosong
+
         if (adapter == null) {
             adapter = new ArtifactSliderAdapter(this, allArtifacts);
             artifactSlider.setAdapter(adapter);
         } else {
             adapter.notifyDataSetChanged();
         }
-        db.collection("record").get().addOnSuccessListener(snapshot -> {
-            Map<String, String> userNameCache = new HashMap<>();
-            List<DocumentSnapshot> docs = snapshot.getDocuments();
-            final int[] counter = {0};
-            allArtifacts.clear();
-            for (DocumentSnapshot doc : docs) {
-                String photoUrl = doc.getString("photo");
-                String location = doc.getString("locationName");
-                String idCustomer = doc.getString("idCustomer");
-                if (photoUrl != null && !photoUrl.isEmpty() && photoUrl.contains(".googleapis.com") && location != null && !location.isEmpty() && idCustomer != null && !idCustomer.isEmpty()) {
-                    if (userNameCache.containsKey(idCustomer)) {
-                        String userName = userNameCache.get(idCustomer);
-                        if (userName != null && !userName.isEmpty()) {
-                            allArtifacts.add(new ArtifactSliderAdapter.ArtifactItem(photoUrl, location, userName, ""));
-                        }
-                        continue;
-                    }
-                    db.collection("user").document(idCustomer).get().addOnSuccessListener(userDoc -> {
-                        String userName = userDoc.getString("name");
-                        if (userName != null && !userName.isEmpty()) {
-                            userNameCache.put(idCustomer, userName);
-                            allArtifacts.add(new ArtifactSliderAdapter.ArtifactItem(photoUrl, location, userName, ""));
-                        }
-                        counter[0]++;
-                        if (counter[0] == docs.size()) {
-                            adapter.notifyDataSetChanged();
-                        }
-                    });
-                } else {
-                    counter[0]++;
+        com.tbuonomo.viewpagerdotsindicator.DotsIndicator dotsIndicator = findViewById(R.id.dotsIndicator);
+        dotsIndicator.setViewPager2(binding.artifactSlider);
+
+// Auto-scroll setiap 3 detik
+        autoScrollRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (adapter != null && adapter.getItemCount() > 0) {
+                    int nextItem = (binding.artifactSlider.getCurrentItem() + 1) % adapter.getItemCount();
+                    binding.artifactSlider.setCurrentItem(nextItem, true);
                 }
+                autoScrollHandler.postDelayed(this, 3000);
             }
-            if (docs.isEmpty()) {
-                adapter.notifyDataSetChanged();
-            }
-        });
+        };
+
+
+        db.collection("record")
+                .orderBy("id", Query.Direction.DESCENDING)
+                .limit(5)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    Map<String, String> userNameCache = new HashMap<>();
+                    List<DocumentSnapshot> docs = snapshot.getDocuments();
+                    final int[] counter = {0};
+                    allArtifacts.clear();
+
+                    if (docs.isEmpty()) {
+                        adapter.notifyDataSetChanged();
+                        return;
+                    }
+
+                    for (DocumentSnapshot doc : docs) {
+                        String photoUrl = doc.getString("photo");
+                        String location = doc.getString("locationName");
+                        String idCustomer = doc.getString("idCustomer");
+
+                        if (photoUrl != null && photoUrl.contains(".googleapis.com") &&
+                                location != null && !location.isEmpty() &&
+                                idCustomer != null && !idCustomer.isEmpty()) {
+
+                            if (userNameCache.containsKey(idCustomer)) {
+                                String userName = userNameCache.get(idCustomer);
+                                if (userName != null && !userName.isEmpty()) {
+                                    allArtifacts.add(new ArtifactSliderAdapter.ArtifactItem(photoUrl, location, userName, ""));
+                                }
+                                counter[0]++;
+                                if (counter[0] == docs.size()) {
+                                    adapter.notifyDataSetChanged();
+                                }
+                                continue;
+                            }
+
+                            db.collection("user").document(idCustomer).get().addOnSuccessListener(userDoc -> {
+                                String userName = userDoc.getString("name");
+                                if (userName != null && !userName.isEmpty()) {
+                                    userNameCache.put(idCustomer, userName);
+                                    allArtifacts.add(new ArtifactSliderAdapter.ArtifactItem(photoUrl, location, userName, ""));
+                                }
+                                counter[0]++;
+                                if (counter[0] == docs.size()) {
+                                    adapter.notifyDataSetChanged();
+                                }
+                            }).addOnFailureListener(e -> {
+                                counter[0]++;
+                                if (counter[0] == docs.size()) {
+                                    adapter.notifyDataSetChanged();
+                                }
+                            });
+
+                        } else {
+                            counter[0]++;
+                            if (counter[0] == docs.size()) {
+                                adapter.notifyDataSetChanged();
+                            }
+                        }
+                    }
+                    autoScrollHandler.postDelayed(autoScrollRunnable, 3000);
+
+                });
     }
+
 }

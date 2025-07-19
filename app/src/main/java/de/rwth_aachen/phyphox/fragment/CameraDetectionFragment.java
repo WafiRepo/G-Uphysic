@@ -323,7 +323,10 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
             @Override
             public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
+                    binding.cardResult.setVisibility(View.VISIBLE);
+
                     ApiResponse apiResponse = response.body();
+                    binding.tvLabel.setText(apiResponse.getLabel());
                     Log.d(TAG, "Upload successful: " + apiResponse.getMessage());
                     Toast.makeText(requireContext(), "Upload successful: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
                 } else {

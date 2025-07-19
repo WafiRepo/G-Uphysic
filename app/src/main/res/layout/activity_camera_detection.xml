@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#6A5AE0"
@@ -14,20 +13,20 @@
         android:id="@+id/back_button"
         android:layout_width="32dp"
         android:layout_height="32dp"
-        android:background="@drawable/ic_arrow_back"
-        android:layout_marginTop="24dp"
         android:layout_marginStart="24dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:layout_marginTop="24dp"
+        android:background="@drawable/ic_arrow_back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Settings Icon -->
     <ImageView
         android:id="@+id/iv_setting"
         android:layout_width="32dp"
         android:layout_height="32dp"
-        android:background="@drawable/ic_settings"
-        android:layout_marginEnd="24dp"
         android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/ic_settings"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -36,24 +35,24 @@
         android:id="@+id/sheet"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@drawable/bg_sheet"
-        android:layout_marginTop="40dp"
         android:layout_marginHorizontal="8dp"
-        app:layout_constraintTop_toBottomOf="@id/iv_setting"
-        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="40dp"
+        android:background="@drawable/bg_sheet"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/iv_setting" />
 
     <!-- Avatar Placeholder -->
-<!--    <ImageView-->
-<!--        android:id="@+id/iv_avatar"-->
-<!--        android:layout_width="80dp"-->
-<!--        android:layout_height="80dp"-->
-<!--        android:background="@drawable/ic_avatar"-->
-<!--        app:layout_constraintTop_toTopOf="@id/sheet"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintBottom_toTopOf="@id/sheet"-->
-<!--        app:layout_constraintEnd_toEndOf="parent" />-->
+    <!--    <ImageView-->
+    <!--        android:id="@+id/iv_avatar"-->
+    <!--        android:layout_width="80dp"-->
+    <!--        android:layout_height="80dp"-->
+    <!--        android:background="@drawable/ic_avatar"-->
+    <!--        app:layout_constraintTop_toTopOf="@id/sheet"-->
+    <!--        app:layout_constraintStart_toStartOf="parent"-->
+    <!--        app:layout_constraintBottom_toTopOf="@id/sheet"-->
+    <!--        app:layout_constraintEnd_toEndOf="parent" />-->
 
     <!-- Camera Container -->
     <FrameLayout
@@ -61,10 +60,10 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_margin="16dp"
-        app:layout_constraintTop_toTopOf="@id/sheet"
         app:layout_constraintBottom_toTopOf="@id/btn_save"
+        app:layout_constraintEnd_toEndOf="@id/sheet"
         app:layout_constraintStart_toStartOf="@id/sheet"
-        app:layout_constraintEnd_toEndOf="@id/sheet">
+        app:layout_constraintTop_toTopOf="@id/sheet">
 
         <org.opencv.android.JavaCameraView
             android:id="@+id/cameraview"
@@ -75,8 +74,8 @@
             android:id="@+id/capturedImageView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone"
-            android:scaleType="centerCrop" />
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
 
     </FrameLayout>
 
@@ -85,38 +84,88 @@
         android:id="@+id/captureButton"
         android:layout_width="64dp"
         android:layout_height="64dp"
-        android:src="@drawable/ic_camera"
+        android:layout_marginBottom="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_camera"
         app:layout_constraintBottom_toTopOf="@id/btn_save"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardResult"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="8dp"
+        app:cardBackgroundColor="@color/phyphox_white_100"
+        app:cardCornerRadius="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginBottom="16dp" />
+        app:layout_constraintTop_toTopOf="@id/camera_container">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp">
+
+            <EditText
+                android:textAlignment="center"
+                android:padding="8dp"
+                android:background="@drawable/background_white_border_primary_8"
+                android:id="@+id/tvLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Label"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/tvEdit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Edit"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvLabel" />
+
+            <TextView
+                android:id="@+id/tvOkay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Okay"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvLabel" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.cardview.widget.CardView>
+
 
     <!-- Save Button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_upload"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Save"
-        android:layout_marginBottom="16dp"
         android:layout_marginStart="16dp"
-        android:textColor="@color/phyphox_white_100"
+        android:layout_marginBottom="16dp"
         android:backgroundTint="@color/phyphox_purple"
-        app:layout_constraintStart_toStartOf="@id/sheet"
-        app:layout_constraintBottom_toBottomOf="@id/sheet" />
+        android:text="Save"
+        android:textColor="@color/phyphox_white_100"
+        app:layout_constraintBottom_toBottomOf="@id/sheet"
+        app:layout_constraintStart_toStartOf="@id/sheet" />
 
     <!-- Next Button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_save"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Next"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
-        android:textColor="@color/btn_next_text_selector"
         android:background="@drawable/btn_next_selector"
         android:enabled="false"
-        app:layout_constraintEnd_toEndOf="@id/sheet"
-        app:layout_constraintBottom_toBottomOf="@id/sheet" />
+        android:text="Next"
+        android:textColor="@color/btn_next_text_selector"
+        app:layout_constraintBottom_toBottomOf="@id/sheet"
+        app:layout_constraintEnd_toEndOf="@id/sheet" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

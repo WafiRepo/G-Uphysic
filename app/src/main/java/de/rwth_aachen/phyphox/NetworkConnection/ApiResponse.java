@@ -5,6 +5,7 @@ import java.util.Map;
 
 public class ApiResponse {
     private String question;
+    private String label;
     private String python_code;
     private String error;
     private String local_image_base64;
@@ -92,5 +93,13 @@ public class ApiResponse {
 
     public String getImage2_base64() {
         return image2_base64;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
     }
 }
