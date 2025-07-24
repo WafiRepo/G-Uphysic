@@ -361,7 +361,7 @@ public class CameraDetectionActivity extends AppCompatActivity implements Camera
                 2,          // dp
                 100,        // minDist
                 100,        // Canny high threshold
-                50,         // Accumulator threshold
+                20,         // Accumulator threshold
                 30,         // minRadius
                 150         // maxRadius
         );

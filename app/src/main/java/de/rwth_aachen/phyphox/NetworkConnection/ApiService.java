@@ -26,6 +26,10 @@ public interface ApiService {
     @POST("/advanced-question")  // Endpoint
     Call<ApiResponse> getAdvancedQuestion(@Body ApiRequest request);
 
+    @Headers("Content-Type: application/json")
+    @POST("/overwrite-label/")
+    Call<ApiResponse> overwriteLabel(@Body OverwriteLabelRequest request);
+
     @Multipart
     @POST("/process-image/")
     Call<ApiResponse> uploadImage(
