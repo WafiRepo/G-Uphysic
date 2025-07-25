@@ -54,13 +54,20 @@ public class UserQuestionsAdapter extends RecyclerView.Adapter<UserQuestionsAdap
         holder.tvTopic.setText(item.getTopics());
         holder.tvType.setText(item.getTypeQuestion());
         holder.tvQuestions.setText(item.getQuestion());
+        holder.tvCreator.setText("Creator : "+item.getCustomerName());
 
 
             holder.itemView.setOnClickListener(view -> {
-                App app = (App) ((Application) context.getApplicationContext());
-                app.setDataModel(item);
-                Intent intent = new Intent(context, DetailRecordActivity.class);
-                context.startActivity(intent);
+                Intent intent = new Intent(context, GeneratesActivity.class);
+                    intent.putExtra("isFromMainMenu", false);
+                    intent.putExtra("isCustomQuestion", true);
+                    App app = (App) application;
+                    app.setDataModel(item);
+                    context.startActivity(intent);
+//                App app = (App) ((Application) context.getApplicationContext());
+//                app.setDataModel(item);
+//                Intent intent = new Intent(context, DetailRecordActivity.class);
+//                context.startActivity(intent);
             });
 //            holder.tvStatus.setText("In Progress");
 //            holder.tvStatus.setBackgroundResource(R.drawable.background_8_orange);
@@ -91,13 +98,14 @@ public class UserQuestionsAdapter extends RecyclerView.Adapter<UserQuestionsAdap
 
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTopic, tvType, tvQuestions;
+        TextView tvTopic, tvType, tvQuestions, tvCreator;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTopic = itemView.findViewById(R.id.tvTopic);
             tvQuestions = itemView.findViewById(R.id.tvQuestion);
             tvType = itemView.findViewById(R.id.tvType);
+            tvCreator = itemView.findViewById(R.id.tvCreator);
         }
     }
 }

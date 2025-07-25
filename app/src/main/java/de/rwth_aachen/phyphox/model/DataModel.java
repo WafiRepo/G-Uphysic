@@ -15,6 +15,7 @@ public class DataModel implements Parcelable {
     private double longitude;
     private String locationName;
     private String idCustomer;
+    private String customerName;
     private String typeQuestion;
     private String photoAcceleration;
     private String valueAcceleration;
@@ -37,6 +38,7 @@ public class DataModel implements Parcelable {
         this.longitude = 0.0;
         this.locationName = "";
         this.idCustomer = "";
+        this.customerName = "";
         this.typeQuestion = "";
         this.photoAcceleration = "";
         this.valueAcceleration = "";
@@ -270,6 +272,17 @@ public class DataModel implements Parcelable {
     }
     public void setBase64_5(String base64_5) {
         this.base64_5 = base64_5;
+    }
+
+    public String getCustomerName() {
+        if(customerName==null ||customerName.isEmpty()){
+            return "-";
+        }
+        return customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
     }
 }
 

@@ -73,6 +73,7 @@ public class GeneratesActivity extends AppCompatActivity {
     private Uri photoUri;
     private String currentPhotoPath;
     byte[] imageBytes;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,17 +83,30 @@ public class GeneratesActivity extends AppCompatActivity {
         App app = (App) getApplication();
         apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
         DataModel dataModel = app.getDataModel();
-        boolean isFromMainMenu=getIntent().getBooleanExtra("isFromMainMenu", true);
+        boolean isFromMainMenu = getIntent().getBooleanExtra("isFromMainMenu", true);
+        boolean isCustomQuestion = getIntent().getBooleanExtra("isCustomQuestion", false);
         if (isFromMainMenu) {
             fetchAdvancedQuestion("indonesia", dataModel.getTypeQuestion());
         } else {
-            binding.tvQuestion.setText(dataModel.getQuestion());
-            // Handle Graph Images
-            if (!dataModel.getBase64().isEmpty()) {
-                loadImageWithGlide(base64ToDrawable(dataModel.getBase64(), GeneratesActivity.this), binding.iv);
+            if (isCustomQuestion) {
+                if (!dataModel.getBase64().isEmpty()) {
+                    loadImageWithGlide(dataModel.getBase64(), binding.iv);
+                    binding.iv.setVisibility(View.VISIBLE);
+                }
+                if (!dataModel.getBase64_2().isEmpty()) {
+                    loadImageWithGlide(dataModel.getBase64_2(), binding.iv2);
+                    binding.iv2.setVisibility(View.VISIBLE);
+                }
+            } else {
+                binding.tvQuestion.setText(dataModel.getQuestion());
+                // Handle Graph Images
+                if (!dataModel.getBase64().isEmpty()) {
+                    loadImageWithGlide(base64ToDrawable(dataModel.getBase64(), GeneratesActivity.this), binding.iv);
 //                binding.iv.setBackground(base64ToDrawable(dataModel.getBase64(), GeneratesActivity.this));
-                binding.iv.setVisibility(View.VISIBLE);
+                    binding.iv.setVisibility(View.VISIBLE);
+                }
             }
+
         }
         // Inisialisasi DrawView
         drawView = binding.drawView;
@@ -128,10 +142,10 @@ public class GeneratesActivity extends AppCompatActivity {
         });
         binding.btnTakePhoto.setOnClickListener(view -> {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                Log.d("btnTakePhoto ","permission failed");
+                Log.d("btnTakePhoto ", "permission failed");
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
             } else {
-                Log.d("btnTakePhoto ","permission graned");
+                Log.d("btnTakePhoto ", "permission graned");
                 dispatchTakePictureIntent();
             }
         });
@@ -139,9 +153,9 @@ public class GeneratesActivity extends AppCompatActivity {
         // Tombol Next yang mengarahkan ke FeedbackActivity
         binding.btnSave.setOnClickListener(v -> {
             binding.btnSave.setEnabled(false);
-            
+
             // Upload image terlebih dahulu (dari drawView atau imageBytes)
-            if(imageBytes == null){
+            if (imageBytes == null) {
                 uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.drawView)), "answer_image_" + System.currentTimeMillis());
             } else {
                 uploadImageToFirestoreAnswer(imageBytes, "answer_image_" + System.currentTimeMillis());
@@ -154,19 +168,19 @@ public class GeneratesActivity extends AppCompatActivity {
                     // Simpan progress ke Firestore tanpa ProgressDialog
                     FirestoreUtil.addOrUpdateDocument("record", dataModel.getId(), dataModel,
                             () -> {
-                            // Setelah simpan, langsung ke homepage
-                            Intent homeIntent = new Intent(GeneratesActivity.this, MainActivity.class);
-                            homeIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            startActivity(homeIntent);
-                            finish();
+                                // Setelah simpan, langsung ke homepage
+                                Intent homeIntent = new Intent(GeneratesActivity.this, MainActivity.class);
+                                homeIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                startActivity(homeIntent);
+                                finish();
                             },
                             e -> {
-                            // Jika gagal, tetap kembali ke homepage (atau bisa tampilkan Toast jika mau)
-                            Intent homeIntent = new Intent(GeneratesActivity.this, MainActivity.class);
-                            homeIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            startActivity(homeIntent);
-                            finish();
-                        }
+                                // Jika gagal, tetap kembali ke homepage (atau bisa tampilkan Toast jika mau)
+                                Intent homeIntent = new Intent(GeneratesActivity.this, MainActivity.class);
+                                homeIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                startActivity(homeIntent);
+                                finish();
+                            }
                     );
                 } else {
                     finish();
@@ -182,6 +196,7 @@ public class GeneratesActivity extends AppCompatActivity {
             }
         });
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -230,6 +245,7 @@ public class GeneratesActivity extends AppCompatActivity {
             }
         }
     }
+
     private File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
@@ -238,6 +254,7 @@ public class GeneratesActivity extends AppCompatActivity {
         currentPhotoPath = image.getAbsolutePath();
         return image;
     }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -278,6 +295,7 @@ public class GeneratesActivity extends AppCompatActivity {
             }
         }
     }
+
     public void uploadImageToFirestoreAnswer(byte[] imageData, String fileName) {
         // Create and configure ProgressDialog
         ProgressDialog progressDialog = new ProgressDialog(this); // Replace 'this' with 'requireContext()' if inside a Fragment
@@ -398,14 +416,14 @@ public class GeneratesActivity extends AppCompatActivity {
                         saveProgressDialog.setMessage("Please wait...");
                         saveProgressDialog.setCancelable(false);
                         saveProgressDialog.show();
-                        
+
                         String documentId = dataModel.getId();
                         if (documentId == null || documentId.isEmpty()) {
                             documentId = String.valueOf(System.currentTimeMillis());
                         }
                         dataModel.setId(documentId);
                         app.setDataModel(dataModel);
-                        
+
                         FirestoreUtil.addOrUpdateDocument("record", documentId, dataModel,
                                 () -> {
                                     saveProgressDialog.dismiss();
@@ -465,37 +483,37 @@ public class GeneratesActivity extends AppCompatActivity {
 
                     // Handle Graph Images (graphImages -> iv)
                     if (apiResponse.getGraphImages() != null && !apiResponse.getGraphImages().isEmpty()) {
-                            dataModel.setBase64(apiResponse.getGraphImages().get(0));
-                            Log.d("getGraphImages --&> ",""+apiResponse.getGraphImages().get(0));
-                            loadImageWithGlide(base64ToDrawable(apiResponse.getGraphImages().get(0), GeneratesActivity.this), binding.iv);
-                            binding.iv.setVisibility(View.VISIBLE);
-                        }
+                        dataModel.setBase64(apiResponse.getGraphImages().get(0));
+                        Log.d("getGraphImages --&> ", "" + apiResponse.getGraphImages().get(0));
+                        loadImageWithGlide(base64ToDrawable(apiResponse.getGraphImages().get(0), GeneratesActivity.this), binding.iv);
+                        binding.iv.setVisibility(View.VISIBLE);
+                    }
                     // Handle Image (image1_base64 -> iv2)
                     if (apiResponse.getImage1_base64() != null && !apiResponse.getImage1_base64().isEmpty()) {
-                            dataModel.setBase64_2(apiResponse.getImage1_base64());
-                            Log.d("getImage1_base64 --&> ",""+apiResponse.getImage1_base64());
-                            loadImageWithGlide(base64ToDrawable(apiResponse.getImage1_base64(), GeneratesActivity.this), binding.iv2);
-                            binding.iv2.setVisibility(View.VISIBLE);
+                        dataModel.setBase64_2(apiResponse.getImage1_base64());
+                        Log.d("getImage1_base64 --&> ", "" + apiResponse.getImage1_base64());
+                        loadImageWithGlide(base64ToDrawable(apiResponse.getImage1_base64(), GeneratesActivity.this), binding.iv2);
+                        binding.iv2.setVisibility(View.VISIBLE);
                     }
                     // Handle Table 1 (table_img_base64_1 -> iv3)
                     if (apiResponse.getTable_img_base64_1() != null && !apiResponse.getTable_img_base64_1().isEmpty()) {
-                            dataModel.setBase64_3(apiResponse.getTable_img_base64_1());
-                            Log.d("getTable_img_base64_1 --&> ",""+apiResponse.getTable_img_base64_1());
+                        dataModel.setBase64_3(apiResponse.getTable_img_base64_1());
+                        Log.d("getTable_img_base64_1 --&> ", "" + apiResponse.getTable_img_base64_1());
                         loadImageWithGlide(base64ToDrawable(apiResponse.getTable_img_base64_1(), GeneratesActivity.this), binding.iv3);
-                            binding.iv3.setVisibility(View.VISIBLE);
+                        binding.iv3.setVisibility(View.VISIBLE);
                     }
                     // Handle Table 2 (table_img_base64_2 -> iv4)
                     if (apiResponse.getTable_img_base64_2() != null && !apiResponse.getTable_img_base64_2().isEmpty()) {
-                            dataModel.setBase64_4(apiResponse.getTable_img_base64_2());
-                            Log.d("getTable_img_base64_2 --&> ",""+apiResponse.getTable_img_base64_2());
+                        dataModel.setBase64_4(apiResponse.getTable_img_base64_2());
+                        Log.d("getTable_img_base64_2 --&> ", "" + apiResponse.getTable_img_base64_2());
                         loadImageWithGlide(base64ToDrawable(apiResponse.getTable_img_base64_2(), GeneratesActivity.this), binding.iv4);
-                            binding.iv4.setVisibility(View.VISIBLE);
-                        }
+                        binding.iv4.setVisibility(View.VISIBLE);
+                    }
 
                     // (Optional) Handle table_img_base64 (lama) jika masih dipakai untuk iv3
                     if (apiResponse.getTable_img_base64() != null && !apiResponse.getTable_img_base64().isEmpty()) {
                         dataModel.setBase64_3(apiResponse.getTable_img_base64());
-                        Log.d("getTable_img_base64 --&> ",""+apiResponse.getTable_img_base64());
+                        Log.d("getTable_img_base64 --&> ", "" + apiResponse.getTable_img_base64());
                         loadImageWithGlide(base64ToDrawable(apiResponse.getTable_img_base64(), GeneratesActivity.this), binding.iv3);
                         binding.iv3.setVisibility(View.VISIBLE);
                     }
@@ -503,7 +521,7 @@ public class GeneratesActivity extends AppCompatActivity {
                     // (Optional) Handle local_image_base64 jika ingin tetap tampilkan di iv2
                     if (apiResponse.getLocal_image_base64() != null && !apiResponse.getLocal_image_base64().isEmpty()) {
                         dataModel.setBase64_2(apiResponse.getLocal_image_base64());
-                        Log.d("getLocal_image_base64 --&> ",""+apiResponse.getLocal_image_base64());
+                        Log.d("getLocal_image_base64 --&> ", "" + apiResponse.getLocal_image_base64());
                         loadImageWithGlide(base64ToDrawable(apiResponse.getLocal_image_base64(), GeneratesActivity.this), binding.iv2);
                         binding.iv2.setVisibility(View.VISIBLE);
                     }
@@ -511,7 +529,7 @@ public class GeneratesActivity extends AppCompatActivity {
                     // Handle image2_base64 (baru) -> iv5
                     if (apiResponse.getImage2_base64() != null && !apiResponse.getImage2_base64().isEmpty()) {
                         dataModel.setBase64_5(apiResponse.getImage2_base64());
-                        Log.d("getImage2_base64 --&> ",""+apiResponse.getImage2_base64());
+                        Log.d("getImage2_base64 --&> ", "" + apiResponse.getImage2_base64());
                         loadImageWithGlide(base64ToDrawable(apiResponse.getImage2_base64(), GeneratesActivity.this), binding.iv5);
                         binding.iv5.setVisibility(View.VISIBLE);
                     }
@@ -568,6 +586,22 @@ public class GeneratesActivity extends AppCompatActivity {
                     }
                 });
     }
+    private void loadImageWithGlide(String url, ImageView imageView) {
+        Glide.with(this)
+                .load(url)
+                .into(new CustomTarget<Drawable>() {
+                    @Override
+                    public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                        imageView.setBackground(resource); // Set as background
+                    }
+
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {
+                        // Handle case when the image is cleared
+                    }
+                });
+    }
+
     public BitmapDrawable base64ToDrawable(String base64String, Context context) {
         try {
             // Remove Base64 headers (if any)
@@ -592,6 +626,7 @@ public class GeneratesActivity extends AppCompatActivity {
             return null;
         }
     }
+
     public void showIntroductionDialog() {
         // Inflate the binding layout manually
         visitStartTime = System.currentTimeMillis();
@@ -612,6 +647,7 @@ public class GeneratesActivity extends AppCompatActivity {
         });
 
     }
+
     public void updateTotalVisitingIntroduction(long visitStartTimeMillis) {
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
         DocumentReference userDocRef = firestore.collection("user").document(SessionManager.getId(this));
@@ -649,6 +685,7 @@ public class GeneratesActivity extends AppCompatActivity {
             Log.e("Firestore", "Gagal update durasi", e);
         });
     }
+
     private String formatDuration(long millis) {
         long seconds = millis / 1000;
         long minutes = seconds / 60;

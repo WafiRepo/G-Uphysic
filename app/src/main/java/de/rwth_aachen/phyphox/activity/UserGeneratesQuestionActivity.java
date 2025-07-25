@@ -187,6 +187,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
         // Tombol Next yang mengarahkan ke FeedbackActivity
         binding.btnNext.setOnClickListener(v -> {
             dataModel.setQuestion(binding.tvQuestion.getText().toString());
+            dataModel.setCustomerName(SessionManager.getName(this));
 //            if (!dataModel.getPhotoDraw().isEmpty()) {
                 // Pindah ke FeedbackActivity
                 Log.d("btnsave","--> "+new Gson().toJson(dataModel));

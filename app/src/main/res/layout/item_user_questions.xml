@@ -41,6 +41,13 @@
                 android:textStyle="bold"
                 android:textColor="@color/phyphox_black_40"/>
             <TextView
+                android:id="@+id/tvCreator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Creator :"
+                android:textSize="14sp"
+                android:textColor="@color/phyphox_white_50_black_50"/>
+            <TextView
                 android:id="@+id/tvQuestion"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
