@@ -47,6 +47,7 @@ public class ApiResponse {
     private Map<String, Integer> circle_details;
     private String processed_image_path;
     private String message;
+    private String image_path;
 
 
     public Map<String, Object> getClassificationResult() {
@@ -101,5 +102,9 @@ public class ApiResponse {
 
     public void setLabel(String label) {
         this.label = label;
+    }
+
+    public String getImage_path() {
+        return image_path;
     }
 }

@@ -78,6 +78,8 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import de.rwth_aachen.phyphox.NetworkConnection.OverwriteLabelRequest;
+
 
 public class CameraDetectionFragment extends Fragment implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -103,6 +105,7 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
             }
         }
     };
+    private String serverImagePath = null;
 
     @Override
     public void onResume() {
@@ -169,6 +172,48 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
                     }
                 });
             }
+        });
+        // Logic agar tombol Edit bisa mengaktifkan kolom label dan tombol OK
+        binding.tvEdit.setOnClickListener(v -> {
+            binding.tvLabel.setEnabled(true);
+            binding.tvLabel.requestFocus();
+            binding.tvOkay.setEnabled(true);
+        });
+        binding.tvOkay.setOnClickListener(v -> {
+            binding.tvLabel.setEnabled(false);
+            binding.tvOkay.setEnabled(false);
+            // Ambil data yang diperlukan
+            String userId = SessionManager.getId(requireContext());
+            if (serverImagePath == null || serverImagePath.isEmpty()) {
+                Toast.makeText(requireContext(), "Gambar belum diupload!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String newLabel = binding.tvLabel.getText().toString();
+
+            // Siapkan request
+            OverwriteLabelRequest request = new OverwriteLabelRequest(userId, serverImagePath, newLabel);
+            ApiService apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
+            ProgressDialog dialog = new ProgressDialog(requireContext());
+            dialog.setTitle("Update Label");
+            dialog.setMessage("Mengirim data ke server...");
+            dialog.setCancelable(false);
+            dialog.show();
+            apiService.overwriteLabel(request).enqueue(new retrofit2.Callback<de.rwth_aachen.phyphox.NetworkConnection.ApiResponse>() {
+                @Override
+                public void onResponse(retrofit2.Call<de.rwth_aachen.phyphox.NetworkConnection.ApiResponse> call, retrofit2.Response<de.rwth_aachen.phyphox.NetworkConnection.ApiResponse> response) {
+                    dialog.dismiss();
+                    if (response.isSuccessful() && response.body() != null) {
+                        Toast.makeText(requireContext(), "Label berhasil diupdate!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(requireContext(), "Gagal update label!", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                @Override
+                public void onFailure(retrofit2.Call<de.rwth_aachen.phyphox.NetworkConnection.ApiResponse> call, Throwable t) {
+                    dialog.dismiss();
+                    Toast.makeText(requireContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
         });
         // Pastikan CameraView diinisialisasi dengan benar
         binding.cameraview.setVisibility(View.VISIBLE);
@@ -327,6 +372,8 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
 
                     ApiResponse apiResponse = response.body();
                     binding.tvLabel.setText(apiResponse.getLabel());
+                    // Simpan image_path dari server untuk overwrite-label
+                    serverImagePath = apiResponse.getImage_path();
                     Log.d(TAG, "Upload successful: " + apiResponse.getMessage());
                     Toast.makeText(requireContext(), "Upload successful: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
                 } else {

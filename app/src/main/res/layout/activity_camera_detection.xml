@@ -109,6 +109,20 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
+            <!-- Judul di atas kolom label -->
+            <TextView
+                android:id="@+id/tvLabelTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Objek yang Terdeteksi"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginBottom="4dp"/>
+
             <EditText
                 android:textAlignment="center"
                 android:padding="8dp"
@@ -117,7 +131,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Label"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:textColor="@android:color/black"
+                android:enabled="false"
+                app:layout_constraintTop_toBottomOf="@id/tvLabelTitle" />
 
             <TextView
                 android:id="@+id/tvEdit"
@@ -125,6 +141,13 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="Edit"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/btn_next_selector"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="6dp"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:elevation="2dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tvLabel" />
 
@@ -133,7 +156,15 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Okay"
+                android:text="OK"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/btn_next_selector"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="6dp"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:elevation="2dp"
+                android:enabled="false"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tvLabel" />
         </androidx.constraintlayout.widget.ConstraintLayout>
