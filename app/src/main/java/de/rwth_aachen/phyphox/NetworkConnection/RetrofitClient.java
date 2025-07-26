@@ -9,7 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitClient {
     private static Retrofit retrofit;
-    private static final String BASE_URL = "http://140.115.126.107"; // Ganti dengan URL server FastAPI Anda
+    private static final String BASE_URL = "http://148.230.96.39:8000"; // Ganti dengan URL server FastAPI Anda
 
     public static Retrofit getRetrofitInstance() {
         if (retrofit == null) {

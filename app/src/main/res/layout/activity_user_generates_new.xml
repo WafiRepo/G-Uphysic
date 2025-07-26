@@ -75,7 +75,40 @@
                 android:minLines="8"
                 android:padding="16dp"
                 android:textColor="@color/phyphox_black_100" />
-
+            <com.github.chrisbanes.photoview.PhotoView
+                android:id="@+id/iv"
+                android:scaleType="fitXY"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"/>
+            <com.github.chrisbanes.photoview.PhotoView
+                android:id="@+id/iv2"
+                android:scaleType="fitXY"
+                android:visibility="gone"
+                android:layout_marginTop="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"/>
+            <com.github.chrisbanes.photoview.PhotoView
+                android:id="@+id/iv3"
+                android:scaleType="fitXY"
+                android:visibility="gone"
+                android:layout_marginTop="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"/>
+            <com.github.chrisbanes.photoview.PhotoView
+                android:id="@+id/iv4"
+                android:scaleType="fitXY"
+                android:visibility="gone"
+                android:layout_marginTop="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"/>
+            <com.github.chrisbanes.photoview.PhotoView
+                android:id="@+id/iv5"
+                android:scaleType="fitXY"
+                android:visibility="gone"
+                android:layout_marginTop="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"/>
             <LinearLayout
                 android:id="@+id/button_container"
                 android:layout_width="wrap_content"

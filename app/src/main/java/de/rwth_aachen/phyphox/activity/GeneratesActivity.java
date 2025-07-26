@@ -90,13 +90,32 @@ public class GeneratesActivity extends AppCompatActivity {
         } else {
             if (isCustomQuestion) {
                 if (!dataModel.getBase64().isEmpty()) {
-                    loadImageWithGlide(dataModel.getBase64(), binding.iv);
+                    loadImage(dataModel.getBase64(), binding.iv);
                     binding.iv.setVisibility(View.VISIBLE);
                 }
                 if (!dataModel.getBase64_2().isEmpty()) {
-                    loadImageWithGlide(dataModel.getBase64_2(), binding.iv2);
+                    loadImage(dataModel.getBase64_2(), binding.iv2);
                     binding.iv2.setVisibility(View.VISIBLE);
                 }
+                if (!dataModel.getBase64_3().isEmpty()) {
+                    loadImage(dataModel.getBase64_3(), binding.iv3);
+                    binding.iv3.setVisibility(View.VISIBLE);
+                }
+                if (!dataModel.getBase64_4().isEmpty()) {
+                    loadImage(dataModel.getBase64_4(), binding.iv4);
+                    binding.iv4.setVisibility(View.VISIBLE);
+                }
+                if (dataModel.getBase64_5()!= null && !dataModel.getBase64_5().isEmpty()) {
+                    loadImage(dataModel.getBase64_5(), binding.iv5);
+                    binding.iv5.setVisibility(View.VISIBLE);
+                }
+                if (!dataModel.getPhoto().isEmpty()) {
+                    loadImage(dataModel.getPhoto(), binding.ivPhoto);
+                    binding.ivPhoto.setVisibility(View.VISIBLE);
+                }
+
+                binding.tvQuestion.setText(dataModel.getQuestion());
+
             } else {
                 binding.tvQuestion.setText(dataModel.getQuestion());
                 // Handle Graph Images
@@ -600,6 +619,25 @@ public class GeneratesActivity extends AppCompatActivity {
                         // Handle case when the image is cleared
                     }
                 });
+    }
+    private void loadImage(String url, ImageView imageView) {
+        if(url.contains("http")) {
+            Glide.with(this)
+                    .load(url)
+                    .into(new CustomTarget<Drawable>() {
+                        @Override
+                        public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                            imageView.setBackground(resource); // Set as background
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+                            // Handle case when the image is cleared
+                        }
+                    });
+        }else{
+            loadImageWithGlide(base64ToDrawable(url, GeneratesActivity.this), imageView);
+        }
     }
 
     public BitmapDrawable base64ToDrawable(String base64String, Context context) {

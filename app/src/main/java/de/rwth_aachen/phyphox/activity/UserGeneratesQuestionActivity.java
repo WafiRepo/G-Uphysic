@@ -53,10 +53,17 @@ import de.rwth_aachen.phyphox.Helper.EasyQuestionHelper;
 import de.rwth_aachen.phyphox.Helper.FirestoreUtil;
 import de.rwth_aachen.phyphox.Helper.IntermediateQuestionHelper;
 import de.rwth_aachen.phyphox.Helper.SessionManager;
+import de.rwth_aachen.phyphox.NetworkConnection.ApiRequest;
+import de.rwth_aachen.phyphox.NetworkConnection.ApiResponse;
+import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
+import de.rwth_aachen.phyphox.NetworkConnection.RetrofitClient;
 import de.rwth_aachen.phyphox.databinding.ActivityUserGeneratesNewBinding;
 import de.rwth_aachen.phyphox.databinding.DialogIntroductionBinding;
 import de.rwth_aachen.phyphox.model.DataModel;
 import de.rwth_aachen.phyphox.model.QuestionModel;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class UserGeneratesQuestionActivity extends AppCompatActivity {
     private long visitStartTime;
@@ -66,6 +73,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
     private static final int REQUEST_CAMERA_PERMISSION = 100;
     private Uri photoUri;
     private String currentPhotoPath;
+    private ApiService apiService;
     byte[] imageBytes= new byte[0];
 
     @Override
@@ -74,61 +82,13 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
         // Inisialisasi ViewBinding
         binding = ActivityUserGeneratesNewBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
         App app = (App) getApplication();
         DataModel dataModel = app.getDataModel();
         boolean isFromMainMenu = getIntent().getBooleanExtra("isFromMainMenu", true);
-        Log.d("getTypeQuestion ", "--> " + isFromMainMenu);
-        Log.d("getTypeQuestion ", "--> " + dataModel.getTopics());
-        Log.d("getTypeQuestion ", "--> " + dataModel.getTypeQuestion());
-        Log.d("getTypeQuestion ", "--> " + dataModel.getTopics().equals("Out Class"));
-        Log.d("getTypeQuestion ", "--> " + dataModel.getTypeQuestion().equals("Advanced"));
-
-//        if (isFromMainMenu) {
-//            fetchAdvancedQuestion("en", dataModel.getTypeQuestion());
-//        } else {
-//            Log.d("getTypeQuestion ", "---> " + dataModel.getBase64());
-//            binding.tvQuestion.setText(dataModel.getQuestion());
-//            // Handle Graph Images
-//            if (dataModel.getTypeQuestion().equals("Advanced")) {
-//                Log.d("getTypeQuestion ", "---> " + dataModel.getBase64());
-//                List<Integer> images = AdvancedQuestionHelper.generateQuestionList().get(Integer.parseInt(dataModel.getBase64())).getImages();
-//                binding.iv.setImageDrawable(
-//                        ContextCompat.getDrawable(UserGeneratesQuestionActivity.this,
-//                                images.get(0)
-//                        ));
-//                if (images.size() > 1) {
-//                    binding.iv2.setImageDrawable(
-//                            ContextCompat.getDrawable(UserGeneratesQuestionActivity.this,
-//                                    images.get(1)
-//                            ));
-//                }
-//            } else if (dataModel.getTypeQuestion() == "Easy") {
-//                List<Integer> images = EasyQuestionHelper.generateQuestionList().get(Integer.parseInt(dataModel.getBase64())).getImages();
-//                binding.iv.setImageDrawable(
-//                        ContextCompat.getDrawable(UserGeneratesQuestionActivity.this,
-//                                images.get(0)
-//                        ));
-//                if (images.size() > 1) {
-//                    binding.iv2.setImageDrawable(
-//                            ContextCompat.getDrawable(UserGeneratesQuestionActivity.this,
-//                                    images.get(1)
-//                            ));
-//                }
-//            } else {
-//                List<Integer> images = IntermediateQuestionHelper.generateQuestionList().get(Integer.parseInt(dataModel.getBase64())).getImages();
-//                binding.iv.setImageDrawable(
-//                        ContextCompat.getDrawable(UserGeneratesQuestionActivity.this,
-//                                images.get(0)
-//                        ));
-//                if (images.size() > 1) {
-//                    binding.iv2.setImageDrawable(
-//                            ContextCompat.getDrawable(UserGeneratesQuestionActivity.this,
-//                                    images.get(1)
-//                            ));
-//                }
-//            }
-//            binding.iv.setVisibility(View.VISIBLE);
-//        }
+        if (!dataModel.getTopics().equals("In Class")) {
+            fetchAdvancedQuestion("indonesia", dataModel.getTypeQuestion());
+        }
         // Inisialisasi DrawView
         drawView = binding.drawView;
 
@@ -188,8 +148,6 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
         binding.btnNext.setOnClickListener(v -> {
             dataModel.setQuestion(binding.tvQuestion.getText().toString());
             dataModel.setCustomerName(SessionManager.getName(this));
-//            if (!dataModel.getPhotoDraw().isEmpty()) {
-                // Pindah ke FeedbackActivity
                 Log.d("btnsave","--> "+new Gson().toJson(dataModel));
                 ProgressDialog progressDialog = new ProgressDialog(this);
                 progressDialog.setTitle("Save data to Server");
@@ -202,46 +160,17 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                             Intent intent =new Intent(UserGeneratesQuestionActivity.this, MainActivity.class);
                             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                             startActivity(intent);
-//                            Intent intent = new Intent(GeneratesActivity.this, FeedbackActivity.class);
-//                            startActivity(intent);
                             finish();
                         },
                         e -> {
                             progressDialog.dismiss();
                             Toast.makeText(UserGeneratesQuestionActivity.this, e.getMessage(), Toast.LENGTH_LONG).show();
                         });
-
-//            } else {
-//                Toast.makeText(UserGeneratesQuestionActivity.this, "Upload Photo First", Toast.LENGTH_LONG).show();
-//
-//            }
         });
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-//                if (getIntent().getBooleanExtra("isFromMainMenu", true)) {
-////                startActivity(new Intent(GeneratesActivity.this, HistoryRecordActivity.class));
-////                finish();
-//                    ProgressDialog progressDialog = new ProgressDialog(UserGeneratesQuestionActivity.this);
-//                    progressDialog.setTitle("Save data to Server");
-//                    progressDialog.setMessage("Please wait...");
-//                    progressDialog.setCancelable(false);
-//                    progressDialog.show();
-//                    FirestoreUtil.addOrUpdateDocument("questions", dataModel.getId(), dataModel,
-//                            () -> {
-//                                progressDialog.dismiss();
-//                                Intent homeIntent = new Intent(UserGeneratesQuestionActivity.this, MainActivity.class);
-//                                homeIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-//                                startActivity(homeIntent);
-//                            },
-//                            e -> {
-//                                progressDialog.dismiss();
-//                                Toast.makeText(UserGeneratesQuestionActivity.this, e.getMessage(), Toast.LENGTH_LONG).show();
-//                            });
-//
-//                } else {
                     finish();
-//                }
             }
         });
     }
@@ -262,12 +191,6 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
         Log.d("btnTakePhoto", "dispatchTakePictureIntent");
 
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-//        if (takePictureIntent.resolveActivity(getPackageManager()) == null) {
-//            Toast.makeText(this, "No camera app available", Toast.LENGTH_SHORT).show();
-//            Log.d("btnTakePhoto", "NO camera app available");
-//            return;
-//        }
-
         Log.d("btnTakePhoto", "takePictureIntent");
 
         File photoFile = null;
@@ -299,9 +222,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.d("onactivityresutl ", "--> " + resultCode);
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode== RESULT_OK) {
-            Log.d("onactivityresutl ", "--> ");
             binding.ivPhoto.setVisibility(View.VISIBLE);
             // Optional: Konversi foto ke base64 dan simpan ke dataModel
             Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath);
@@ -349,7 +270,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                         // Save the download URL to DataModel
                         App app = (App) getApplication();
                         DataModel dataModel = app.getDataModel();
-                        dataModel.setBase64_2(downloadUrl);
+                        dataModel.setPhoto(downloadUrl);
                         app.setDataModel(dataModel);
                         progressDialog.dismiss();
                         uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.drawView)), "answer_image_" + System.currentTimeMillis());
@@ -443,32 +364,113 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
     }
 
     private void fetchAdvancedQuestion(String language, String type) {
-        Pair<Integer, QuestionModel> result;
-        if (Objects.equals(type, "Easy")) {
-            result = EasyQuestionHelper.getRandomQuestion();
-        } else if (Objects.equals(type, "Intermediate")) {
-            result = IntermediateQuestionHelper.getRandomQuestion();
-        } else {
-            result = AdvancedQuestionHelper.getRandomQuestion();
-        }
-        App app = (App) getApplication();
-        DataModel dataModel = app.getDataModel();
-        dataModel.setQuestion(result.second.getQuestion());
-        dataModel.setTypeQuestion(result.second.getType());
-        dataModel.setIdCustomer(SessionManager.getId(UserGeneratesQuestionActivity.this));
-        binding.tvQuestion.setText(result.second.getQuestion());
-        dataModel.setBase64(String.valueOf(result.first));
-        // Handle Graph Images
+        ProgressDialog progressDialog = new ProgressDialog(this); // Replace 'this' with 'requireContext()' if inside a Fragment
+        progressDialog.setTitle("");
+        progressDialog.setMessage("Loading...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+        ApiRequest request = new ApiRequest(language, de.rwth_aachen.phyphox.Helper.SessionManager.getId(this));
 
-//        dataModel.setBase64(apiResponse.getGraphImages().get(0));
-//        binding.iv.setImageDrawable(ContextCompat.getDrawable(UserGeneratesQuestionActivity.this, result.second.getImages().get(0)));
-//        binding.iv.setVisibility(View.VISIBLE);
-//        if (result.second.getImages().size() > 1) {
-//            dataModel.setBase64_2(String.valueOf(result.first));
-//            binding.iv2.setImageDrawable(ContextCompat.getDrawable(UserGeneratesQuestionActivity.this, result.second.getImages().get(1)));
-//            binding.iv2.setVisibility(View.VISIBLE);
-//        }
-        app.setDataModel(dataModel);
+        Callback<ApiResponse> callback = new Callback<ApiResponse>() {
+            @Override
+            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                progressDialog.dismiss();
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse apiResponse = response.body();
+                    App app = (App) getApplication();
+                    DataModel dataModel = app.getDataModel();
+                    dataModel.setQuestion(apiResponse.getQuestions());
+                    dataModel.setIdCustomer(SessionManager.getId(UserGeneratesQuestionActivity.this));
+//                    binding.tvQuestion.setText(apiResponse.getQuestions());
+
+                    // Reset all image views to GONE at the start
+                    binding.iv.setVisibility(View.GONE);
+                    binding.iv2.setVisibility(View.GONE);
+                    binding.iv3.setVisibility(View.GONE);
+                    binding.iv4.setVisibility(View.GONE);
+                    binding.iv5.setVisibility(View.GONE);
+
+                    // Handle Graph Images (graphImages -> iv)
+                    if (apiResponse.getGraphImages() != null && !apiResponse.getGraphImages().isEmpty()) {
+                        dataModel.setBase64(apiResponse.getGraphImages().get(0));
+                        Log.d("getGraphImages --&> ", "" + apiResponse.getGraphImages().get(0));
+                        loadImageWithGlide(base64ToDrawable(apiResponse.getGraphImages().get(0), UserGeneratesQuestionActivity.this), binding.iv);
+                        binding.iv.setVisibility(View.VISIBLE);
+                    }
+                    // Handle Image (image1_base64 -> iv2)
+                    if (apiResponse.getImage1_base64() != null && !apiResponse.getImage1_base64().isEmpty()) {
+                        dataModel.setBase64_2(apiResponse.getImage1_base64());
+                        Log.d("getImage1_base64 --&> ", "" + apiResponse.getImage1_base64());
+                        loadImageWithGlide(base64ToDrawable(apiResponse.getImage1_base64(), UserGeneratesQuestionActivity.this), binding.iv2);
+                        binding.iv2.setVisibility(View.VISIBLE);
+                    }
+                    // Handle Table 1 (table_img_base64_1 -> iv3)
+                    if (apiResponse.getTable_img_base64_1() != null && !apiResponse.getTable_img_base64_1().isEmpty()) {
+                        dataModel.setBase64_3(apiResponse.getTable_img_base64_1());
+                        Log.d("getTable_img_base64_1 --&> ", "" + apiResponse.getTable_img_base64_1());
+                        loadImageWithGlide(base64ToDrawable(apiResponse.getTable_img_base64_1(), UserGeneratesQuestionActivity.this), binding.iv3);
+                        binding.iv3.setVisibility(View.VISIBLE);
+                    }
+                    // Handle Table 2 (table_img_base64_2 -> iv4)
+                    if (apiResponse.getTable_img_base64_2() != null && !apiResponse.getTable_img_base64_2().isEmpty()) {
+                        dataModel.setBase64_4(apiResponse.getTable_img_base64_2());
+                        Log.d("getTable_img_base64_2 --&> ", "" + apiResponse.getTable_img_base64_2());
+                        loadImageWithGlide(base64ToDrawable(apiResponse.getTable_img_base64_2(), UserGeneratesQuestionActivity.this), binding.iv4);
+                        binding.iv4.setVisibility(View.VISIBLE);
+                    }
+
+                    // (Optional) Handle table_img_base64 (lama) jika masih dipakai untuk iv3
+                    if (apiResponse.getTable_img_base64() != null && !apiResponse.getTable_img_base64().isEmpty()) {
+                        dataModel.setBase64_3(apiResponse.getTable_img_base64());
+                        Log.d("getTable_img_base64 --&> ", "" + apiResponse.getTable_img_base64());
+                        loadImageWithGlide(base64ToDrawable(apiResponse.getTable_img_base64(), UserGeneratesQuestionActivity.this), binding.iv3);
+                        binding.iv3.setVisibility(View.VISIBLE);
+                    }
+
+                    // (Optional) Handle local_image_base64 jika ingin tetap tampilkan di iv2
+                    if (apiResponse.getLocal_image_base64() != null && !apiResponse.getLocal_image_base64().isEmpty()) {
+                        dataModel.setBase64_2(apiResponse.getLocal_image_base64());
+                        Log.d("getLocal_image_base64 --&> ", "" + apiResponse.getLocal_image_base64());
+                        loadImageWithGlide(base64ToDrawable(apiResponse.getLocal_image_base64(), UserGeneratesQuestionActivity.this), binding.iv2);
+                        binding.iv2.setVisibility(View.VISIBLE);
+                    }
+
+                    // Handle image2_base64 (baru) -> iv5
+                    if (apiResponse.getImage2_base64() != null && !apiResponse.getImage2_base64().isEmpty()) {
+                        dataModel.setBase64_5(apiResponse.getImage2_base64());
+                        Log.d("getImage2_base64 --&> ", "" + apiResponse.getImage2_base64());
+                        loadImageWithGlide(base64ToDrawable(apiResponse.getImage2_base64(), UserGeneratesQuestionActivity.this), binding.iv5);
+                        binding.iv5.setVisibility(View.VISIBLE);
+                    }
+
+                    app.setDataModel(dataModel);
+
+                    // Handle Experiment Data
+                    if (apiResponse.getExperiment1Data() != null) {
+                        Log.d("Retrofit", "Experiment 1 Data: " + apiResponse.getExperiment1Data().size());
+                    }
+                    if (apiResponse.getExperiment2Data() != null) {
+                        Log.d("Retrofit", "Experiment 2 Data: " + apiResponse.getExperiment2Data().size());
+                    }
+                } else {
+                    Log.e("Retrofit", "Failed to fetch question");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse> call, Throwable t) {
+                Log.e("Retrofit", "Error: " + t.getMessage());
+                progressDialog.dismiss();
+                Toast.makeText(UserGeneratesQuestionActivity.this, "Failed to connect", Toast.LENGTH_SHORT).show();
+            }
+        };
+        if (type.equals("Easy")) {
+            apiService.getEasyQuestion(request).enqueue(callback);
+        } else if (type.equals("Intermediate")) {
+            apiService.getIntermediateQuestion(request).enqueue(callback);
+        } else {
+            apiService.getAdvancedQuestion(request).enqueue(callback);
+        }
     }
 
     //    @NonNull

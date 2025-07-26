@@ -13,7 +13,7 @@
         <domain includeSubdomains="true">10.0.2.2</domain>
     </domain-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">140.115.126.107</domain>
+        <domain includeSubdomains="true">148.230.96.39</domain>
     </domain-config>
 
 </network-security-config>
