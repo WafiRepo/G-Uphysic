@@ -484,6 +484,7 @@ public class GeneratesActivity extends AppCompatActivity {
                         app.setDataModel(dataModel);
                         String table = "record";
                         if (isCustomQuestionNew) {
+                            dataModel.setType(binding.tvType.getText().toString());
                             dataModel.setQuestion(binding.etQuestion.getText().toString());
                             table = "questions";
                         }
