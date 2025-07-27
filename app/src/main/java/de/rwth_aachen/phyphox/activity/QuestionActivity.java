@@ -54,7 +54,11 @@ public class QuestionActivity extends AppCompatActivity {
                 App app = (App) getApplication();
                 DataModel dataModel = app.getDataModel();
                 if (!dataModel.getTypeQuestion().isEmpty()) {
-                    startActivity(new Intent(QuestionActivity.this, UserGeneratesQuestionActivity.class));
+                    Intent intent = new Intent(QuestionActivity.this, GeneratesActivity.class);
+                    intent.putExtra("isFromMainMenu", false);
+                    intent.putExtra("isCustomQuestion", true);
+                    intent.putExtra("isCustomQuestionNew", true);
+                    startActivity(intent);
                 }
             }
         });

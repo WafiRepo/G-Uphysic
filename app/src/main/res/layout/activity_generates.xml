@@ -72,6 +72,20 @@
                 android:padding="16dp"
                 android:textColor="@color/phyphox_black_100"
                 android:textSize="16sp" />
+            <EditText
+                android:visibility="gone"
+                android:layout_marginHorizontal="16dp"
+                android:hint="Input Questions"
+                android:id="@+id/etQuestion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/custom_edittext_background_2"
+                android:textSize="16sp"
+                android:textColorHint="@color/phyphox_white_50_black_50"
+                android:minLines="8"
+                android:padding="16dp"
+                android:textColor="@color/phyphox_black_100" />
 
             <com.github.chrisbanes.photoview.PhotoView
                 android:id="@+id/iv"

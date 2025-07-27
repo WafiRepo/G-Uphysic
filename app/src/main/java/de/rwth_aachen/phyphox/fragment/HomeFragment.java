@@ -23,6 +23,7 @@ import de.rwth_aachen.phyphox.activity.IntroductionClassActivity;
 import de.rwth_aachen.phyphox.activity.LinearActivity;
 import de.rwth_aachen.phyphox.activity.ListUserQuestionsActivity;
 import de.rwth_aachen.phyphox.activity.QuestionActivity;
+import de.rwth_aachen.phyphox.activity.UserGeneratesQuestionActivity;
 import de.rwth_aachen.phyphox.model.DataModel;
 
 public class HomeFragment extends Fragment {
@@ -65,6 +66,8 @@ public class HomeFragment extends Fragment {
             dataModel.setId(String.valueOf(System.currentTimeMillis()));
             dataModel.setTopics("Centripetal Acceleration");
             app.setDataModel(dataModel);
+//            startActivity(new Intent(getActivity(), UserGeneratesQuestionActivity.class));
+
             startActivity(new Intent(getActivity(), LinearActivity.class));
         });
         rlInClass.setOnClickListener(view1 -> {

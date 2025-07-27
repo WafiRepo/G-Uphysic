@@ -92,48 +92,58 @@ public class GeneratesActivity extends AppCompatActivity {
         DataModel dataModel = app.getDataModel();
         boolean isFromMainMenu = getIntent().getBooleanExtra("isFromMainMenu", true);
         boolean isCustomQuestion = getIntent().getBooleanExtra("isCustomQuestion", false);
+        boolean isCustomQuestionNew = getIntent().getBooleanExtra("isCustomQuestionNew", false);
         if (isFromMainMenu) {
-            dataModel.setDesc(SessionManager.getName(this)+" Mengerjakan pertanyaan dari Sistem");
+            dataModel.setDesc(SessionManager.getName(this) + " Mengerjakan pertanyaan dari Sistem");
             fetchAdvancedQuestion("indonesia", dataModel.getTypeQuestion());
         } else {
             if (isCustomQuestion) {
-                FirebaseFirestore db = FirebaseFirestore.getInstance();
-                if(!dataModel.getIdCustomer().isEmpty()){
-                db.collection("user").document(dataModel.getIdCustomer()).get().addOnSuccessListener(userDoc -> {
-                    String userName = userDoc.getString("name");
-                    dataModel.setDesc(SessionManager.getName(this)+" Mengerjakan pertanyaan dari "+userName);
-                }).addOnFailureListener(e -> {
+                if (isCustomQuestionNew) {
+                    binding.etQuestion.setVisibility(View.VISIBLE);
+                    binding.tvQuestion.setVisibility(View.GONE);
+                    if (!dataModel.getTopics().equals("In Class")) {
+                        fetchAdvancedQuestion("indonesia", dataModel.getTypeQuestion());
+                    }
+                } else {
 
-                });
-                }
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+                    if (!dataModel.getIdCustomer().isEmpty()) {
+                        db.collection("user").document(dataModel.getIdCustomer()).get().addOnSuccessListener(userDoc -> {
+                            String userName = userDoc.getString("name");
+                            dataModel.setDesc(SessionManager.getName(this) + " Mengerjakan pertanyaan dari " + userName);
+                        }).addOnFailureListener(e -> {
+
+                        });
+                    }
 
 
-                if (!dataModel.getBase64().isEmpty()) {
-                    loadImage(dataModel.getBase64(), binding.iv);
-                    binding.iv.setVisibility(View.VISIBLE);
-                }
-                if (!dataModel.getBase64_2().isEmpty()) {
-                    loadImage(dataModel.getBase64_2(), binding.iv2);
-                    binding.iv2.setVisibility(View.VISIBLE);
-                }
-                if (!dataModel.getBase64_3().isEmpty()) {
-                    loadImage(dataModel.getBase64_3(), binding.iv3);
-                    binding.iv3.setVisibility(View.VISIBLE);
-                }
-                if (!dataModel.getBase64_4().isEmpty()) {
-                    loadImage(dataModel.getBase64_4(), binding.iv4);
-                    binding.iv4.setVisibility(View.VISIBLE);
-                }
-                if (dataModel.getBase64_5()!= null && !dataModel.getBase64_5().isEmpty()) {
-                    loadImage(dataModel.getBase64_5(), binding.iv5);
-                    binding.iv5.setVisibility(View.VISIBLE);
-                }
-                if (!dataModel.getPhoto().isEmpty()) {
-                    loadImage(dataModel.getPhoto(), binding.ivPhoto);
-                    binding.ivPhoto.setVisibility(View.VISIBLE);
-                }
+                    if (!dataModel.getBase64().isEmpty()) {
+                        loadImage(dataModel.getBase64(), binding.iv);
+                        binding.iv.setVisibility(View.VISIBLE);
+                    }
+                    if (!dataModel.getBase64_2().isEmpty()) {
+                        loadImage(dataModel.getBase64_2(), binding.iv2);
+                        binding.iv2.setVisibility(View.VISIBLE);
+                    }
+                    if (!dataModel.getBase64_3().isEmpty()) {
+                        loadImage(dataModel.getBase64_3(), binding.iv3);
+                        binding.iv3.setVisibility(View.VISIBLE);
+                    }
+                    if (!dataModel.getBase64_4().isEmpty()) {
+                        loadImage(dataModel.getBase64_4(), binding.iv4);
+                        binding.iv4.setVisibility(View.VISIBLE);
+                    }
+                    if (dataModel.getBase64_5() != null && !dataModel.getBase64_5().isEmpty()) {
+                        loadImage(dataModel.getBase64_5(), binding.iv5);
+                        binding.iv5.setVisibility(View.VISIBLE);
+                    }
+                    if (!dataModel.getPhoto().isEmpty()) {
+                        loadImage(dataModel.getPhoto(), binding.ivPhoto);
+                        binding.ivPhoto.setVisibility(View.VISIBLE);
+                    }
 
-                binding.tvQuestion.setText(dataModel.getQuestion());
+                    binding.tvQuestion.setText(dataModel.getQuestion());
+                }
 
             } else {
                 binding.tvQuestion.setText(dataModel.getQuestion());
@@ -202,9 +212,9 @@ public class GeneratesActivity extends AppCompatActivity {
         binding.btnType.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(binding.tvType.getVisibility()== View.VISIBLE){
+                if (binding.tvType.getVisibility() == View.VISIBLE) {
                     binding.tvType.setVisibility(View.GONE);
-                }else{
+                } else {
                     binding.tvType.setVisibility(View.VISIBLE);
                 }
             }
@@ -458,7 +468,7 @@ public class GeneratesActivity extends AppCompatActivity {
 
                         // Log success
                         Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
-
+                        boolean isCustomQuestionNew = getIntent().getBooleanExtra("isCustomQuestionNew", false);
                         // Save data to Firestore after successful upload
                         ProgressDialog saveProgressDialog = new ProgressDialog(GeneratesActivity.this);
                         saveProgressDialog.setTitle("Save data to Server");
@@ -472,13 +482,25 @@ public class GeneratesActivity extends AppCompatActivity {
                         }
                         dataModel.setId(documentId);
                         app.setDataModel(dataModel);
-
-                        FirestoreUtil.addOrUpdateDocument("record", documentId, dataModel,
+                        String table = "record";
+                        if (isCustomQuestionNew) {
+                            dataModel.setQuestion(binding.etQuestion.getText().toString());
+                            table = "questions";
+                        }
+                        FirestoreUtil.addOrUpdateDocument(table, documentId, dataModel,
                                 () -> {
                                     saveProgressDialog.dismiss();
                                     progressDialog.dismiss();
-                                    startActivity(new Intent(GeneratesActivity.this, MapsActivity.class));
-                                    finish();
+                                    if (isCustomQuestionNew) {
+                                        Intent intent = new Intent(GeneratesActivity.this, MainActivity.class);
+                                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        startActivity(intent);
+                                        finish();
+                                    } else {
+                                        startActivity(new Intent(GeneratesActivity.this, MapsActivity.class));
+                                        finish();
+                                    }
+
                                 },
                                 e -> {
                                     saveProgressDialog.dismiss();
@@ -635,6 +657,7 @@ public class GeneratesActivity extends AppCompatActivity {
                     }
                 });
     }
+
     private void loadImageWithGlide(String url, ImageView imageView) {
         Glide.with(this)
                 .load(url)
@@ -650,6 +673,7 @@ public class GeneratesActivity extends AppCompatActivity {
                     }
                 });
     }
+
     private void loadImage(String url, ImageView imageView) {
         if (url.contains("http")) {
             ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -772,6 +796,7 @@ public class GeneratesActivity extends AppCompatActivity {
             return String.format(Locale.getDefault(), "%d detik", seconds);
         }
     }
+
     public static String imageUrlToBase64(String urlStr) {
         try {
             URL url = new URL(urlStr);
