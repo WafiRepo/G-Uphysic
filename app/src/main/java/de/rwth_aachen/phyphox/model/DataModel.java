@@ -30,6 +30,8 @@ public class DataModel implements Parcelable {
     private String photoAnswer;
     private String dateTime;
     private String base64_5;
+    private String type;
+    private String desc;
 
     public DataModel(){
         this.photo = "";
@@ -50,6 +52,7 @@ public class DataModel implements Parcelable {
         this.base64_3 = "";
         this.base64_4 = "";
         this.photoAnswer = "";
+        this.desc = "";
         this.isFinished = false;
         Date now = Calendar.getInstance().getTime();
 
@@ -283,6 +286,22 @@ public class DataModel implements Parcelable {
 
     public void setCustomerName(String customerName) {
         this.customerName = customerName;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
     }
 }
 

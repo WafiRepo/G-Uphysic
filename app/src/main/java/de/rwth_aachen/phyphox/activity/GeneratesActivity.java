@@ -86,9 +86,18 @@ public class GeneratesActivity extends AppCompatActivity {
         boolean isFromMainMenu = getIntent().getBooleanExtra("isFromMainMenu", true);
         boolean isCustomQuestion = getIntent().getBooleanExtra("isCustomQuestion", false);
         if (isFromMainMenu) {
+            dataModel.setDesc(SessionManager.getName(this)+" Mengerjakan pertanyaan dari Sistem");
             fetchAdvancedQuestion("indonesia", dataModel.getTypeQuestion());
         } else {
             if (isCustomQuestion) {
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+                db.collection("user").document(dataModel.getIdCustomer()).get().addOnSuccessListener(userDoc -> {
+                    String userName = userDoc.getString("name");
+                    dataModel.setDesc(SessionManager.getName(this)+" Mengerjakan pertanyaan dari "+userName);
+                }).addOnFailureListener(e -> {
+
+                });
                 if (!dataModel.getBase64().isEmpty()) {
                     loadImage(dataModel.getBase64(), binding.iv);
                     binding.iv.setVisibility(View.VISIBLE);
@@ -178,6 +187,16 @@ public class GeneratesActivity extends AppCompatActivity {
                 uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.drawView)), "answer_image_" + System.currentTimeMillis());
             } else {
                 uploadImageToFirestoreAnswer(imageBytes, "answer_image_" + System.currentTimeMillis());
+            }
+        });
+        binding.btnType.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(binding.tvType.getVisibility()== View.VISIBLE){
+                    binding.tvType.setVisibility(View.GONE);
+                }else{
+                    binding.tvType.setVisibility(View.VISIBLE);
+                }
             }
         });
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -347,6 +366,7 @@ public class GeneratesActivity extends AppCompatActivity {
                         App app = (App) getApplication();
                         DataModel dataModel = app.getDataModel();
                         dataModel.setPhotoAnswer(downloadUrl);
+                        dataModel.setType(binding.tvType.getText().toString());
                         app.setDataModel(dataModel);
                         progressDialog.dismiss();
                         uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.drawView)), "answer_image_" + System.currentTimeMillis());

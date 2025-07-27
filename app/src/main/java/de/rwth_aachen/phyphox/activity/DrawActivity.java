@@ -21,15 +21,20 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.util.Locale;
 
 import de.rwth_aachen.phyphox.App;
 import de.rwth_aachen.phyphox.Helper.DrawingView;
+import de.rwth_aachen.phyphox.Helper.SessionManager;
 import de.rwth_aachen.phyphox.R;
 import de.rwth_aachen.phyphox.model.DataModel;
 
@@ -38,6 +43,7 @@ public class DrawActivity extends AppCompatActivity {
     private DrawingView mDrawingView;
     private FloatingActionButton fab_next;
     private EditText inputValue;
+    private long visitStartTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +105,7 @@ public class DrawActivity extends AppCompatActivity {
     }
 
     private void showIntroductionDialog() {
+        visitStartTime = System.currentTimeMillis();
         LayoutInflater inflater = LayoutInflater.from(this);
         View dialogView = inflater.inflate(R.layout.dialog_introduction, null, false);
         AlertDialog dialog = new AlertDialog.Builder(this)
@@ -106,7 +113,10 @@ public class DrawActivity extends AppCompatActivity {
                 .setCancelable(true)
                 .create();
         // Tombol tutup
-        dialogView.findViewById(R.id.tvClose).setOnClickListener(v -> dialog.dismiss());
+        dialogView.findViewById(R.id.tvClose).setOnClickListener(v ->{
+            updateTotalVisitingIntroduction(visitStartTime);
+            dialog.dismiss();
+        });
         dialog.show();
     }
 
@@ -193,6 +203,58 @@ public class DrawActivity extends AppCompatActivity {
                     // Notify the user of the error
                     Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
+    }
+    public void updateTotalVisitingIntroduction(long visitStartTimeMillis) {
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+        DocumentReference userDocRef = firestore.collection("user").document(SessionManager.getId(this));
+
+        long visitDuration = System.currentTimeMillis() - visitStartTimeMillis;
+
+        firestore.runTransaction(transaction -> {
+            DocumentSnapshot snapshot = transaction.get(userDocRef);
+
+            Long currentTotal = snapshot.getLong("totalVisitingIntroduction");
+            if (currentTotal == null) currentTotal = 0L;
+            Long newTotal = currentTotal + 1;
+
+            Long totalDuration = snapshot.getLong("totalVisitDurationMillis");
+            if (totalDuration == null) totalDuration = 0L;
+            long newTotalDuration = totalDuration + visitDuration;
+
+            // Convert durasi ke format readable
+            String lastDurationFormatted = formatDuration(visitDuration);
+            String totalDurationFormatted = formatDuration(newTotalDuration);
+
+            // Update Firestore
+            transaction.update(userDocRef, "totalVisitingIntroduction", newTotal);
+            transaction.update(userDocRef, "totalVisitDurationMillis", newTotalDuration);
+            transaction.update(userDocRef, "totalVisitDurationFormatted", totalDurationFormatted);
+
+            // Simpan juga ke SessionManager
+            SessionManager.setKeyVisitingInto(this, newTotal);
+            SessionManager.setTotalVisitDuration(this, newTotalDuration);
+
+            return null;
+        }).addOnSuccessListener(aVoid -> {
+            Log.d("Firestore", "Berhasil update durasi dan format waktu");
+        }).addOnFailureListener(e -> {
+            Log.e("Firestore", "Gagal update durasi", e);
+        });
+    }
+    private String formatDuration(long millis) {
+        long seconds = millis / 1000;
+        long minutes = seconds / 60;
+        long hours = minutes / 60;
+        seconds %= 60;
+        minutes %= 60;
+
+        if (hours > 0) {
+            return String.format(Locale.getDefault(), "%d jam %d menit %d detik", hours, minutes, seconds);
+        } else if (minutes > 0) {
+            return String.format(Locale.getDefault(), "%d menit %d detik", minutes, seconds);
+        } else {
+            return String.format(Locale.getDefault(), "%d detik", seconds);
+        }
     }
 
 }

@@ -31,12 +31,16 @@
             android:textColor="#8F0D53"
             android:textStyle="bold" />
 
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:layout_marginTop="8dp"
-            android:src="@drawable/image_circle"
-            android:scaleType="centerCrop" />
+        <de.rwth_aachen.phyphox.Helper.NewZoomableImageView
+            android:id="@+id/iv_circle"
+            android:layout_width="206dp"
+            android:layout_height="171dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/image_circle"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_what" />
+
         <ImageView
             android:id="@+id/tv_see"
             android:layout_width="200dp"

@@ -128,23 +128,55 @@
                     android:tint="@color/phyphox_white_100"
                     android:layout_marginStart="16dp" />
             </LinearLayout>
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnTakePhoto"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Take Photo"
-                android:layout_marginBottom="16dp"
-                android:layout_marginStart="16dp"
-                android:textColor="@color/phyphox_white_100"
-                android:backgroundTint="@color/phyphox_purple"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent" />
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTakePhoto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:backgroundTint="@color/phyphox_purple"
+                    android:text="Take Photo"
+                    android:textColor="@color/phyphox_white_100"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent" />
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btn_type"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:layout_marginEnd="16dp"
+                    android:backgroundTint="@color/phyphox_purple"
+                    android:contentDescription="Calculator"
+                    android:tint="@color/phyphox_white_100"
+                    app:srcCompat="@drawable/ic_calculator"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"/>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
             <ImageView
                 android:id="@+id/ivPhoto"
                 android:scaleType="fitXY"
                 android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
+            <EditText
+                android:id="@+id/tvType"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/custom_edittext_background_2"
+                android:hint="Input Type"
+                android:padding="16dp"
+                android:textColor="@color/phyphox_black_100"
+                android:textColorHint="@color/phyphox_white_50_black_50"
+                android:textSize="16sp" />
             <de.rwth_aachen.phyphox.activity.DrawView
                 android:id="@+id/drawView"
                 android:layout_width="match_parent"

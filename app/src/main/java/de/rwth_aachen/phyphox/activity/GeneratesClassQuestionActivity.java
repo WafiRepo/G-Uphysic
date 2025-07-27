@@ -97,7 +97,7 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         Log.d("getTypeQuestion ", "--> " + dataModel.getTypeQuestion());
         Log.d("getTypeQuestion ", "--> " + dataModel.getTopics().equals("Out Class"));
         Log.d("getTypeQuestion ", "--> " + dataModel.getTypeQuestion().equals("Advanced"));
-
+        dataModel.setDesc(SessionManager.getName(this)+" Mengerjakan pertanyaan dari Sistem");
         if (isFromMainMenu) {
             fetchAdvancedQuestion("en", dataModel.getTypeQuestion());
         } else {
@@ -224,6 +224,16 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(GeneratesClassQuestionActivity.this, "Upload Photo First", Toast.LENGTH_LONG).show();
 //
+            }
+        });
+        binding.btnType.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(binding.tvType.getVisibility()== View.VISIBLE){
+                    binding.tvType.setVisibility(View.GONE);
+                }else{
+                    binding.tvType.setVisibility(View.VISIBLE);
+                }
             }
         });
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -360,6 +370,7 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
                         App app = (App) getApplication();
                         DataModel dataModel = app.getDataModel();
                         dataModel.setPhotoAnswer(downloadUrl);
+                        dataModel.setType(binding.tvType.getText().toString());
                         app.setDataModel(dataModel);
                         progressDialog.dismiss();
                         uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.drawView)), "answer_image_" + System.currentTimeMillis());
