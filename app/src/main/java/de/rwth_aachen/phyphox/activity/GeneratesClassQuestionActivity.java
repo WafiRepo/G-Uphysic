@@ -80,8 +80,9 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
     private static final int REQUEST_IMAGE_CAPTURE = 1;
     private static final int REQUEST_CAMERA_PERMISSION = 100;
     private Uri photoUri;
+    private DataModel dataModel;
     private String currentPhotoPath;
-    byte[] imageBytes= new byte[0];
+    byte[] imageBytes = new byte[0];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,14 +91,14 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         binding = ActivityGeneratesNewBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         App app = (App) getApplication();
-        DataModel dataModel = app.getDataModel();
+        dataModel = app.getDataModel();
         boolean isFromMainMenu = getIntent().getBooleanExtra("isFromMainMenu", true);
         Log.d("getTypeQuestion ", "--> " + isFromMainMenu);
         Log.d("getTypeQuestion ", "--> " + dataModel.getTopics());
         Log.d("getTypeQuestion ", "--> " + dataModel.getTypeQuestion());
         Log.d("getTypeQuestion ", "--> " + dataModel.getTopics().equals("Out Class"));
         Log.d("getTypeQuestion ", "--> " + dataModel.getTypeQuestion().equals("Advanced"));
-        dataModel.setDesc(SessionManager.getName(this)+" Mengerjakan pertanyaan dari Sistem");
+        dataModel.setDesc(SessionManager.getName(this) + " Mengerjakan pertanyaan dari Sistem");
         if (isFromMainMenu) {
             fetchAdvancedQuestion("en", dataModel.getTypeQuestion());
         } else {
@@ -178,10 +179,10 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         });
         binding.btnTakePhoto.setOnClickListener(view -> {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                Log.d("btnTakePhoto ","permission failed");
+                Log.d("btnTakePhoto ", "permission failed");
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
             } else {
-                Log.d("btnTakePhoto ","takePictureIntent");
+                Log.d("btnTakePhoto ", "takePictureIntent");
                 dispatchTakePictureIntent();
             }
         });
@@ -208,6 +209,8 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
                 progressDialog.setMessage("Please wait...");
                 progressDialog.setCancelable(false);
                 progressDialog.show();
+                dataModel.setTypeData(binding.tvType.getText().toString());
+                app.setDataModel(dataModel);
                 FirestoreUtil.addOrUpdateDocument("record", dataModel.getId(), dataModel,
                         () -> {
                             progressDialog.dismiss();
@@ -229,9 +232,9 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         binding.btnType.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(binding.tvType.getVisibility()== View.VISIBLE){
+                if (binding.tvType.getVisibility() == View.VISIBLE) {
                     binding.tvType.setVisibility(View.GONE);
-                }else{
+                } else {
                     binding.tvType.setVisibility(View.VISIBLE);
                 }
             }
@@ -247,6 +250,8 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
                     progressDialog.setMessage("Please wait...");
                     progressDialog.setCancelable(false);
                     progressDialog.show();
+                    dataModel.setTypeData(binding.tvType.getText().toString());
+                    app.setDataModel(dataModel);
                     FirestoreUtil.addOrUpdateDocument("record", dataModel.getId(), dataModel,
                             () -> {
                                 progressDialog.dismiss();
@@ -265,6 +270,7 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
             }
         });
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -320,7 +326,7 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         Log.d("onactivityresutl ", "--> " + resultCode);
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode== RESULT_OK) {
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             Log.d("onactivityresutl ", "--> ");
             binding.ivPhoto.setVisibility(View.VISIBLE);
             // Optional: Konversi foto ke base64 dan simpan ke dataModel
@@ -331,10 +337,7 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
             String base64Image = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
             loadImageWithGlide(base64ToDrawable(base64Image, GeneratesClassQuestionActivity.this), binding.ivPhoto);
 
-            App app = (App) getApplication();
-            DataModel dataModel = app.getDataModel();
             dataModel.setPhotoAnswer(base64Image);
-            app.setDataModel(dataModel);
         }
     }
 
@@ -365,13 +368,8 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
                     // Get the download URL
                     imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
                         String downloadUrl = uri.toString();
-
-                        // Save the download URL to DataModel
-                        App app = (App) getApplication();
-                        DataModel dataModel = app.getDataModel();
                         dataModel.setPhotoAnswer(downloadUrl);
-                        dataModel.setType(binding.tvType.getText().toString());
-                        app.setDataModel(dataModel);
+                        dataModel.setTypeData(binding.tvType.getText().toString());
                         progressDialog.dismiss();
                         uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.llDraw)), "answer_image_" + System.currentTimeMillis());
 
@@ -539,6 +537,7 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
             return null;
         }
     }
+
     public void showIntroductionDialog() {
         visitStartTime = System.currentTimeMillis();
         // Inflate the binding layout manually
@@ -559,6 +558,7 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         });
 
     }
+
     public void updateTotalVisitingIntroduction(long visitStartTimeMillis) {
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
         DocumentReference userDocRef = firestore.collection("user").document(SessionManager.getId(this));
@@ -596,6 +596,7 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
             Log.e("Firestore", "Gagal update durasi", e);
         });
     }
+
     private String formatDuration(long millis) {
         long seconds = millis / 1000;
         long minutes = seconds / 60;

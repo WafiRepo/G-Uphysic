@@ -271,7 +271,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                         App app = (App) getApplication();
                         DataModel dataModel = app.getDataModel();
                         dataModel.setPhoto(downloadUrl);
-                        dataModel.setType(binding.tvType.getText().toString());
+                        dataModel.setTypeData(binding.tvType.getText().toString());
                         app.setDataModel(dataModel);
                         progressDialog.dismiss();
                         uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.llDraw)), "answer_image_" + System.currentTimeMillis());

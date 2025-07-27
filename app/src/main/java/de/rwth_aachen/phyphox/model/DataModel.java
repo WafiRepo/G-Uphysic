@@ -30,7 +30,7 @@ public class DataModel implements Parcelable {
     private String photoAnswer;
     private String dateTime;
     private String base64_5;
-    private String type;
+    private String typeData;
     private String desc;
 
     public DataModel(){
@@ -288,13 +288,7 @@ public class DataModel implements Parcelable {
         this.customerName = customerName;
     }
 
-    public String getType() {
-        return type;
-    }
 
-    public void setType(String type) {
-        this.type = type;
-    }
 
     public String getDesc() {
         return desc;
@@ -302,6 +296,14 @@ public class DataModel implements Parcelable {
 
     public void setDesc(String desc) {
         this.desc = desc;
+    }
+
+    public String getTypeData() {
+        return typeData;
+    }
+
+    public void setTypeData(String typeData) {
+        this.typeData = typeData;
     }
 }
 

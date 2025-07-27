@@ -80,6 +80,7 @@ public class GeneratesActivity extends AppCompatActivity {
     private Uri photoUri;
     private String currentPhotoPath;
     byte[] imageBytes;
+    private DataModel dataModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,7 +90,7 @@ public class GeneratesActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
         App app = (App) getApplication();
         apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
-        DataModel dataModel = app.getDataModel();
+        dataModel = app.getDataModel();
         boolean isFromMainMenu = getIntent().getBooleanExtra("isFromMainMenu", true);
         boolean isCustomQuestion = getIntent().getBooleanExtra("isCustomQuestion", false);
         boolean isCustomQuestionNew = getIntent().getBooleanExtra("isCustomQuestionNew", false);
@@ -224,7 +225,13 @@ public class GeneratesActivity extends AppCompatActivity {
             public void handleOnBackPressed() {
                 if (getIntent().getBooleanExtra("isFromMainMenu", true)) {
                     // Simpan progress ke Firestore tanpa ProgressDialog
-                    FirestoreUtil.addOrUpdateDocument("record", dataModel.getId(), dataModel,
+                    String table = "record";
+                    if (isCustomQuestionNew) {
+                        dataModel.setQuestion(binding.etQuestion.getText().toString());
+                        table = "questions";
+                    }
+                    dataModel.setTypeData(binding.tvType.getText().toString());
+                    FirestoreUtil.addOrUpdateDocument(table, dataModel.getId(), dataModel,
                             () -> {
                                 // Setelah simpan, langsung ke homepage
                                 Intent homeIntent = new Intent(GeneratesActivity.this, MainActivity.class);
@@ -335,9 +342,7 @@ public class GeneratesActivity extends AppCompatActivity {
                         BitmapDrawable drawable = base64ToDrawable(base64Image, GeneratesActivity.this);
                         if (drawable != null) {
                             loadImageWithGlide(drawable, binding.ivPhoto);
-
                             App app = (App) getApplication();
-                            DataModel dataModel = app.getDataModel();
                             dataModel.setPhotoAnswer(base64Image);
                             app.setDataModel(dataModel);
                         }
@@ -384,9 +389,8 @@ public class GeneratesActivity extends AppCompatActivity {
 
                         // Save the download URL to DataModel
                         App app = (App) getApplication();
-                        DataModel dataModel = app.getDataModel();
                         dataModel.setPhotoAnswer(downloadUrl);
-                        dataModel.setType(binding.tvType.getText().toString());
+                        dataModel.setTypeData(binding.tvType.getText().toString());
                         app.setDataModel(dataModel);
                         progressDialog.dismiss();
                         uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.llDraw)), "answer_image_" + System.currentTimeMillis());
@@ -459,8 +463,8 @@ public class GeneratesActivity extends AppCompatActivity {
 
                         // Save the download URL to DataModel
                         App app = (App) getApplication();
-                        DataModel dataModel = app.getDataModel();
                         dataModel.setPhotoDraw(downloadUrl);
+                        dataModel.setTypeData(binding.tvType.getText().toString());
                         app.setDataModel(dataModel);
 
                         // Enable the save button
@@ -481,13 +485,12 @@ public class GeneratesActivity extends AppCompatActivity {
                             documentId = String.valueOf(System.currentTimeMillis());
                         }
                         dataModel.setId(documentId);
-                        app.setDataModel(dataModel);
                         String table = "record";
                         if (isCustomQuestionNew) {
-                            dataModel.setType(binding.tvType.getText().toString());
                             dataModel.setQuestion(binding.etQuestion.getText().toString());
                             table = "questions";
                         }
+                        app.setDataModel(dataModel);
                         FirestoreUtil.addOrUpdateDocument(table, documentId, dataModel,
                                 () -> {
                                     saveProgressDialog.dismiss();
@@ -541,7 +544,6 @@ public class GeneratesActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse apiResponse = response.body();
                     App app = (App) getApplication();
-                    DataModel dataModel = app.getDataModel();
                     dataModel.setQuestion(apiResponse.getQuestions());
                     dataModel.setIdCustomer(SessionManager.getId(GeneratesActivity.this));
                     binding.tvQuestion.setText(apiResponse.getQuestions());
