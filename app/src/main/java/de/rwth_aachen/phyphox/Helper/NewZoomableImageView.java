@@ -10,7 +10,7 @@ import android.view.ScaleGestureDetector;
 
 import androidx.appcompat.widget.AppCompatImageView;
 
-public class NewZoomableImageView extends AppCompatImageView {
+public class    NewZoomableImageView extends AppCompatImageView {
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
 
         @Override

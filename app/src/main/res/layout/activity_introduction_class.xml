@@ -48,7 +48,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <de.rwth_aachen.phyphox.Helper.NewZoomableImageView
+            <com.github.chrisbanes.photoview.PhotoView
                 android:id="@+id/iv_circle"
                 android:layout_width="206dp"
                 android:layout_height="171dp"
@@ -63,7 +63,7 @@
                 android:layout_width="200dp"
                 android:layout_height="167dp"
                 android:layout_marginTop="16dp"
-                    android:background="@drawable/image_parent"
+                    android:src="@drawable/image_parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/iv_circle" />
@@ -74,7 +74,7 @@
                 android:layout_height="200dp"
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="16dp"
-                android:background="@drawable/image_ballet"
+                android:src="@drawable/image_ballet"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tv_see" />

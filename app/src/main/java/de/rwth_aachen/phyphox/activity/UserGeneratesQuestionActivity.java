@@ -136,7 +136,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
             public void onClick(View v) {
                 binding.btnNext.setEnabled(false);
                 if (imageBytes.length == 0) {
-                    uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.drawView)), "answer_image_" + System.currentTimeMillis());
+                    uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.llDraw)), "answer_image_" + System.currentTimeMillis());
                 } else {
                     uploadImageCameraToFirestore(imageBytes, "answer_image_" + System.currentTimeMillis());
                 }
@@ -274,7 +274,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                         dataModel.setType(binding.tvType.getText().toString());
                         app.setDataModel(dataModel);
                         progressDialog.dismiss();
-                        uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.drawView)), "answer_image_" + System.currentTimeMillis());
+                        uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.llDraw)), "answer_image_" + System.currentTimeMillis());
 
                     });
                 })

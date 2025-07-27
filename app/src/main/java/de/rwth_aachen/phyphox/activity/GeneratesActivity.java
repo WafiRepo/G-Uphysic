@@ -13,6 +13,8 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.se.omapi.Session;
 import android.util.Base64;
@@ -45,9 +47,14 @@ import com.google.firebase.storage.UploadTask;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import de.rwth_aachen.phyphox.App;
 import de.rwth_aachen.phyphox.Helper.FirestoreUtil;
@@ -91,13 +98,16 @@ public class GeneratesActivity extends AppCompatActivity {
         } else {
             if (isCustomQuestion) {
                 FirebaseFirestore db = FirebaseFirestore.getInstance();
-
+                if(!dataModel.getIdCustomer().isEmpty()){
                 db.collection("user").document(dataModel.getIdCustomer()).get().addOnSuccessListener(userDoc -> {
                     String userName = userDoc.getString("name");
                     dataModel.setDesc(SessionManager.getName(this)+" Mengerjakan pertanyaan dari "+userName);
                 }).addOnFailureListener(e -> {
 
                 });
+                }
+
+
                 if (!dataModel.getBase64().isEmpty()) {
                     loadImage(dataModel.getBase64(), binding.iv);
                     binding.iv.setVisibility(View.VISIBLE);
@@ -184,7 +194,7 @@ public class GeneratesActivity extends AppCompatActivity {
 
             // Upload image terlebih dahulu (dari drawView atau imageBytes)
             if (imageBytes == null) {
-                uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.drawView)), "answer_image_" + System.currentTimeMillis());
+                uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.llDraw)), "answer_image_" + System.currentTimeMillis());
             } else {
                 uploadImageToFirestoreAnswer(imageBytes, "answer_image_" + System.currentTimeMillis());
             }
@@ -369,7 +379,7 @@ public class GeneratesActivity extends AppCompatActivity {
                         dataModel.setType(binding.tvType.getText().toString());
                         app.setDataModel(dataModel);
                         progressDialog.dismiss();
-                        uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.drawView)), "answer_image_" + System.currentTimeMillis());
+                        uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.llDraw)), "answer_image_" + System.currentTimeMillis());
 
                     });
                 })
@@ -641,24 +651,27 @@ public class GeneratesActivity extends AppCompatActivity {
                 });
     }
     private void loadImage(String url, ImageView imageView) {
-        if(url.contains("http")) {
-            Glide.with(this)
-                    .load(url)
-                    .into(new CustomTarget<Drawable>() {
-                        @Override
-                        public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
-                            imageView.setBackground(resource); // Set as background
-                        }
+        if (url.contains("http")) {
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            Handler handler = new Handler(Looper.getMainLooper());
 
-                        @Override
-                        public void onLoadCleared(@Nullable Drawable placeholder) {
-                            // Handle case when the image is cleared
-                        }
-                    });
-        }else{
+            executor.execute(() -> {
+                String base64 = imageUrlToBase64(url);
+
+                handler.post(() -> {
+                    if (!base64.isEmpty()) {
+                        loadImageWithGlide(base64ToDrawable(base64, this), imageView);
+                    } else {
+                        Log.e("loadImage", "Failed to convert image to base64");
+                    }
+                });
+            });
+
+        } else {
             loadImageWithGlide(base64ToDrawable(url, GeneratesActivity.this), imageView);
         }
     }
+
 
     public BitmapDrawable base64ToDrawable(String base64String, Context context) {
         try {
@@ -759,5 +772,24 @@ public class GeneratesActivity extends AppCompatActivity {
             return String.format(Locale.getDefault(), "%d detik", seconds);
         }
     }
+    public static String imageUrlToBase64(String urlStr) {
+        try {
+            URL url = new URL(urlStr);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setDoInput(true);
+            connection.connect();
 
+            InputStream input = connection.getInputStream();
+            Bitmap bitmap = BitmapFactory.decodeStream(input);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream); // or JPEG
+            byte[] byteArray = outputStream.toByteArray();
+
+            return Base64.encodeToString(byteArray, Base64.NO_WRAP);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
 }
