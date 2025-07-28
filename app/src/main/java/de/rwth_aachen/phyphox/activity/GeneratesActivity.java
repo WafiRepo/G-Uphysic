@@ -144,9 +144,13 @@ public class GeneratesActivity extends AppCompatActivity {
                     }
 
                     binding.tvQuestion.setText(dataModel.getQuestion());
+                    binding.tvType.setText(dataModel.getTypeData());
                 }
 
             } else {
+                int totalEdit =dataModel.getTotalEdit()+1;
+                dataModel.setTotalEdit(totalEdit);
+                binding.tvType.setText(dataModel.getTypeData());
                 binding.tvQuestion.setText(dataModel.getQuestion());
                 // Handle Graph Images
                 if (!dataModel.getBase64().isEmpty()) {

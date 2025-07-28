@@ -104,6 +104,9 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         } else {
             Log.d("getTypeQuestion ", "---> " + dataModel.getBase64());
             binding.tvQuestion.setText(dataModel.getQuestion());
+            binding.tvType.setText(dataModel.getTypeData());
+            int totalEdit =dataModel.getTotalEdit()+1;
+            dataModel.setTotalEdit(totalEdit);
             // Handle Graph Images
             if (dataModel.getTypeQuestion().equals("Advanced")) {
                 Log.d("getTypeQuestion ", "---> " + dataModel.getBase64());

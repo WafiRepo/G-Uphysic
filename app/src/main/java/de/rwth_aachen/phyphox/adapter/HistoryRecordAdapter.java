@@ -65,6 +65,7 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
 
         if (item.getFinished()) {
             holder.ivCompletedAction.setVisibility(View.VISIBLE);
+            holder.tvEdit.setVisibility(View.VISIBLE);
             holder.tvInProgressAction.setVisibility(View.GONE);
             holder.tvStatus.setText("Completed");
             holder.tvStatus.setBackgroundResource(R.drawable.background_8_gray);
@@ -73,6 +74,21 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
                 app.setDataModel(item);
                 Intent intent = new Intent(context, DetailRecordActivity.class);
                 context.startActivity(intent);
+            });
+            holder.tvEdit.setOnClickListener(view -> {
+                if (item.getTopics().equals("Out Class") || item.getTopics().equals("In Class")) {
+                    Intent intent = new Intent(context, GeneratesClassQuestionActivity.class);
+                    intent.putExtra("isFromMainMenu", false);
+                    App app = (App) application;
+                    app.setDataModel(item);
+                    context.startActivity(intent);
+                }else{
+                    Intent intent = new Intent(context, GeneratesActivity.class);
+                    intent.putExtra("isFromMainMenu", false);
+                    App app = (App) application;
+                    app.setDataModel(item);
+                    context.startActivity(intent);
+                }
             });
         } else {
             holder.ivCompletedAction.setVisibility(View.GONE);
@@ -112,7 +128,7 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTopic, tvType, tvStatus, tvInProgressAction;
+        TextView tvTopic, tvType, tvStatus, tvInProgressAction, tvEdit;
         Button btnAction;
         ImageView ivCompletedAction;
         CheckBox cbSelect;
@@ -121,6 +137,7 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
             super(itemView);
             tvTopic = itemView.findViewById(R.id.tvTopic);
             tvType = itemView.findViewById(R.id.tvType);
+            tvEdit = itemView.findViewById(R.id.tvEdit);
             tvStatus = itemView.findViewById(R.id.tvStatus);
             tvInProgressAction = itemView.findViewById(R.id.tvInProgressAction);
             ivCompletedAction = itemView.findViewById(R.id.ivCompletedAction);

@@ -32,6 +32,7 @@ public class DataModel implements Parcelable {
     private String base64_5;
     private String typeData;
     private String desc;
+    private int totalEdit;
 
     public DataModel(){
         this.photo = "";
@@ -54,6 +55,7 @@ public class DataModel implements Parcelable {
         this.photoAnswer = "";
         this.desc = "";
         this.isFinished = false;
+        this.totalEdit = 0;
         Date now = Calendar.getInstance().getTime();
 
         // Format waktu
@@ -92,6 +94,7 @@ public class DataModel implements Parcelable {
         base64_3 = in.readString();
         base64_4 = in.readString();
         photoAnswer = in.readString();
+        totalEdit = in.readInt();
     }
 
     @Override
@@ -114,6 +117,7 @@ public class DataModel implements Parcelable {
         dest.writeString(base64_3);
         dest.writeString(base64_4);
         dest.writeString(photoAnswer);
+        dest.writeInt(totalEdit);
     }
 
     @Override
@@ -304,6 +308,14 @@ public class DataModel implements Parcelable {
 
     public void setTypeData(String typeData) {
         this.typeData = typeData;
+    }
+
+    public int getTotalEdit() {
+        return totalEdit;
+    }
+
+    public void setTotalEdit(int totalEdit) {
+        this.totalEdit = totalEdit;
     }
 }
 
