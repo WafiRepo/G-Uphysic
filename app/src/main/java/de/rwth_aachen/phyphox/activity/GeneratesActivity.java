@@ -158,6 +158,30 @@ public class GeneratesActivity extends AppCompatActivity {
 //                binding.iv.setBackground(base64ToDrawable(dataModel.getBase64(), GeneratesActivity.this));
                     binding.iv.setVisibility(View.VISIBLE);
                 }
+                if (!dataModel.getBase64().isEmpty()) {
+                    loadImage(dataModel.getBase64(), binding.iv);
+                    binding.iv.setVisibility(View.VISIBLE);
+                }
+                if (!dataModel.getBase64_2().isEmpty()) {
+                    loadImage(dataModel.getBase64_2(), binding.iv2);
+                    binding.iv2.setVisibility(View.VISIBLE);
+                }
+                if (!dataModel.getBase64_3().isEmpty()) {
+                    loadImage(dataModel.getBase64_3(), binding.iv3);
+                    binding.iv3.setVisibility(View.VISIBLE);
+                }
+                if (!dataModel.getBase64_4().isEmpty()) {
+                    loadImage(dataModel.getBase64_4(), binding.iv4);
+                    binding.iv4.setVisibility(View.VISIBLE);
+                }
+                if (dataModel.getBase64_5() != null && !dataModel.getBase64_5().isEmpty()) {
+                    loadImage(dataModel.getBase64_5(), binding.iv5);
+                    binding.iv5.setVisibility(View.VISIBLE);
+                }
+                if (!dataModel.getPhoto().isEmpty()) {
+                    loadImage(dataModel.getPhoto(), binding.ivPhoto);
+                    binding.ivPhoto.setVisibility(View.VISIBLE);
+                }
             }
 
         }
