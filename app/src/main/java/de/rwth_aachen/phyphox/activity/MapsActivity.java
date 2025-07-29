@@ -69,7 +69,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
         App app = (App) getApplication();
         DataModel dataModel = app.getDataModel();
-        loadImageWithGlide(dataModel.getPhotoDraw(), binding.imgLeft);
+        if(!dataModel.getPhotoDraw().isEmpty()){
+            loadImageWithGlide(dataModel.getPhotoDraw().get(dataModel.getPhotoDraw().size()-1), binding.imgLeft);
+        }
         loadImageWithGlide(dataModel.getPhoto(), binding.imgRight);
         // Set up the map
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()

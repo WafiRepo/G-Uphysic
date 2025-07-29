@@ -51,6 +51,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -152,6 +153,10 @@ public class GeneratesActivity extends AppCompatActivity {
                 dataModel.setTotalEdit(totalEdit);
                 binding.tvType.setText(dataModel.getTypeData());
                 binding.tvQuestion.setText(dataModel.getQuestion());
+                if(!dataModel.getPhotoDraw().isEmpty()){
+                    binding.ivDraw.setVisibility(View.VISIBLE);
+                    loadImage(dataModel.getPhotoDraw().get(dataModel.getPhotoDraw().size()-1), binding.ivDraw);
+                }
                 // Handle Graph Images
                 if (!dataModel.getBase64().isEmpty()) {
                     loadImageWithGlide(base64ToDrawable(dataModel.getBase64(), GeneratesActivity.this), binding.iv);
@@ -491,7 +496,9 @@ public class GeneratesActivity extends AppCompatActivity {
 
                         // Save the download URL to DataModel
                         App app = (App) getApplication();
-                        dataModel.setPhotoDraw(downloadUrl);
+                        ArrayList<String> photoDraws= dataModel.getPhotoDraw();
+                        photoDraws.add(downloadUrl);
+                        dataModel.setPhotoDraw(photoDraws);
                         dataModel.setTypeData(binding.tvType.getText().toString());
                         app.setDataModel(dataModel);
 

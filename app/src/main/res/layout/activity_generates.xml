@@ -218,6 +218,13 @@
                 android:layout_height="wrap_content"
                 android:scaleType="fitXY"
                 android:visibility="gone" />
+            <com.github.chrisbanes.photoview.PhotoView
+                android:id="@+id/ivDraw"
+                android:layout_marginTop="8dp"
+                android:scaleType="fitXY"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"/>
         <LinearLayout
             android:id="@+id/llDraw"
             android:orientation="vertical"

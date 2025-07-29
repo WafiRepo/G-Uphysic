@@ -54,7 +54,7 @@ public class DetailRecordActivity extends AppCompatActivity {
         App app = (App) getApplication();
         DataModel data = app.getDataModel();
             binding.tvQuestion.setText(data.getQuestion());
-        
+
         // Handle Graph/Image 1 (base64)
             if (data.getBase64() != null && !data.getBase64().isEmpty()) {
                 if (data.getTopics().equals("Out Class") || data.getTopics().equals("In Class")) {
@@ -83,7 +83,7 @@ public class DetailRecordActivity extends AppCompatActivity {
                 binding.tvGraphQuestion.setVisibility(View.GONE);
                 binding.cvGraph.setVisibility(View.GONE);
             }
-        
+
         // Handle Image 2 (base64_2) - hanya untuk Advanced question
         if (data.getBase64_2() != null && !data.getBase64_2().isEmpty()) {
             if (data.getTopics().equals("Out Class") || data.getTopics().equals("In Class")) {
@@ -104,28 +104,28 @@ public class DetailRecordActivity extends AppCompatActivity {
                 binding.cvImage2.setVisibility(View.VISIBLE);
             }
         }
-        
+
         // Handle Table 1 (base64_3)
         if (data.getBase64_3() != null && !data.getBase64_3().isEmpty()) {
             binding.ivTable1.setBackground(base64ToDrawable(data.getBase64_3(), DetailRecordActivity.this));
             binding.tvTable1.setVisibility(View.VISIBLE);
             binding.cvTable1.setVisibility(View.VISIBLE);
         }
-        
+
         // Handle Table 2 (base64_4)
         if (data.getBase64_4() != null && !data.getBase64_4().isEmpty()) {
             binding.ivTable2.setBackground(base64ToDrawable(data.getBase64_4(), DetailRecordActivity.this));
             binding.tvTable2.setVisibility(View.VISIBLE);
             binding.cvTable2.setVisibility(View.VISIBLE);
         }
-        
+
         // Handle Image 3 (base64_5)
         if (data.getBase64_5() != null && !data.getBase64_5().isEmpty()) {
             binding.ivImage3.setBackground(base64ToDrawable(data.getBase64_5(), DetailRecordActivity.this));
             binding.tvImage3.setVisibility(View.VISIBLE);
             binding.cvImage3.setVisibility(View.VISIBLE);
         }
-        
+
         // Tampilkan foto jawaban jika ada
         if (data.getPhoto() != null && !data.getPhoto().isEmpty()) {
             loadImageWithGlide(data.getPhoto(), binding.ivImage);
@@ -135,7 +135,9 @@ public class DetailRecordActivity extends AppCompatActivity {
             binding.ivImage.setVisibility(View.GONE);
             binding.cvImage.setVisibility(View.GONE);
         }
-            loadImageWithGlide(data.getPhotoDraw(), binding.ivFeedBack);
+        if(!data.getPhotoDraw().isEmpty()){
+            loadImageWithGlide(data.getPhotoDraw().get(data.getPhotoDraw().size()-1), binding.ivFeedBack);
+        }
     }
 
     private void loadImageWithGlide(String url, ImageView imageView) {

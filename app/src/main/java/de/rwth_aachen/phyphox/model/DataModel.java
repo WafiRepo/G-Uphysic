@@ -4,13 +4,14 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 
 public class DataModel implements Parcelable {
 
     private String photo;
-    private String photoDraw;
+    private ArrayList<String> photoDraw;
     private double latitude;
     private double longitude;
     private String locationName;
@@ -36,7 +37,7 @@ public class DataModel implements Parcelable {
 
     public DataModel(){
         this.photo = "";
-        this.photoDraw = "";
+        this.photoDraw = new ArrayList<>();
         this.latitude = 0.0;
         this.longitude = 0.0;
         this.locationName = "";
@@ -64,8 +65,7 @@ public class DataModel implements Parcelable {
         this.dateTime= formatted;
     }
 
-    // Constructor, Getter, and Setter
-    public DataModel(String photo,String photoDraw, double latitude, double longitude, String locationName) {
+    public DataModel(String photo, ArrayList<String> photoDraw, double latitude, double longitude, String locationName) {
         this.photo = photo;
         this.photoDraw = photoDraw;
         this.latitude = latitude;
@@ -73,10 +73,9 @@ public class DataModel implements Parcelable {
         this.locationName = locationName;
     }
 
-
     protected DataModel(Parcel in) {
         photo = in.readString();
-        photoDraw = in.readString();
+        photoDraw = in.createStringArrayList(); // read ArrayList<String>
         latitude = in.readDouble();
         longitude = in.readDouble();
         locationName = in.readString();
@@ -100,7 +99,7 @@ public class DataModel implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(photo);
-        dest.writeString(photoDraw);
+        dest.writeStringList(photoDraw); // write ArrayList<String>
         dest.writeDouble(latitude);
         dest.writeDouble(longitude);
         dest.writeString(locationName);
@@ -141,7 +140,11 @@ public class DataModel implements Parcelable {
         this.photo = photo;
     }
 
-    public void setPhotoDraw(String photoDraw) {
+    public ArrayList<String> getPhotoDraw() {
+        return photoDraw;
+    }
+
+    public void setPhotoDraw(ArrayList<String> photoDraw) {
         this.photoDraw = photoDraw;
     }
 
@@ -155,10 +158,6 @@ public class DataModel implements Parcelable {
 
     public void setLocationName(String locationName) {
         this.locationName = locationName;
-    }
-
-    public String getPhotoDraw() {
-        return photoDraw;
     }
 
     public String getPhoto() {

@@ -9,6 +9,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
 import android.util.Pair;
@@ -35,6 +37,10 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -70,6 +76,8 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import retrofit2.Response;
 
@@ -105,6 +113,10 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
             Log.d("getTypeQuestion ", "---> " + dataModel.getBase64());
             binding.tvQuestion.setText(dataModel.getQuestion());
             binding.tvType.setText(dataModel.getTypeData());
+            if(!dataModel.getPhotoDraw().isEmpty()){
+                binding.ivDraw.setVisibility(View.VISIBLE);
+                loadImage(dataModel.getPhotoDraw().get(dataModel.getPhotoDraw().size()-1), binding.ivDraw);
+            }
             int totalEdit =dataModel.getTotalEdit()+1;
             dataModel.setTotalEdit(totalEdit);
             // Handle Graph Images
@@ -439,7 +451,9 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
                         // Save the download URL to DataModel
                         App app = (App) getApplication();
                         DataModel dataModel = app.getDataModel();
-                        dataModel.setPhotoDraw(downloadUrl);
+                        ArrayList<String> photoDraws= dataModel.getPhotoDraw();
+                        photoDraws.add(downloadUrl);
+                        dataModel.setPhotoDraw(photoDraws);
                         app.setDataModel(dataModel);
 
                         // Enable the save button
@@ -540,6 +554,42 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
             return null;
         }
     }
+    private void loadImage(String url, ImageView imageView) {
+        if (url.contains("http")) {
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            Handler handler = new Handler(Looper.getMainLooper());
+
+            executor.execute(() -> {
+                String base64 = imageUrlToBase64(url);
+
+                handler.post(() -> {
+                    if (!base64.isEmpty()) {
+                        loadImageWithGlide(base64ToDrawable(base64, this), imageView);
+                    } else {
+                        Log.e("loadImage", "Failed to convert image to base64");
+                    }
+                });
+            });
+
+        } else {
+            loadImageWithGlide(base64ToDrawable(url, GeneratesClassQuestionActivity.this), imageView);
+        }
+    }
+    private void loadImageWithGlide(String url, ImageView imageView) {
+        Glide.with(this)
+                .load(url)
+                .into(new CustomTarget<Drawable>() {
+                    @Override
+                    public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                        imageView.setBackground(resource); // Set as background
+                    }
+
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {
+                        // Handle case when the image is cleared
+                    }
+                });
+    }
 
     public void showIntroductionDialog() {
         visitStartTime = System.currentTimeMillis();
@@ -615,5 +665,24 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
             return String.format(Locale.getDefault(), "%d detik", seconds);
         }
     }
+    public static String imageUrlToBase64(String urlStr) {
+        try {
+            URL url = new URL(urlStr);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setDoInput(true);
+            connection.connect();
 
+            InputStream input = connection.getInputStream();
+            Bitmap bitmap = BitmapFactory.decodeStream(input);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream); // or JPEG
+            byte[] byteArray = outputStream.toByteArray();
+
+            return Base64.encodeToString(byteArray, Base64.NO_WRAP);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
 }
