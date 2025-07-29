@@ -56,6 +56,7 @@ import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TextView;
+import android.graphics.Color;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
@@ -117,6 +118,7 @@ import de.rwth_aachen.phyphox.Helper.DecimalTextWatcher;
 import de.rwth_aachen.phyphox.Helper.Helper;
 import de.rwth_aachen.phyphox.NetworkConnection.NetworkConnection;
 import de.rwth_aachen.phyphox.NetworkConnection.RadiusResponse;
+import de.rwth_aachen.phyphox.NetworkConnection.RadiusUpdateRequest;
 import de.rwth_aachen.phyphox.activity.DrawActivity;
 import de.rwth_aachen.phyphox.NetworkConnection.BufferData;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
@@ -399,13 +401,33 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
     }
 
     private void share(Bitmap bitmap) {
-        String pathofBmp =
-                MediaStore.Images.Media.insertImage(this.getContentResolver(),
-                        bitmap, "title", null);
-        Uri uri = Uri.parse(pathofBmp);
-        Intent intent = new Intent(Experiment.this, DrawActivity.class);
-        intent.putExtra("Uri Image", uri);
-        startActivity(intent);
+        try {
+            // Save the bitmap to a file
+            File file = new File(getExternalCacheDir(), "screenshot_" + System.currentTimeMillis() + ".jpg");
+            FileOutputStream out = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+            out.flush();
+            out.close();
+
+            // Get the file's content URI using FileProvider
+            Uri contentUri = FileProvider.getUriForFile(this,
+                getPackageName() + ".fileprovider",
+                file);
+
+            // Create share intent
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("image/jpeg");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            // Start the share activity
+            startActivity(Intent.createChooser(shareIntent, "Share via"));
+
+        } catch (Exception e) {
+            Log.e("Share", "Error sharing image", e);
+            Toast.makeText(this, "Error sharing image: " + e.getMessage(),
+                Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -1470,8 +1492,9 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
                 }
             }
 
-            // Ambil screenshot dan buka DrawActivity, tanpa harus menunggu measurement
-            takeScreenshotWithData();
+            // Panggil getRadius() untuk menampilkan dialog konfirmasi radius
+            // Navigasi ke DrawActivity hanya akan terjadi setelah user mengkonfirmasi radius
+            getRadius();
             return true;
         }
 
@@ -2274,26 +2297,145 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
     private void getRadius() {
         ApiService apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
 
-        // Ambil user_id dari SessionManager
+        // Get user_id from SessionManager
         String userId = de.rwth_aachen.phyphox.Helper.SessionManager.getId(this);
+
+        // Show loading dialog
+        final ProgressDialog loadingDialog = new ProgressDialog(this);
+        loadingDialog.setMessage("Menghitung radius...");
+        loadingDialog.setCancelable(false);
+        loadingDialog.show();
 
         // Make the GET request
         apiService.calculateRadius(userId).enqueue(new Callback<RadiusResponse>() {
             @Override
             public void onResponse(Call<RadiusResponse> call, Response<RadiusResponse> response) {
+                loadingDialog.dismiss();
                 if (response.isSuccessful() && response.body() != null) {
                     float radius = response.body().getRadius();
                     Log.d("getRadius", "Calculated Radius: " + radius);
+                    // Show dialog with the radius value
+                    showRadiusDialog(radius, userId);
                 } else {
                     Log.e("getRadius", "Response unsuccessful: " + response.message());
+                    showErrorDialog("Gagal mendapatkan radius: " + response.message());
                 }
             }
 
             @Override
             public void onFailure(Call<RadiusResponse> call, Throwable t) {
+                loadingDialog.dismiss();
                 Log.e("getRadius", "API call failed: " + t.getMessage());
+                showErrorDialog("Koneksi gagal: " + t.getMessage());
             }
         });
+    }
+
+    private void showRadiusDialog(final float radius, final String userId) {
+        // Create dialog with custom layout
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_radius, null);
+
+        final EditText etRadius = dialogView.findViewById(R.id.et_radius);
+        etRadius.setText(String.valueOf(radius));
+        etRadius.setTextColor(Color.BLACK);
+
+        builder.setView(dialogView)
+                .setTitle("Radius Lingkaran")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        try {
+                            // Parse the radius input
+                            float newRadius = Float.parseFloat(etRadius.getText().toString());
+
+                            // Check if the radius has actually changed
+                            if (newRadius != radius) {
+                                updateRadius(userId, newRadius);
+                            } else {
+                                // If the radius hasn't changed, proceed directly to screenshot and DrawActivity
+                                new AlertDialog.Builder(Experiment.this)
+                                    .setTitle("Konfirmasi")
+                                    .setMessage("Radius tidak berubah, lanjutkan ke halaman berikutnya?")
+                                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            takeScreenshotOnly();
+                                        }
+                                    })
+                                    .setNegativeButton("Batal", null)
+                                    .show();
+                            }
+                        } catch (NumberFormatException e) {
+                            showErrorDialog("Nilai radius tidak valid");
+                        }
+                    }
+                })
+                .setNegativeButton("Batal", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void updateRadius(String userId, float newRadius) {
+        // Show loading dialog
+        final ProgressDialog loadingDialog = new ProgressDialog(this);
+        loadingDialog.setMessage("Menyimpan radius...");
+        loadingDialog.setCancelable(false);
+        loadingDialog.show();
+
+        ApiService apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
+
+        apiService.replaceRadius(userId, newRadius).enqueue(new Callback<RadiusResponse>() {
+            @Override
+            public void onResponse(Call<RadiusResponse> call, Response<RadiusResponse> response) {
+                loadingDialog.dismiss();
+                if (response.isSuccessful() && response.body() != null) {
+                    float updatedRadius = response.body().getRadius();
+                    // Show success message and then take screenshot and open DrawActivity
+                    new AlertDialog.Builder(Experiment.this)
+                        .setTitle("Berhasil")
+                        .setMessage("Radius berhasil diperbarui")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                takeScreenshotOnly();
+                            }
+                        })
+                        .show();
+                } else {
+                    showErrorDialog("Gagal memperbarui radius: " + response.message());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<RadiusResponse> call, Throwable t) {
+                loadingDialog.dismiss();
+                showErrorDialog("Koneksi gagal: " + t.getMessage());
+            }
+        });
+    }
+
+    private void showErrorDialog(String message) {
+        new AlertDialog.Builder(this)
+                .setTitle("Terjadi Kesalahan")
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show();
+    }
+
+    private void showSuccessDialog(String message) {
+        new AlertDialog.Builder(this)
+                .setTitle("Berhasil")
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show();
     }
 
     // Method untuk mengambil screenshot dengan data yang benar
@@ -2386,19 +2528,19 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
 
             // Coba screenshot dari view yang berbeda untuk mendapatkan data yang benar
             View screenView = null;
-            
+
             // Coba dari view_pager terlebih dahulu
             if (pager != null) {
                 screenView = pager.getRootView();
                 Log.d("SCREENSHOT_DEBUG", "Using pager root view for screenshot");
             }
-            
+
             // Jika pager null, coba dari root layout
             if (screenView == null) {
                 screenView = findViewById(android.R.id.content);
                 Log.d("SCREENSHOT_DEBUG", "Using content root view for screenshot");
             }
-            
+
             // Jika masih null, gunakan root view
             if (screenView == null) {
                 screenView = findViewById(R.id.rootLayout);
@@ -2415,5 +2557,68 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
                 Log.e("SCREENSHOT_DEBUG", "No suitable view found for screenshot");
             }
         }, 500); // Tunggu 500ms agar UI ter-update
+    }
+
+    // Method untuk mengambil screenshot tanpa mengirim data ke server
+    private void takeScreenshotOnly() {
+        Log.d("SCREENSHOT_DEBUG", "Taking screenshot without sending data to server...");
+        
+        // Existing Screenshot and Intent code
+        final String fileName = experiment != null ? experiment.title.replaceAll("[^0-9a-zA-Z \\-_]", "") : "phyphox";
+        File file = new File(this.getCacheDir(), "/" + (fileName.isEmpty() ? "phyphox" : fileName) + " " + (new SimpleDateFormat("yyyy-MM-dd HH-mm-ss")).format(new Date()) + ".png");
+        final Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".exportProvider", file);
+
+        Helper.ScreenshotCallback callback = new Helper.ScreenshotCallback() {
+            @Override
+            public void onSuccess(Bitmap bitmap) {
+                try {
+                    FileOutputStream out = new FileOutputStream(file);
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out);
+                    out.flush();
+                    out.close();
+                    String path = file.getPath();
+                    bitmap.recycle();
+
+                    Log.d("SCREENSHOT_DEBUG", "Screenshot saved to: " + path);
+
+                    Intent intent = new Intent(Experiment.this, DrawActivity.class);
+                    intent.putExtra("Uri Image", path);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Log.e("action_share", "Unhandled exception", e);
+                }
+            }
+        };
+
+        // Coba screenshot dari view yang berbeda untuk mendapatkan data yang benar
+        View screenView = null;
+
+        // Coba dari view_pager terlebih dahulu
+        if (pager != null) {
+            screenView = pager.getRootView();
+            Log.d("SCREENSHOT_DEBUG", "Using pager root view for screenshot");
+        }
+
+        // Jika pager null, coba dari root layout
+        if (screenView == null) {
+            screenView = findViewById(android.R.id.content);
+            Log.d("SCREENSHOT_DEBUG", "Using content root view for screenshot");
+        }
+
+        // Jika masih null, gunakan root view
+        if (screenView == null) {
+            screenView = findViewById(R.id.rootLayout);
+            if (screenView != null) {
+                screenView = screenView.getRootView();
+                Log.d("SCREENSHOT_DEBUG", "Using rootLayout root view for screenshot");
+            }
+        }
+
+        if (screenView != null) {
+            Helper.getScreenshot(screenView, this.getWindow(), callback);
+            Log.d("SCREENSHOT_DEBUG", "Screenshot process started");
+        } else {
+            Log.e("SCREENSHOT_DEBUG", "No suitable view found for screenshot");
+        }
     }
 }
