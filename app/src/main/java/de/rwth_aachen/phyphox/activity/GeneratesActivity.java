@@ -100,6 +100,7 @@ public class GeneratesActivity extends AppCompatActivity {
             fetchAdvancedQuestion("indonesia", dataModel.getTypeQuestion());
         } else {
             if (isCustomQuestion) {
+                dataModel.setCustomerName(SessionManager.getName(this));
                 if (isCustomQuestionNew) {
                     binding.etQuestion.setVisibility(View.VISIBLE);
                     binding.tvQuestion.setVisibility(View.GONE);
