@@ -308,6 +308,60 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
         return byteArrayOutputStream.toByteArray();
     }
 
+    /**
+     * Compress or truncate base64 string to stay under Firestore limit (1MB)
+     * @param base64String Original base64 string
+     * @return Compressed or truncated base64 string
+     */
+    private String compressBase64ForFirestore(String base64String) {
+        if (base64String == null || base64String.isEmpty()) {
+            return base64String;
+        }
+        
+        // Firestore limit is 1048487 bytes (~1MB)
+        final int FIRESTORE_LIMIT = 1000000; // Leave some margin
+        
+        if (base64String.length() > FIRESTORE_LIMIT) {
+            Log.w("FIRESTORE_COMPRESS", "Base64 string too large (" + base64String.length() + " bytes), compressing...");
+            
+            try {
+                // Try to compress the image data
+                String base64Data = base64String;
+                if (base64String.contains(",")) {
+                    base64Data = base64String.split(",")[1];
+                }
+                
+                byte[] decodedBytes = Base64.decode(base64Data, Base64.NO_WRAP);
+                Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                
+                if (bitmap != null) {
+                    // Compress with lower quality
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    int quality = 30; // Start with low quality
+                    
+                    do {
+                        outputStream.reset();
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream);
+                        quality -= 5; // Reduce quality further if still too large
+                    } while (outputStream.size() > FIRESTORE_LIMIT && quality > 5);
+                    
+                    String compressedBase64 = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP);
+                    Log.d("FIRESTORE_COMPRESS", "Compressed from " + base64String.length() + " to " + compressedBase64.length() + " bytes");
+                    return compressedBase64;
+                }
+            } catch (Exception e) {
+                Log.e("FIRESTORE_COMPRESS", "Error compressing image: " + e.getMessage());
+            }
+            
+            // If compression fails, truncate the string
+            String truncated = base64String.substring(0, FIRESTORE_LIMIT);
+            Log.w("FIRESTORE_COMPRESS", "Compression failed, truncated to " + truncated.length() + " bytes");
+            return truncated;
+        }
+        
+        return base64String;
+    }
+
     public void uploadImageToFirestore(byte[] imageData, String fileName) {
         // Create and configure ProgressDialog
         ProgressDialog progressDialog = new ProgressDialog(this); // Replace 'this' with 'requireContext()' if inside a Fragment
@@ -393,54 +447,68 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
 
                     // Handle Graph Images (graphImages -> iv)
                     if (apiResponse.getGraphImages() != null && !apiResponse.getGraphImages().isEmpty()) {
-                        dataModel.setBase64(apiResponse.getGraphImages().get(0));
-                        Log.d("getGraphImages --&> ", "" + apiResponse.getGraphImages().get(0));
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getGraphImages().get(0), UserGeneratesQuestionActivity.this), binding.iv);
+                        String originalBase64 = apiResponse.getGraphImages().get(0);
+                        String compressedBase64 = compressBase64ForFirestore(originalBase64);
+                        dataModel.setBase64(compressedBase64);
+                        Log.d("getGraphImages --&> ", "" + originalBase64.substring(0, Math.min(50, originalBase64.length())));
+                        loadImageWithGlide(base64ToDrawable(originalBase64, UserGeneratesQuestionActivity.this), binding.iv);
                         binding.iv.setVisibility(View.VISIBLE);
                     }
                     // Handle Image (image1_base64 -> iv2)
                     if (apiResponse.getImage1_base64() != null && !apiResponse.getImage1_base64().isEmpty()) {
-                        dataModel.setBase64_2(apiResponse.getImage1_base64());
-                        Log.d("getImage1_base64 --&> ", "" + apiResponse.getImage1_base64());
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getImage1_base64(), UserGeneratesQuestionActivity.this), binding.iv2);
+                        String originalBase64_2 = apiResponse.getImage1_base64();
+                        String compressedBase64_2 = compressBase64ForFirestore(originalBase64_2);
+                        dataModel.setBase64_2(compressedBase64_2);
+                        Log.d("getImage1_base64 --&> ", "" + originalBase64_2.substring(0, Math.min(50, originalBase64_2.length())));
+                        loadImageWithGlide(base64ToDrawable(originalBase64_2, UserGeneratesQuestionActivity.this), binding.iv2);
                         binding.iv2.setVisibility(View.VISIBLE);
                     }
                     // Handle Table 1 (table_img_base64_1 -> iv3)
                     if (apiResponse.getTable_img_base64_1() != null && !apiResponse.getTable_img_base64_1().isEmpty()) {
-                        dataModel.setBase64_3(apiResponse.getTable_img_base64_1());
-                        Log.d("getTable_img_base64_1 --&> ", "" + apiResponse.getTable_img_base64_1());
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getTable_img_base64_1(), UserGeneratesQuestionActivity.this), binding.iv3);
+                        String originalBase64_3 = apiResponse.getTable_img_base64_1();
+                        String compressedBase64_3 = compressBase64ForFirestore(originalBase64_3);
+                        dataModel.setBase64_3(compressedBase64_3);
+                        Log.d("getTable_img_base64_1 --&> ", "" + originalBase64_3.substring(0, Math.min(50, originalBase64_3.length())));
+                        loadImageWithGlide(base64ToDrawable(originalBase64_3, UserGeneratesQuestionActivity.this), binding.iv3);
                         binding.iv3.setVisibility(View.VISIBLE);
                     }
                     // Handle Table 2 (table_img_base64_2 -> iv4)
                     if (apiResponse.getTable_img_base64_2() != null && !apiResponse.getTable_img_base64_2().isEmpty()) {
-                        dataModel.setBase64_4(apiResponse.getTable_img_base64_2());
-                        Log.d("getTable_img_base64_2 --&> ", "" + apiResponse.getTable_img_base64_2());
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getTable_img_base64_2(), UserGeneratesQuestionActivity.this), binding.iv4);
+                        String originalBase64_4 = apiResponse.getTable_img_base64_2();
+                        String compressedBase64_4 = compressBase64ForFirestore(originalBase64_4);
+                        dataModel.setBase64_4(compressedBase64_4);
+                        Log.d("getTable_img_base64_2 --&> ", "" + originalBase64_4.substring(0, Math.min(50, originalBase64_4.length())));
+                        loadImageWithGlide(base64ToDrawable(originalBase64_4, UserGeneratesQuestionActivity.this), binding.iv4);
                         binding.iv4.setVisibility(View.VISIBLE);
                     }
 
                     // (Optional) Handle table_img_base64 (lama) jika masih dipakai untuk iv3
                     if (apiResponse.getTable_img_base64() != null && !apiResponse.getTable_img_base64().isEmpty()) {
-                        dataModel.setBase64_3(apiResponse.getTable_img_base64());
-                        Log.d("getTable_img_base64 --&> ", "" + apiResponse.getTable_img_base64());
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getTable_img_base64(), UserGeneratesQuestionActivity.this), binding.iv3);
+                        String originalFallback3 = apiResponse.getTable_img_base64();
+                        String compressedFallback3 = compressBase64ForFirestore(originalFallback3);
+                        dataModel.setBase64_3(compressedFallback3);
+                        Log.d("getTable_img_base64 --&> ", "" + originalFallback3.substring(0, Math.min(50, originalFallback3.length())));
+                        loadImageWithGlide(base64ToDrawable(originalFallback3, UserGeneratesQuestionActivity.this), binding.iv3);
                         binding.iv3.setVisibility(View.VISIBLE);
                     }
 
                     // (Optional) Handle local_image_base64 jika ingin tetap tampilkan di iv2
                     if (apiResponse.getLocal_image_base64() != null && !apiResponse.getLocal_image_base64().isEmpty()) {
-                        dataModel.setBase64_2(apiResponse.getLocal_image_base64());
-                        Log.d("getLocal_image_base64 --&> ", "" + apiResponse.getLocal_image_base64());
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getLocal_image_base64(), UserGeneratesQuestionActivity.this), binding.iv2);
+                        String originalFallback2 = apiResponse.getLocal_image_base64();
+                        String compressedFallback2 = compressBase64ForFirestore(originalFallback2);
+                        dataModel.setBase64_2(compressedFallback2);
+                        Log.d("getLocal_image_base64 --&> ", "" + originalFallback2.substring(0, Math.min(50, originalFallback2.length())));
+                        loadImageWithGlide(base64ToDrawable(originalFallback2, UserGeneratesQuestionActivity.this), binding.iv2);
                         binding.iv2.setVisibility(View.VISIBLE);
                     }
 
                     // Handle image2_base64 (baru) -> iv5
                     if (apiResponse.getImage2_base64() != null && !apiResponse.getImage2_base64().isEmpty()) {
-                        dataModel.setBase64_5(apiResponse.getImage2_base64());
-                        Log.d("getImage2_base64 --&> ", "" + apiResponse.getImage2_base64());
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getImage2_base64(), UserGeneratesQuestionActivity.this), binding.iv5);
+                        String originalBase64_5 = apiResponse.getImage2_base64();
+                        String compressedBase64_5 = compressBase64ForFirestore(originalBase64_5);
+                        dataModel.setBase64_5(compressedBase64_5);
+                        Log.d("getImage2_base64 --&> ", "" + originalBase64_5.substring(0, Math.min(50, originalBase64_5.length())));
+                        loadImageWithGlide(base64ToDrawable(originalBase64_5, UserGeneratesQuestionActivity.this), binding.iv5);
                         binding.iv5.setVisibility(View.VISIBLE);
                     }
 

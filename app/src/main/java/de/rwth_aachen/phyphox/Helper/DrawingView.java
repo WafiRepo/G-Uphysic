@@ -17,6 +17,11 @@ public class DrawingView extends View {
     private Path currentPath;
     private List<Path> paths;
     private List<Path> undonePaths;
+    
+    // Color management
+    private List<Integer> pathColors;
+    private List<Integer> undonePathColors;
+    private int currentColor = Color.BLACK;
 
     // Variables for smoothing the path
     private float lastX, lastY;
@@ -35,9 +40,9 @@ public class DrawingView extends View {
     private void init() {
         // Initialize the paint and set its color to white
         paint = new Paint();
-        paint.setColor(Color.WHITE);  // Set the pen color to white
+        paint.setColor(currentColor);  // Set the pen color to current color
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(5);
+        paint.setStrokeWidth(8);  // Slightly thicker for better visibility
         paint.setAntiAlias(true);  // Enable anti-aliasing for smoother edges
         paint.setDither(true);  // Enable dithering for better color blending
         paint.setStrokeJoin(Paint.Join.ROUND);  // Smooth stroke joins
@@ -45,15 +50,23 @@ public class DrawingView extends View {
 
         paths = new ArrayList<>();
         undonePaths = new ArrayList<>();
+        pathColors = new ArrayList<>();
+        undonePathColors = new ArrayList<>();
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        for (Path path : paths) {
-            canvas.drawPath(path, paint);
+        
+        // Draw each path with its associated color
+        for (int i = 0; i < paths.size(); i++) {
+            paint.setColor(pathColors.get(i));
+            canvas.drawPath(paths.get(i), paint);
         }
+        
+        // Draw current path with current color
         if (currentPath != null) {
+            paint.setColor(currentColor);
             canvas.drawPath(currentPath, paint);
         }
     }
@@ -104,6 +117,7 @@ public class DrawingView extends View {
         if (currentPath != null) {
             currentPath.lineTo(lastX, lastY);
             paths.add(currentPath);
+            pathColors.add(currentColor);  // Save the current color for this path
             currentPath = null;
         }
     }
@@ -112,6 +126,7 @@ public class DrawingView extends View {
     public void undo() {
         if (!paths.isEmpty()) {
             undonePaths.add(paths.remove(paths.size() - 1));
+            undonePathColors.add(pathColors.remove(pathColors.size() - 1));
             invalidate();
         }
     }
@@ -120,6 +135,7 @@ public class DrawingView extends View {
     public void redo() {
         if (!undonePaths.isEmpty()) {
             paths.add(undonePaths.remove(undonePaths.size() - 1));
+            pathColors.add(undonePathColors.remove(undonePathColors.size() - 1));
             invalidate();
         }
     }
@@ -128,6 +144,18 @@ public class DrawingView extends View {
     public void clear() {
         paths.clear();
         undonePaths.clear();
+        pathColors.clear();
+        undonePathColors.clear();
         invalidate();  // Refresh the view to clear everything
+    }
+    
+    // Set the current drawing color
+    public void setColor(int color) {
+        this.currentColor = color;
+    }
+    
+    // Get the current drawing color
+    public int getCurrentColor() {
+        return currentColor;
     }
 }

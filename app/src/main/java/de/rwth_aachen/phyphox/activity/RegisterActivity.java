@@ -47,8 +47,8 @@ public class RegisterActivity extends AppCompatActivity {
 
     public void registerNewUser() {
         String email, password;
-        email = Objects.requireNonNull(binding.tilEmail.getEditText()).getText().toString().trim();
-        password = Objects.requireNonNull(binding.tilPassword.getEditText()).getText().toString().trim();
+        email = binding.etEmail.getText().toString().trim();
+        password = binding.etPassword.getText().toString().trim();
 
         if (TextUtils.isEmpty(email)) {
             Toast.makeText(this, "Please input your email", Toast.LENGTH_SHORT).show();
@@ -75,8 +75,8 @@ public class RegisterActivity extends AppCompatActivity {
     private void insertData(String id){
         UserModel usermodel= new UserModel(
                 id,
-                binding.tilName.getEditText().getText().toString(),
-                binding.tilEmail.getEditText().getText().toString()
+                binding.etName.getText().toString(),
+                binding.etEmail.getText().toString()
         );
         ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setTitle("Save data to Server");

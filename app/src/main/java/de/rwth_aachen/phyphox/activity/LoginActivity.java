@@ -58,8 +58,8 @@ public class LoginActivity extends AppCompatActivity {
 
     public void loginUser() {
         String email, password;
-        email = binding.tilEmail.getEditText().getText().toString();
-        password = binding.tilPassword.getEditText().getText().toString();
+        email = binding.etEmail.getText().toString();
+        password = binding.etPassword.getText().toString();
 
         if (TextUtils.isEmpty(email)) {
             Toast.makeText(this, "Please input your email", Toast.LENGTH_SHORT).show();
@@ -68,6 +68,7 @@ public class LoginActivity extends AppCompatActivity {
 
         if (TextUtils.isEmpty(password)) {
             Toast.makeText(this, "Please input your password", Toast.LENGTH_SHORT).show();
+            return;
         }
         progressDialog = new ProgressDialog(this); // Replace 'this' with 'requireContext()' if inside a Fragment
         progressDialog.setTitle("");

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="320dp"
+    android:layout_height="match_parent"
+    android:layout_marginHorizontal="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="@color/phyphox_white_100">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Title -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:id="@+id/tv_carousel_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Grafik Analisis"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/phyphox_purple"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_fullscreen"
+                app:tint="@color/phyphox_black_40" />
+
+        </LinearLayout>
+
+        <!-- Image Container -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/phyphox_black_5">
+
+            <ImageView
+                android:id="@+id/iv_carousel_image"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true"
+                android:padding="8dp"
+                android:contentDescription="Generated AI Image" />
+
+            <!-- Text Content for Question/User Input -->
+            <TextView
+                android:id="@+id/tv_carousel_content"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="24dp"
+                android:gravity="center"
+                android:textSize="14sp"
+                android:textColor="@color/phyphox_black_80"
+                android:lineSpacingMultiplier="1.4"
+                android:visibility="gone"
+                android:background="@color/phyphox_white_100" />
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Description -->
+        <TextView
+            android:id="@+id/tv_carousel_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📊 Data dari analisis AI"
+            android:textSize="14sp"
+            android:textColor="@color/phyphox_black_60"
+            android:textAlignment="center"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:lineSpacingExtra="2dp" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView> 

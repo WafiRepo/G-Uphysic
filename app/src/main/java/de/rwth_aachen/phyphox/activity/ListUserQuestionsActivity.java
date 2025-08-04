@@ -15,6 +15,8 @@ import de.rwth_aachen.phyphox.adapter.UserQuestionsAdapter;
 import de.rwth_aachen.phyphox.databinding.ActivityListQuestionsBinding;
 import de.rwth_aachen.phyphox.databinding.ActivityMainBinding;
 import de.rwth_aachen.phyphox.model.DataModel;
+import android.view.View;
+import android.widget.TextView;
 
 public class ListUserQuestionsActivity extends AppCompatActivity {
     ActivityListQuestionsBinding binding;
@@ -26,14 +28,24 @@ public class ListUserQuestionsActivity extends AppCompatActivity {
         binding = ActivityListQuestionsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         Toolbar toolbar = binding.toolbar;
-        // Set up toolbar
-        setSupportActionBar(toolbar);
         setSupportActionBar(toolbar);
 
-        // Set title and enable back button
+        // Set title and center it
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("User Questions");
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true); // Show back button
+            getSupportActionBar().setTitle("📚 Community Physics Questions");
+            getSupportActionBar().setDisplayHomeAsUpEnabled(false); // Hide back button
+            toolbar.setTitleMarginStart(0);
+            toolbar.setTitleMarginEnd(0);
+            for(int i = 0; i < toolbar.getChildCount(); i++) {
+                View view = toolbar.getChildAt(i);
+                if(view instanceof TextView) {
+                    TextView textView = (TextView) view;
+                    textView.setGravity(android.view.Gravity.CENTER);
+                    textView.setLayoutParams(new Toolbar.LayoutParams(
+                            Toolbar.LayoutParams.MATCH_PARENT,
+                            Toolbar.LayoutParams.WRAP_CONTENT));
+                }
+            }
         }
 
         adapter = new UserQuestionsAdapter(this, this.getApplication());
@@ -46,6 +58,5 @@ public class ListUserQuestionsActivity extends AppCompatActivity {
         }, e -> {
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
         });
-
     }
 }

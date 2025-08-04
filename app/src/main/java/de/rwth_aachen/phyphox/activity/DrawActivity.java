@@ -5,14 +5,16 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.EditText;
+
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -41,9 +43,10 @@ import de.rwth_aachen.phyphox.model.DataModel;
 public class DrawActivity extends AppCompatActivity {
 
     private DrawingView mDrawingView;
-    private FloatingActionButton fab_next;
-    private EditText inputValue;
     private long visitStartTime;
+    private LinearLayout colorPickerOverlay;
+    private View currentColorIndicator;
+    private boolean isColorPickerVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,9 +59,6 @@ public class DrawActivity extends AppCompatActivity {
         // Add DrawingView to the layout
         LinearLayout imageScreenshot = findViewById(R.id.iv_screenshot);
         LinearLayout mDrawingPad = findViewById(R.id.view_drawing_pad);
-        FloatingActionButton fab_next = findViewById(R.id.fab_next);
-        RelativeLayout rl = findViewById(R.id.rlView);
-        inputValue = findViewById(R.id.input_value);
         mDrawingPad.addView(mDrawingView);
 
         // Get the image from the intent and set it as background
@@ -69,17 +69,25 @@ public class DrawActivity extends AppCompatActivity {
         Drawable d = Drawable.createFromPath(file.getAbsolutePath());
         imageScreenshot.setBackground(d);
 
-        // Set up buttons for undo, redo, clear, calculator, and next
+        // Set up buttons for undo, redo, clear, calculator, color picker and next
         FloatingActionButton btnUndo = findViewById(R.id.fab_undo);
         FloatingActionButton btnRedo = findViewById(R.id.fab_redo);
         FloatingActionButton btnClear = findViewById(R.id.fab_clear);
         FloatingActionButton btnCalculator = findViewById(R.id.fab_calculator);
-        FloatingActionButton btnNext = findViewById(R.id.fab_next);
+        FloatingActionButton btnColorPicker = findViewById(R.id.fab_color_picker);
+        android.widget.Button btnNext = findViewById(R.id.fab_next);
+        
+        // Initialize color picker elements
+        colorPickerOverlay = findViewById(R.id.color_picker_overlay);
+        currentColorIndicator = findViewById(R.id.current_color_indicator);
 
         // Set click listeners for buttons
         btnUndo.setOnClickListener(v -> mDrawingView.undo());
         btnRedo.setOnClickListener(v -> mDrawingView.redo());
         btnClear.setOnClickListener(v -> mDrawingView.clear());
+        
+        // Color picker toggle
+        btnColorPicker.setOnClickListener(v -> toggleColorPicker());
 
         // Handle Calculator button click - Launch custom calculator
         btnCalculator.setOnClickListener(v -> {
@@ -88,20 +96,17 @@ public class DrawActivity extends AppCompatActivity {
         });
 
         // Navigate to the next activity on Next button click
-        btnNext.setOnClickListener(v -> startActivity(new Intent(this, QuestionActivity.class)));
-        fab_next.setOnClickListener(v -> {
-//            startActivity(new Intent(this, QuestionActivity.class));
-//
-            if (!inputValue.getText().toString().isEmpty()) {
-                uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(imageScreenshot)), "question_image_" + System.currentTimeMillis());
-            } else {
-                Toast.makeText(this, "Please Input value", Toast.LENGTH_SHORT).show();
-            }
+        btnNext.setOnClickListener(v -> {
+            // Upload the drawing and proceed to questions
+            uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(imageScreenshot)), "question_image_" + System.currentTimeMillis());
         });
 
         // Tambahkan logic untuk icon info (introduction)
-        ImageView ivInfo = findViewById(R.id.ivSign);
+        FloatingActionButton ivInfo = findViewById(R.id.ivSign);
         ivInfo.setOnClickListener(v -> showIntroductionDialog());
+        
+        // Setup color selection buttons
+        setupColorButtons();
     }
 
     private void showIntroductionDialog() {
@@ -181,7 +186,7 @@ public class DrawActivity extends AppCompatActivity {
                         App app = (App) getApplication();
                         DataModel dataModel = app.getDataModel();
                         dataModel.setPhotoAcceleration(downloadUrl);
-                        dataModel.setValueAcceleration(inputValue.getText().toString());
+                        dataModel.setValueAcceleration(""); // No input value needed anymore
                         app.setDataModel(dataModel);
                         startActivity(new Intent(this, QuestionActivity.class));
                         // Enable the save button
@@ -255,6 +260,50 @@ public class DrawActivity extends AppCompatActivity {
         } else {
             return String.format(Locale.getDefault(), "%d detik", seconds);
         }
+    }
+    
+    private void toggleColorPicker() {
+        isColorPickerVisible = !isColorPickerVisible;
+        colorPickerOverlay.setVisibility(isColorPickerVisible ? View.VISIBLE : View.GONE);
+    }
+    
+    private void setupColorButtons() {
+        // Color selection buttons
+        View colorBlack = findViewById(R.id.color_black);
+        View colorRed = findViewById(R.id.color_red);
+        View colorBlue = findViewById(R.id.color_blue);
+        View colorGreen = findViewById(R.id.color_green);
+        View colorOrange = findViewById(R.id.color_orange);
+        View colorPurple = findViewById(R.id.color_purple);
+        View colorPink = findViewById(R.id.color_pink);
+        View colorBrown = findViewById(R.id.color_brown);
+        
+        // Set click listeners for each color
+        setColorClickListener(colorBlack, Color.BLACK);
+        setColorClickListener(colorRed, Color.RED);
+        setColorClickListener(colorBlue, Color.BLUE);
+        setColorClickListener(colorGreen, Color.GREEN);
+        setColorClickListener(colorOrange, Color.parseColor("#FF9800"));
+        setColorClickListener(colorPurple, Color.parseColor("#9C27B0"));
+        setColorClickListener(colorPink, Color.parseColor("#E91E63"));
+        setColorClickListener(colorBrown, Color.parseColor("#795548"));
+    }
+    
+    private void setColorClickListener(View colorView, int color) {
+        colorView.setOnClickListener(v -> {
+            mDrawingView.setColor(color);
+            updateCurrentColorIndicator(color);
+            toggleColorPicker(); // Hide color picker after selection
+            Toast.makeText(this, "Warna berubah!", Toast.LENGTH_SHORT).show();
+        });
+    }
+    
+    private void updateCurrentColorIndicator(int color) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setShape(GradientDrawable.OVAL);
+        drawable.setColor(color);
+        drawable.setStroke(4, Color.WHITE);
+        currentColorIndicator.setBackground(drawable);
     }
 
 }

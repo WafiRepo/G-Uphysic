@@ -145,6 +145,9 @@
             android:name=".activity.GeneratesActivity"
             android:exported="false" />
         <activity
+            android:name=".activity.ImageCarouselActivity"
+            android:exported="false" />
+        <activity
             android:name=".activity.QuestionActivity"
             android:exported="false" />
         <activity
@@ -161,6 +164,9 @@
             android:exported="false" />
         <activity
             android:name=".activity.DetailRecordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activity.RecordPreviewActivity"
             android:exported="false" />
         <activity
             android:name=".activity.RegisterActivity"

@@ -17,6 +17,7 @@ import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,8 +26,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import de.rwth_aachen.phyphox.R;
 
 import com.bumptech.glide.Glide;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.google.firebase.firestore.DocumentReference;
@@ -81,6 +84,9 @@ import java.util.concurrent.Executors;
 
 import retrofit2.Response;
 
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+
 public class GeneratesClassQuestionActivity extends AppCompatActivity {
     private long visitStartTime;
     ActivityGeneratesNewBinding binding;
@@ -91,6 +97,9 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
     private DataModel dataModel;
     private String currentPhotoPath;
     byte[] imageBytes = new byte[0];
+    private LinearLayout colorPickerOverlay;
+    private View currentColorIndicator;
+    private boolean isColorPickerVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,6 +109,12 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
         App app = (App) getApplication();
         dataModel = app.getDataModel();
+
+        // Initialize color picker
+        colorPickerOverlay = binding.colorPickerOverlay;
+        currentColorIndicator = binding.currentColorIndicator;
+        setupColorPalette();
+
         boolean isFromMainMenu = getIntent().getBooleanExtra("isFromMainMenu", true);
         Log.d("getTypeQuestion ", "--> " + isFromMainMenu);
         Log.d("getTypeQuestion ", "--> " + dataModel.getTopics());
@@ -134,28 +149,44 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
                             ));
                 }
             } else if (dataModel.getTypeQuestion() == "Easy") {
-                List<Integer> images = EasyQuestionHelper.generateQuestionList().get(Integer.parseInt(dataModel.getBase64())).getImages();
-                binding.iv.setImageDrawable(
-                        ContextCompat.getDrawable(GeneratesClassQuestionActivity.this,
-                                images.get(0)
-                        ));
-                if (images.size() > 1) {
-                    binding.iv2.setImageDrawable(
-                            ContextCompat.getDrawable(GeneratesClassQuestionActivity.this,
-                                    images.get(1)
-                            ));
+                try {
+                    String base64Value = dataModel.getBase64();
+                    if (base64Value != null && !base64Value.isEmpty()) {
+                        int questionIndex = Integer.parseInt(base64Value);
+                        List<Integer> images = EasyQuestionHelper.generateQuestionList().get(questionIndex).getImages();
+                        binding.iv.setImageDrawable(
+                                ContextCompat.getDrawable(GeneratesClassQuestionActivity.this,
+                                        images.get(0)
+                                ));
+                        if (images.size() > 1) {
+                            binding.iv2.setImageDrawable(
+                                    ContextCompat.getDrawable(GeneratesClassQuestionActivity.this,
+                                            images.get(1)
+                                    ));
+                        }
+                    }
+                } catch (NumberFormatException | IndexOutOfBoundsException e) {
+                    Log.e("GeneratesClassQuestionActivity", "Error loading Easy question images: " + e.getMessage());
                 }
             } else {
-                List<Integer> images = IntermediateQuestionHelper.generateQuestionList().get(Integer.parseInt(dataModel.getBase64())).getImages();
-                binding.iv.setImageDrawable(
-                        ContextCompat.getDrawable(GeneratesClassQuestionActivity.this,
-                                images.get(0)
-                        ));
-                if (images.size() > 1) {
-                    binding.iv2.setImageDrawable(
-                            ContextCompat.getDrawable(GeneratesClassQuestionActivity.this,
-                                    images.get(1)
-                            ));
+                try {
+                    String base64Value = dataModel.getBase64();
+                    if (base64Value != null && !base64Value.isEmpty()) {
+                        int questionIndex = Integer.parseInt(base64Value);
+                        List<Integer> images = IntermediateQuestionHelper.generateQuestionList().get(questionIndex).getImages();
+                        binding.iv.setImageDrawable(
+                                ContextCompat.getDrawable(GeneratesClassQuestionActivity.this,
+                                        images.get(0)
+                                ));
+                        if (images.size() > 1) {
+                            binding.iv2.setImageDrawable(
+                                    ContextCompat.getDrawable(GeneratesClassQuestionActivity.this,
+                                            images.get(1)
+                                    ));
+                        }
+                    }
+                } catch (NumberFormatException | IndexOutOfBoundsException e) {
+                    Log.e("GeneratesClassQuestionActivity", "Error loading Intermediate question images: " + e.getMessage());
                 }
             }
             binding.iv.setVisibility(View.VISIBLE);
@@ -217,32 +248,8 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
 
         // Tombol Next yang mengarahkan ke FeedbackActivity
         binding.btnSave.setOnClickListener(v -> {
-            if (!dataModel.getPhotoDraw().isEmpty()) {
-                // Pindah ke FeedbackActivity
-                ProgressDialog progressDialog = new ProgressDialog(this);
-                progressDialog.setTitle("Save data to Server");
-                progressDialog.setMessage("Please wait...");
-                progressDialog.setCancelable(false);
-                progressDialog.show();
-                dataModel.setTypeData(binding.tvType.getText().toString());
-                app.setDataModel(dataModel);
-                FirestoreUtil.addOrUpdateDocument("record", dataModel.getId(), dataModel,
-                        () -> {
-                            progressDialog.dismiss();
-                            startActivity(new Intent(GeneratesClassQuestionActivity.this, MapsActivity.class));
-//                            Intent intent = new Intent(GeneratesActivity.this, FeedbackActivity.class);
-//                            startActivity(intent);
-                            finish();
-                        },
-                        e -> {
-                            progressDialog.dismiss();
-                            Toast.makeText(GeneratesClassQuestionActivity.this, e.getMessage(), Toast.LENGTH_LONG).show();
-                        });
-
-            } else {
-                Toast.makeText(GeneratesClassQuestionActivity.this, "Upload Photo First", Toast.LENGTH_LONG).show();
-//
-            }
+            // Selalu tampilkan pesan untuk klik Save terlebih dahulu
+            Toast.makeText(GeneratesClassQuestionActivity.this, "Klik Save terlebih dahulu", Toast.LENGTH_LONG).show();
         });
         binding.btnType.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -458,12 +465,39 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
 
                         // Enable the save button
                         binding.btnSave.setEnabled(true);
-                        binding.btnSave.performClick();
                         // Log success
                         Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
 
-                        // Dismiss the progress dialog
-                        progressDialog.dismiss();
+                        // Save data to Firestore after successful upload
+                        ProgressDialog saveProgressDialog = new ProgressDialog(GeneratesClassQuestionActivity.this);
+                        saveProgressDialog.setTitle("Save data to Server");
+                        saveProgressDialog.setMessage("Please wait...");
+                        saveProgressDialog.setCancelable(false);
+                        saveProgressDialog.show();
+
+                        String documentId = dataModel.getId();
+                        if (documentId == null || documentId.isEmpty()) {
+                            documentId = String.valueOf(System.currentTimeMillis());
+                        }
+                        dataModel.setId(documentId);
+                        dataModel.setTypeData(binding.tvType.getText().toString());
+                        app.setDataModel(dataModel);
+                        
+                        FirestoreUtil.addOrUpdateDocument("record", documentId, dataModel,
+                                () -> {
+                                    saveProgressDialog.dismiss();
+                                    progressDialog.dismiss();
+                                    // Navigate to RecordPreviewActivity after successful save
+                                    Intent intent = new Intent(GeneratesClassQuestionActivity.this, RecordPreviewActivity.class);
+                                    startActivity(intent);
+                                    finish();
+                                },
+                                e -> {
+                                    saveProgressDialog.dismiss();
+                                    progressDialog.dismiss();
+                                    Toast.makeText(GeneratesClassQuestionActivity.this, e.getMessage(), Toast.LENGTH_LONG).show();
+                                    binding.btnSave.setEnabled(true); // Re-enable button if failed
+                                });
                     });
                 })
                 .addOnFailureListener(e -> {
@@ -683,6 +717,67 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
             return "";
+        }
+    }
+
+    private void setupColorPalette() {
+        // Setup color picker button
+        FloatingActionButton btnColorPicker = findViewById(R.id.btn_color_picker);
+        btnColorPicker.setOnClickListener(v -> toggleColorPicker());
+
+        // Setup color buttons
+        setupColorButtons();
+
+        // Set initial color
+        setCurrentColor("#000000");
+    }
+
+    private void toggleColorPicker() {
+        isColorPickerVisible = !isColorPickerVisible;
+        colorPickerOverlay.setVisibility(isColorPickerVisible ? View.VISIBLE : View.GONE);
+    }
+
+    private void setupColorButtons() {
+        // Row 1
+        setupColorButton(R.id.color_black, "#000000");
+        setupColorButton(R.id.color_red, "#FF0000");
+        setupColorButton(R.id.color_blue, "#0000FF");
+        setupColorButton(R.id.color_green, "#00FF00");
+
+        // Row 2
+        setupColorButton(R.id.color_orange, "#FF9800");
+        setupColorButton(R.id.color_purple, "#9C27B0");
+        setupColorButton(R.id.color_pink, "#E91E63");
+        setupColorButton(R.id.color_brown, "#795548");
+    }
+
+    private void setupColorButton(int viewId, String colorHex) {
+        View colorButton = findViewById(viewId);
+        colorButton.setOnClickListener(v -> {
+            setCurrentColor(colorHex);
+            toggleColorPicker();
+        });
+    }
+
+    private void setCurrentColor(String colorHex) {
+        try {
+            int color = Color.parseColor(colorHex);
+            
+            // Update current color indicator
+            GradientDrawable indicator = new GradientDrawable();
+            indicator.setShape(GradientDrawable.OVAL);
+            indicator.setColor(color);
+            indicator.setStroke(4, Color.WHITE);
+            currentColorIndicator.setBackground(indicator);
+            
+            // Update drawing view color
+            if (drawView != null) {
+                drawView.setColor(color);
+            }
+            
+            Toast.makeText(this, "Warna dipilih: " + colorHex, Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Error memilih warna", Toast.LENGTH_SHORT).show();
         }
     }
 }

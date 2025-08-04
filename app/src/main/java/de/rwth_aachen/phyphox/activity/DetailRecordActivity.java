@@ -9,21 +9,29 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import de.rwth_aachen.phyphox.Helper.AdvancedQuestionHelper;
 import de.rwth_aachen.phyphox.Helper.EasyQuestionHelper;
 import de.rwth_aachen.phyphox.Helper.IntermediateQuestionHelper;
+import de.rwth_aachen.phyphox.R;
 import de.rwth_aachen.phyphox.databinding.ActivityDetailRecordBinding;
 import de.rwth_aachen.phyphox.model.DataModel;
 import de.rwth_aachen.phyphox.App;
@@ -31,6 +39,8 @@ import de.rwth_aachen.phyphox.App;
 public class DetailRecordActivity extends AppCompatActivity {
 
     private ActivityDetailRecordBinding binding;
+    private DataModel dataModel;
+    private DrawingAdapter drawingAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,125 +53,130 @@ public class DetailRecordActivity extends AppCompatActivity {
         // Set up Toolbar
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);  // Enable back button
-            getSupportActionBar().setTitle("Details");
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("📋 Detail Lengkap");
         }
 
         // Handle Back Button Click
         binding.toolbar.setNavigationOnClickListener(view -> onBackPressed());
 
-        // Ambil DataModel dari App singleton, bukan dari Bundle
+        // Get DataModel from App singleton
         App app = (App) getApplication();
-        DataModel data = app.getDataModel();
-            binding.tvQuestion.setText(data.getQuestion());
+        dataModel = app.getDataModel();
 
-        // Handle Graph/Image 1 (base64)
-            if (data.getBase64() != null && !data.getBase64().isEmpty()) {
-                if (data.getTopics().equals("Out Class") || data.getTopics().equals("In Class")) {
-                    if (data.getTypeQuestion() == "Advanced") {
-                        binding.ivQuestion.setBackground(
-                                ContextCompat.getDrawable(DetailRecordActivity.this,
-                                        AdvancedQuestionHelper.generateQuestionList().get(Integer.parseInt(data.getBase64())).getImages().get(0)
-                                ));
-                    } else if (data.getTypeQuestion() == "Easy") {
-                        binding.ivQuestion.setBackground(
-                                ContextCompat.getDrawable(DetailRecordActivity.this,
-                                        EasyQuestionHelper.generateQuestionList().get(Integer.parseInt(data.getBase64())).getImages().get(0)
-                                ));
-                    } else {
-                        binding.ivQuestion.setBackground(
-                                ContextCompat.getDrawable(DetailRecordActivity.this,
-                                        IntermediateQuestionHelper.generateQuestionList().get(Integer.parseInt(data.getBase64())).getImages().get(0)
-                                ));
-                    }
-                } else {
-                    binding.ivQuestion.setBackground(base64ToDrawable(data.getBase64(), DetailRecordActivity.this));
-                }
-                binding.tvGraphQuestion.setVisibility(View.VISIBLE);
-                binding.ivQuestion.setVisibility(View.VISIBLE);
-            } else {
-                binding.tvGraphQuestion.setVisibility(View.GONE);
-                binding.cvGraph.setVisibility(View.GONE);
-            }
+        setupUI();
+        setupImageCarouselButton();
+        setupDrawingsList();
+    }
 
-        // Handle Image 2 (base64_2) - hanya untuk Advanced question
-        if (data.getBase64_2() != null && !data.getBase64_2().isEmpty()) {
-            if (data.getTopics().equals("Out Class") || data.getTopics().equals("In Class")) {
-                if (data.getTypeQuestion() == "Advanced") {
-                    // Hanya untuk Advanced question yang memiliki 2 image
-                    binding.ivImage2.setBackground(
-                            ContextCompat.getDrawable(DetailRecordActivity.this,
-                                    AdvancedQuestionHelper.generateQuestionList().get(Integer.parseInt(data.getBase64_2())).getImages().get(1)
-                            ));
-                    binding.tvImage2.setVisibility(View.VISIBLE);
-                    binding.cvImage2.setVisibility(View.VISIBLE);
-                }
-                // Untuk Easy dan Intermediate, tidak menampilkan image kedua
-            } else {
-                // Untuk non-class question, tetap tampilkan jika ada base64_2
-                binding.ivImage2.setBackground(base64ToDrawable(data.getBase64_2(), DetailRecordActivity.this));
-                binding.tvImage2.setVisibility(View.VISIBLE);
-                binding.cvImage2.setVisibility(View.VISIBLE);
-            }
-        }
+    private void setupUI() {
+        if (dataModel == null) return;
 
-        // Handle Table 1 (base64_3)
-        if (data.getBase64_3() != null && !data.getBase64_3().isEmpty()) {
-            binding.ivTable1.setBackground(base64ToDrawable(data.getBase64_3(), DetailRecordActivity.this));
-            binding.tvTable1.setVisibility(View.VISIBLE);
-            binding.cvTable1.setVisibility(View.VISIBLE);
-        }
-
-        // Handle Table 2 (base64_4)
-        if (data.getBase64_4() != null && !data.getBase64_4().isEmpty()) {
-            binding.ivTable2.setBackground(base64ToDrawable(data.getBase64_4(), DetailRecordActivity.this));
-            binding.tvTable2.setVisibility(View.VISIBLE);
-            binding.cvTable2.setVisibility(View.VISIBLE);
-        }
-
-        // Handle Image 3 (base64_5)
-        if (data.getBase64_5() != null && !data.getBase64_5().isEmpty()) {
-            binding.ivImage3.setBackground(base64ToDrawable(data.getBase64_5(), DetailRecordActivity.this));
-            binding.tvImage3.setVisibility(View.VISIBLE);
-            binding.cvImage3.setVisibility(View.VISIBLE);
-        }
-
-        // Tampilkan foto jawaban jika ada
-        if (data.getPhoto() != null && !data.getPhoto().isEmpty()) {
-            loadImageWithGlide(data.getPhoto(), binding.ivImage);
-            binding.ivImage.setVisibility(View.VISIBLE);
-            binding.cvImage.setVisibility(View.VISIBLE);
+        // Set basic info
+        binding.tvQuestion.setText(dataModel.getQuestion() != null ? dataModel.getQuestion() : "Tidak ada pertanyaan");
+        
+        // Format type question to remove "Advanced"
+        String typeQuestion = dataModel.getTypeQuestion();
+        if (typeQuestion != null && typeQuestion.equalsIgnoreCase("Advanced")) {
+            binding.tvType.setText("Sulit");
         } else {
-            binding.ivImage.setVisibility(View.GONE);
-            binding.cvImage.setVisibility(View.GONE);
+            binding.tvType.setText(typeQuestion != null ? typeQuestion : "Sedang");
         }
-        if(!data.getPhotoDraw().isEmpty()){
-            loadImageWithGlide(data.getPhotoDraw().get(data.getPhotoDraw().size()-1), binding.ivFeedBack);
+        
+        binding.tvDateTime.setText(dataModel.getDateTime() != null ? dataModel.getDateTime() : "Unknown");
+        binding.tvCustomerName.setText(dataModel.getCustomerName() != null ? dataModel.getCustomerName() : "Unknown");
+        binding.tvId.setText(dataModel.getId() != null ? dataModel.getId() : "Unknown");
+        binding.tvTotalEdit.setText(dataModel.getTotalEdit() + " kali");
+        binding.tvStatus.setText(dataModel.getFinished() != null && dataModel.getFinished() ? "Completed" : "In Progress");
+
+        // Load images into grid
+        loadImageIntoView(dataModel.getBase64(), binding.ivImage, binding.cvImage);
+        loadImageIntoView(dataModel.getBase64_2(), binding.ivImage2, binding.cvImage2);
+        loadImageIntoView(dataModel.getBase64_3(), binding.ivImage3, binding.cvImage3);
+        loadImageIntoView(dataModel.getBase64_4(), binding.ivImage4, binding.cvImage4);
+        loadImageIntoView(dataModel.getBase64_5(), binding.ivImage5, binding.cvImage5);
+    }
+
+    private void loadImageIntoView(String base64Data, ImageView imageView, View cardView) {
+        if (base64Data != null && !base64Data.isEmpty()) {
+            // Check if it's from class questions (uses drawable resources)
+            if (dataModel.getTopics() != null && 
+                (dataModel.getTopics().equals("Out Class") || dataModel.getTopics().equals("In Class"))) {
+                
+                try {
+                    int index = Integer.parseInt(base64Data);
+                    int drawableId = getDrawableIdFromQuestionType(index);
+                    if (drawableId != 0) {
+                        imageView.setImageDrawable(ContextCompat.getDrawable(this, drawableId));
+                        cardView.setVisibility(View.VISIBLE);
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    // Continue with base64 loading
+                }
+            }
+            
+            // Load base64 image
+            BitmapDrawable drawable = base64ToDrawable(base64Data, this);
+            if (drawable != null) {
+                imageView.setImageDrawable(drawable);
+                cardView.setVisibility(View.VISIBLE);
+            } else {
+                cardView.setVisibility(View.GONE);
+            }
+        } else {
+            cardView.setVisibility(View.GONE);
         }
     }
 
-    private void loadImageWithGlide(String url, ImageView imageView) {
-        Glide.with(this)
-                .load(url)
-                .into(new CustomTarget<Drawable>() {
-                    @Override
-                    public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
-                        imageView.setBackground(resource); // Set as background
-                    }
+    private int getDrawableIdFromQuestionType(int index) {
+        String typeQuestion = dataModel.getTypeQuestion();
+        if (typeQuestion == null) return 0;
 
-                    @Override
-                    public void onLoadCleared(@Nullable Drawable placeholder) {
-                        // Handle case when the image is cleared
-                    }
-                });
+        try {
+            switch (typeQuestion) {
+                case "Easy":
+                case "Mudah":
+                    return EasyQuestionHelper.generateQuestionList().get(index).getImages().get(0);
+                case "Intermediate":
+                case "Sedang":
+                    return IntermediateQuestionHelper.generateQuestionList().get(index).getImages().get(0);
+                case "Advanced":
+                case "Sulit":
+                case "Lanjutan":
+                    return AdvancedQuestionHelper.generateQuestionList().get(index).getImages().get(0);
+                default:
+                    return 0;
+            }
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private void setupImageCarouselButton() {
+        binding.btnViewCarousel.setOnClickListener(v -> {
+            Intent intent = new Intent(DetailRecordActivity.this, ImageCarouselActivity.class);
+            startActivity(intent);
+        });
+    }
+
+    private void setupDrawingsList() {
+        if (dataModel.getPhotoDraw() != null && !dataModel.getPhotoDraw().isEmpty()) {
+            binding.llNoDrawings.setVisibility(View.GONE);
+            binding.rvDrawings.setVisibility(View.VISIBLE);
+            
+            drawingAdapter = new DrawingAdapter(this, dataModel.getPhotoDraw());
+            binding.rvDrawings.setLayoutManager(
+                new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+            );
+            binding.rvDrawings.setAdapter(drawingAdapter);
+        } else {
+            binding.llNoDrawings.setVisibility(View.VISIBLE);
+            binding.rvDrawings.setVisibility(View.GONE);
+        }
     }
 
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        binding = null;  // Prevent memory leaks
-    }
 
     public BitmapDrawable base64ToDrawable(String base64String, Context context) {
         try {
@@ -187,4 +202,50 @@ public class DetailRecordActivity extends AppCompatActivity {
             return null;
         }
     }
+
+    // Adapter for drawing images
+    public static class DrawingAdapter extends RecyclerView.Adapter<DrawingAdapter.ViewHolder> {
+        private Context context;
+        private List<String> drawingUrls;
+
+        public DrawingAdapter(Context context, List<String> drawingUrls) {
+            this.context = context;
+            this.drawingUrls = drawingUrls != null ? drawingUrls : new ArrayList<>();
+        }
+
+        @NonNull
+        @Override
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(context).inflate(R.layout.item_drawing_thumbnail, parent, false);
+            return new ViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+            String drawingUrl = drawingUrls.get(position);
+            
+            if (drawingUrl != null && !drawingUrl.isEmpty()) {
+                Glide.with(context)
+                    .load(drawingUrl)
+                    .placeholder(R.drawable.ic_image_placeholder)
+                    .error(R.drawable.ic_image_error)
+                    .into(holder.ivDrawing);
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            return drawingUrls.size();
+        }
+
+        public static class ViewHolder extends RecyclerView.ViewHolder {
+            ImageView ivDrawing;
+
+            public ViewHolder(@NonNull View itemView) {
+                super(itemView);
+                ivDrawing = itemView.findViewById(R.id.iv_drawing_thumbnail);
+            }
+        }
+    }
 }
+

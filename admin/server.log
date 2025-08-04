@@ -1,0 +1,424 @@
+2025-07-30 07:55:43,552 - INFO - Server started on port 8000
+2025-07-30 07:56:11,253 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 07:56:11.252594
+Path: /
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 07:56:11,254 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\index.html
+2025-07-30 07:56:11,257 - INFO - Client: 127.0.0.1 - Request: "GET / HTTP/1.1" 304 -
+2025-07-30 07:56:25,499 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 07:56:25.499175
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 07:56:25,499 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2025-07-30 07:56:25,499 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 200 -
+2025-07-30 08:00:35,396 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:00:35.391704
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:00:35,404 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:00:35,564 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:00:35,565 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:00:47,417 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:00:47.417698
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:00:47,419 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:00:47,420 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:00:47,420 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:01:26,339 - INFO - Server shutdown by user
+2025-07-30 08:01:27,933 - INFO - Server started on port 8000
+2025-07-30 08:01:30,675 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:01:30.675804
+Path: /
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:01:30,675 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\index.html
+2025-07-30 08:01:30,675 - INFO - Client: 127.0.0.1 - Request: "GET / HTTP/1.1" 304 -
+2025-07-30 08:01:30,817 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:01:30.817133
+Path: /favicon.ico
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:01:30,818 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\favicon.ico
+2025-07-30 08:01:30,974 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:01:30,984 - INFO - Client: 127.0.0.1 - Request: "GET /favicon.ico HTTP/1.1" 404 -
+2025-07-30 08:01:32,017 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:01:32.017048
+Path: /dashboard.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:01:32,018 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\dashboard.html
+2025-07-30 08:01:32,018 - INFO - Client: 127.0.0.1 - Request: "GET /dashboard.html HTTP/1.1" 304 -
+2025-07-30 08:01:43,214 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:01:43.214856
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:01:43,216 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:01:43,217 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:01:43,218 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:08:04,660 - INFO - Server shutdown by user
+2025-07-30 08:08:06,533 - INFO - Server started on port 8000
+2025-07-30 08:08:10,046 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:08:10.046151
+Path: /dashboard.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:08:10,046 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\dashboard.html
+2025-07-30 08:08:10,047 - INFO - Client: 127.0.0.1 - Request: "GET /dashboard.html HTTP/1.1" 200 -
+2025-07-30 08:08:10,270 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:08:10.270127
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:08:10,271 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:08:10,372 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:08:10,372 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:08:38,452 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:08:38.445865
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:08:38,456 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2025-07-30 08:08:38,457 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 200 -
+2025-07-30 08:08:38,527 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:08:38.527323
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:08:38,528 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:08:38,530 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:08:38,530 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:10:05,508 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:10:05.507108
+Path: /questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:10:05,509 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\questions.html
+2025-07-30 08:10:05,510 - INFO - Client: 127.0.0.1 - Request: "GET /questions.html HTTP/1.1" 200 -
+2025-07-30 08:10:05,740 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:10:05.740047
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:10:05,742 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:10:05,743 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:10:05,744 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:12:03,078 - INFO - Server shutdown by user
+2025-07-30 08:12:04,356 - INFO - Server started on port 8000
+2025-07-30 08:12:07,155 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:12:07.155844
+Path: /questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:12:07,156 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\questions.html
+2025-07-30 08:12:07,157 - INFO - Client: 127.0.0.1 - Request: "GET /questions.html HTTP/1.1" 200 -
+2025-07-30 08:12:07,255 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:12:07.255844
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:12:07,255 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:12:07,323 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:12:07,324 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:13:17,403 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:13:17.402732
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:13:17,412 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2025-07-30 08:13:17,428 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 304 -
+2025-07-30 08:13:17,752 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:13:17.751166
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:13:17,796 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:13:17,838 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:13:17,847 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:13:55,966 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:13:55.964315
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:13:56,005 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2025-07-30 08:13:56,005 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 304 -
+2025-07-30 08:13:56,531 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:13:56.531395
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:13:56,531 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:13:56,532 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:13:56,532 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:16:38,366 - INFO - Server shutdown by user
+2025-07-30 08:16:40,172 - INFO - Server started on port 8000
+2025-07-30 08:16:41,777 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:16:41.776710
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:16:41,777 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2025-07-30 08:16:41,779 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 304 -
+2025-07-30 08:16:42,013 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:16:42.013863
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:16:42,015 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:16:42,185 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:16:42,186 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:16:46,841 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:16:46.841711
+Path: /questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:16:46,842 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\questions.html
+2025-07-30 08:16:46,842 - INFO - Client: 127.0.0.1 - Request: "GET /questions.html HTTP/1.1" 200 -
+2025-07-30 08:16:47,120 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:16:47.120748
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:16:47,123 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:16:47,130 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:16:47,137 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:18:00,561 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:18:00.557688
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:18:00,572 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2025-07-30 08:18:00,577 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 304 -
+2025-07-30 08:18:00,846 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:18:00.846903
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:18:00,849 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:18:00,850 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:18:00,851 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:18:34,039 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:18:34.039905
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:18:34,042 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:18:34,044 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:18:34,044 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:19:35,869 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:19:35.869374
+Path: /questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:19:35,869 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\questions.html
+2025-07-30 08:19:35,877 - INFO - Client: 127.0.0.1 - Request: "GET /questions.html HTTP/1.1" 304 -
+2025-07-30 08:19:36,100 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:19:36.100674
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:19:36,101 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:19:36,101 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:19:36,102 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:25:52,311 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:25:52.304702
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:25:52,318 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2025-07-30 08:25:52,318 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 304 -
+2025-07-30 08:25:52,583 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:25:52.583148
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:25:52,586 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:25:52,590 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:25:52,591 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:31:35,650 - INFO - Server shutdown by user
+2025-07-30 08:31:39,311 - INFO - Server started on port 8000
+2025-07-30 08:31:42,464 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:31:42.464646
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:31:42,465 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2025-07-30 08:31:42,465 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 304 -
+2025-07-30 08:31:42,664 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:31:42.664733
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:31:42,665 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:31:42,877 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:31:42,879 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:31:51,883 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:31:51.883207
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:31:51,883 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:31:51,884 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:31:51,884 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:31:55,331 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:31:55.331225
+Path: /questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:31:55,331 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\questions.html
+2025-07-30 08:31:55,331 - INFO - Client: 127.0.0.1 - Request: "GET /questions.html HTTP/1.1" 304 -
+2025-07-30 08:31:55,640 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:31:55.640273
+Path: /.well-known/appspecific/com.chrome.devtools.json
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:31:55,641 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\.well-known/appspecific/com.chrome.devtools.json
+2025-07-30 08:31:55,643 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:31:55,644 - INFO - Client: 127.0.0.1 - Request: "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 -
+2025-07-30 08:43:02,937 - INFO - Server shutdown by user
+2025-07-30 08:43:22,380 - INFO - Server started on port 8000
+2025-07-30 08:54:02,434 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:54:02.407069
+Path: /
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:54:02,497 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\index.html
+2025-07-30 08:54:02,534 - INFO - Client: 127.0.0.1 - Request: "GET / HTTP/1.1" 200 -
+2025-07-30 08:54:03,743 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:54:03.743834
+Path: /favicon.ico
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:54:03,752 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\favicon.ico
+2025-07-30 08:54:03,999 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2025-07-30 08:54:04,002 - INFO - Client: 127.0.0.1 - Request: "GET /favicon.ico HTTP/1.1" 404 -
+2025-07-30 08:54:06,001 - INFO - 
+Request Details:
+---------------
+Time: 2025-07-30 08:54:06.001981
+Path: /dashboard.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+
+2025-07-30 08:54:06,003 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\dashboard.html
+2025-07-30 08:54:06,007 - INFO - Client: 127.0.0.1 - Request: "GET /dashboard.html HTTP/1.1" 304 -
+2025-07-30 09:05:30,933 - INFO - Server shutdown by user

@@ -19,6 +19,9 @@ public class DrawView extends View {
     private Path currentPath;
     private List<Path> paths; // List to store paths for undo
     private List<Path> undonePaths; // List to store undone paths for redo
+    private List<Integer> pathColors; // List to store colors for each path
+    private List<Integer> undonePathColors; // List to store colors for undone paths
+    private int currentColor = Color.BLACK; // Current drawing color
 
     public DrawView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -29,13 +32,15 @@ public class DrawView extends View {
         // Initialize Paint object
         paint = new Paint();
         paint.setAntiAlias(true);
-        paint.setColor(Color.BLACK); // Color of the drawing stroke
+        paint.setColor(currentColor); // Color of the drawing stroke
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(8f);
 
-        // Initialize paths
+        // Initialize paths and colors
         paths = new ArrayList<>();
         undonePaths = new ArrayList<>();
+        pathColors = new ArrayList<>();
+        undonePathColors = new ArrayList<>();
         currentPath = new Path();
     }
 
@@ -43,13 +48,17 @@ public class DrawView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        // Draw all paths in the list
-        for (Path p : paths) {
-            canvas.drawPath(p, paint);
+        // Draw all paths with their respective colors
+        for (int i = 0; i < paths.size(); i++) {
+            paint.setColor(pathColors.get(i));
+            canvas.drawPath(paths.get(i), paint);
         }
 
-        // Draw the current path being drawn
-        canvas.drawPath(currentPath, paint);
+        // Draw the current path being drawn with current color
+        if (currentPath != null) {
+            paint.setColor(currentColor);
+            canvas.drawPath(currentPath, paint);
+        }
     }
 
     @Override
@@ -71,7 +80,9 @@ public class DrawView extends View {
             case MotionEvent.ACTION_UP:
                 // Add the current path to the paths list and reset undone paths
                 paths.add(currentPath);
+                pathColors.add(currentColor); // Store the color for this path
                 undonePaths.clear();
+                undonePathColors.clear(); // Clear undone colors too
                 currentPath = new Path(); // Reset the current path
                 break;
             default:
@@ -87,6 +98,8 @@ public class DrawView extends View {
         // Clear all paths and reset the canvas
         paths.clear();
         undonePaths.clear();
+        pathColors.clear();
+        undonePathColors.clear();
         invalidate(); // Redraw the view
     }
 
@@ -94,6 +107,7 @@ public class DrawView extends View {
         if (paths.size() > 0) {
             // Remove the last path from the paths list and add it to the undonePaths list
             undonePaths.add(paths.remove(paths.size() - 1));
+            undonePathColors.add(pathColors.remove(pathColors.size() - 1)); // Store the color too
             invalidate(); // Redraw the view
         }
     }
@@ -102,7 +116,13 @@ public class DrawView extends View {
         if (undonePaths.size() > 0) {
             // Re-add the last undone path back to the paths list
             paths.add(undonePaths.remove(undonePaths.size() - 1));
+            pathColors.add(undonePathColors.remove(undonePathColors.size() - 1)); // Restore the color too
             invalidate(); // Redraw the view
         }
+    }
+
+    public void setColor(int color) {
+        currentColor = color; // Only change the current color, not existing paths
+        invalidate(); // Redraw the view
     }
 }

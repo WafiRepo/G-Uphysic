@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -22,6 +23,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 import android.window.OnBackInvokedDispatcher;
 
@@ -70,6 +72,8 @@ import de.rwth_aachen.phyphox.model.DataModel;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import android.graphics.drawable.GradientDrawable;
+import android.view.ViewGroup;
 
 public class GeneratesActivity extends AppCompatActivity {
     private long visitStartTime;
@@ -82,6 +86,7 @@ public class GeneratesActivity extends AppCompatActivity {
     private String currentPhotoPath;
     byte[] imageBytes;
     private DataModel dataModel;
+    private boolean isCustomQuestion;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,7 +98,7 @@ public class GeneratesActivity extends AppCompatActivity {
         apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
         dataModel = app.getDataModel();
         boolean isFromMainMenu = getIntent().getBooleanExtra("isFromMainMenu", true);
-        boolean isCustomQuestion = getIntent().getBooleanExtra("isCustomQuestion", false);
+        isCustomQuestion = getIntent().getBooleanExtra("isCustomQuestion", false);
         boolean isCustomQuestionNew = getIntent().getBooleanExtra("isCustomQuestionNew", false);
         if (isFromMainMenu) {
             dataModel.setDesc(SessionManager.getName(this) + " Mengerjakan pertanyaan dari Sistem");
@@ -108,6 +113,12 @@ public class GeneratesActivity extends AppCompatActivity {
                         fetchAdvancedQuestion("indonesia", dataModel.getTypeQuestion());
                     }
                 } else {
+                    // For questions from the list, ensure proper progress tracking
+                    int totalEdit = dataModel.getTotalEdit() + 1;
+                    dataModel.setTotalEdit(totalEdit);
+                    dataModel.setCustomerName(SessionManager.getName(this));
+                    dataModel.setIdCustomer(SessionManager.getId(this));
+                    dataModel.setDesc(SessionManager.getName(this) + " Mengerjakan pertanyaan dari list");
 
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
                     if (!dataModel.getIdCustomer().isEmpty()) {
@@ -140,10 +151,7 @@ public class GeneratesActivity extends AppCompatActivity {
                         loadImage(dataModel.getBase64_5(), binding.iv5);
                         binding.iv5.setVisibility(View.VISIBLE);
                     }
-                    if (!dataModel.getPhoto().isEmpty()) {
-                        loadImage(dataModel.getPhoto(), binding.ivPhoto);
-                        binding.ivPhoto.setVisibility(View.VISIBLE);
-                    }
+
 
                     binding.tvQuestion.setText(dataModel.getQuestion());
                     binding.tvType.setText(dataModel.getTypeData());
@@ -154,10 +162,13 @@ public class GeneratesActivity extends AppCompatActivity {
                 dataModel.setTotalEdit(totalEdit);
                 binding.tvType.setText(dataModel.getTypeData());
                 binding.tvQuestion.setText(dataModel.getQuestion());
+                
+                // Load canvas drawing if available (for Edit mode)
                 if(!dataModel.getPhotoDraw().isEmpty()){
                     binding.ivDraw.setVisibility(View.VISIBLE);
                     loadImage(dataModel.getPhotoDraw().get(dataModel.getPhotoDraw().size()-1), binding.ivDraw);
                 }
+
                 // Handle Graph Images
                 if (!dataModel.getBase64().isEmpty()) {
                     loadImageWithGlide(base64ToDrawable(dataModel.getBase64(), GeneratesActivity.this), binding.iv);
@@ -184,10 +195,7 @@ public class GeneratesActivity extends AppCompatActivity {
                     loadImage(dataModel.getBase64_5(), binding.iv5);
                     binding.iv5.setVisibility(View.VISIBLE);
                 }
-                if (!dataModel.getPhoto().isEmpty()) {
-                    loadImage(dataModel.getPhoto(), binding.ivPhoto);
-                    binding.ivPhoto.setVisibility(View.VISIBLE);
-                }
+
             }
 
         }
@@ -232,17 +240,24 @@ public class GeneratesActivity extends AppCompatActivity {
                 dispatchTakePictureIntent();
             }
         });
-        // Tombol Submit (fungsionalitas belum diimplementasikan)
+        // Tombol Save untuk menyimpan progress
+        binding.btnUpload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                binding.btnUpload.setEnabled(false);
+                if (imageBytes == null) {
+                    uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.llDraw)), "answer_image_" + System.currentTimeMillis());
+                } else {
+                    uploadImageToFirestoreAnswer(imageBytes, "answer_image_" + System.currentTimeMillis());
+                }
+                // Implementasi fungsi Submit bisa ditambahkan di sini
+            }
+        });
+
         // Tombol Next yang mengarahkan ke FeedbackActivity
         binding.btnSave.setOnClickListener(v -> {
-            binding.btnSave.setEnabled(false);
-
-            // Upload image terlebih dahulu (dari drawView atau imageBytes)
-            if (imageBytes == null) {
-                uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.llDraw)), "answer_image_" + System.currentTimeMillis());
-            } else {
-                uploadImageToFirestoreAnswer(imageBytes, "answer_image_" + System.currentTimeMillis());
-            }
+            // Selalu tampilkan pesan untuk klik Save terlebih dahulu
+            Toast.makeText(GeneratesActivity.this, "Klik Save terlebih dahulu", Toast.LENGTH_LONG).show();
         });
         binding.btnType.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -294,6 +309,70 @@ public class GeneratesActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        // Record visit start time
+        visitStartTime = System.currentTimeMillis();
+        
+        // Setup color palette functionality
+        setupColorPalette();
+    }
+
+    private void setupColorPalette() {
+        // Setup color palette button click listener
+        binding.btnColorPalette.setOnClickListener(v -> toggleColorPicker());
+        
+        // Setup color buttons click listeners
+        setupColorButtons();
+    }
+
+    private void toggleColorPicker() {
+        if (binding.colorPickerOverlay.getVisibility() == View.VISIBLE) {
+            binding.colorPickerOverlay.setVisibility(View.GONE);
+        } else {
+            binding.colorPickerOverlay.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void setupColorButtons() {
+        // Get all color views from the overlay
+        ViewGroup colorOverlay = binding.colorPickerOverlay;
+        for (int i = 0; i < colorOverlay.getChildCount(); i++) {
+            View child = colorOverlay.getChildAt(i);
+            if (child instanceof LinearLayout) {
+                LinearLayout row = (LinearLayout) child;
+                for (int j = 0; j < row.getChildCount(); j++) {
+                    View colorView = row.getChildAt(j);
+                    if (colorView.getTag() != null) {
+                        colorView.setOnClickListener(v -> {
+                            String colorHex = (String) v.getTag();
+                            setCurrentColor(colorHex);
+                            binding.colorPickerOverlay.setVisibility(View.GONE);
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    private void setCurrentColor(String colorHex) {
+        try {
+            int color = Color.parseColor(colorHex);
+            
+            // Update current color indicator
+            GradientDrawable indicator = new GradientDrawable();
+            indicator.setShape(GradientDrawable.OVAL);
+            indicator.setColor(color);
+            indicator.setStroke(4, Color.WHITE);
+            binding.currentColorIndicator.setBackground(indicator);
+            
+            // Update drawing view color
+            if (drawView != null) {
+                drawView.setColor(color);
+            }
+            
+            Toast.makeText(this, "Warna dipilih: " + colorHex, Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Error memilih warna", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -362,8 +441,6 @@ public class GeneratesActivity extends AppCompatActivity {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             try {
                 Log.d("onactivityresult", "--> processing image");
-                binding.ivPhoto.setVisibility(View.VISIBLE);
-
                 // Cek apakah file exists
                 if (currentPhotoPath != null && new File(currentPhotoPath).exists()) {
                     Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath);
@@ -372,14 +449,10 @@ public class GeneratesActivity extends AppCompatActivity {
                         bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
                         imageBytes = baos.toByteArray();
                         String base64Image = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
-
-                        BitmapDrawable drawable = base64ToDrawable(base64Image, GeneratesActivity.this);
-                        if (drawable != null) {
-                            loadImageWithGlide(drawable, binding.ivPhoto);
-                            App app = (App) getApplication();
-                            dataModel.setPhotoAnswer(base64Image);
-                            app.setDataModel(dataModel);
-                        }
+                        
+                        App app = (App) getApplication();
+                        dataModel.setPhotoAnswer(base64Image);
+                        app.setDataModel(dataModel);
                     } else {
                         Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show();
                     }
@@ -438,6 +511,10 @@ public class GeneratesActivity extends AppCompatActivity {
                     // Dismiss the progress dialog
                     progressDialog.dismiss();
 
+                    // Re-enable buttons
+                    binding.btnSave.setEnabled(true);
+                    binding.btnUpload.setEnabled(true);
+
                     // Notify the user of the error
                     Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
@@ -465,6 +542,60 @@ public class GeneratesActivity extends AppCompatActivity {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 80, byteArrayOutputStream); // Reduce quality
         return byteArrayOutputStream.toByteArray();
+    }
+
+    /**
+     * Compress or truncate base64 string to stay under Firestore limit (1MB)
+     * @param base64String Original base64 string
+     * @return Compressed or truncated base64 string
+     */
+    private String compressBase64ForFirestore(String base64String) {
+        if (base64String == null || base64String.isEmpty()) {
+            return base64String;
+        }
+        
+        // Firestore limit is 1048487 bytes (~1MB)
+        final int FIRESTORE_LIMIT = 1000000; // Leave some margin
+        
+        if (base64String.length() > FIRESTORE_LIMIT) {
+            Log.w("FIRESTORE_COMPRESS", "Base64 string too large (" + base64String.length() + " bytes), compressing...");
+            
+            try {
+                // Try to compress the image data
+                String base64Data = base64String;
+                if (base64String.contains(",")) {
+                    base64Data = base64String.split(",")[1];
+                }
+                
+                byte[] decodedBytes = Base64.decode(base64Data, Base64.NO_WRAP);
+                Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                
+                if (bitmap != null) {
+                    // Compress with lower quality
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    int quality = 30; // Start with low quality
+                    
+                    do {
+                        outputStream.reset();
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream);
+                        quality -= 5; // Reduce quality further if still too large
+                    } while (outputStream.size() > FIRESTORE_LIMIT && quality > 5);
+                    
+                    String compressedBase64 = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP);
+                    Log.d("FIRESTORE_COMPRESS", "Compressed from " + base64String.length() + " to " + compressedBase64.length() + " bytes");
+                    return compressedBase64;
+                }
+            } catch (Exception e) {
+                Log.e("FIRESTORE_COMPRESS", "Error compressing image: " + e.getMessage());
+            }
+            
+            // If compression fails, truncate the string
+            String truncated = base64String.substring(0, FIRESTORE_LIMIT);
+            Log.w("FIRESTORE_COMPRESS", "Compression failed, truncated to " + truncated.length() + " bytes");
+            return truncated;
+        }
+        
+        return base64String;
     }
 
     public void uploadImageToFirestore(byte[] imageData, String fileName) {
@@ -503,8 +634,9 @@ public class GeneratesActivity extends AppCompatActivity {
                         dataModel.setTypeData(binding.tvType.getText().toString());
                         app.setDataModel(dataModel);
 
-                        // Enable the save button
+                        // Enable the buttons
                         binding.btnSave.setEnabled(true);
+                        binding.btnUpload.setEnabled(true);
 
                         // Log success
                         Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
@@ -525,28 +657,28 @@ public class GeneratesActivity extends AppCompatActivity {
                         if (isCustomQuestionNew) {
                             dataModel.setQuestion(binding.etQuestion.getText().toString());
                             table = "questions";
+                        } else if (isCustomQuestion) {
+                            // For questions from the list, ensure progress status is properly managed
+                            dataModel.setCustomerName(SessionManager.getName(this));
+                            dataModel.setIdCustomer(SessionManager.getId(this));
+                            dataModel.setDesc(SessionManager.getName(this) + " Mengerjakan pertanyaan dari list");
                         }
                         app.setDataModel(dataModel);
                         FirestoreUtil.addOrUpdateDocument(table, documentId, dataModel,
                                 () -> {
                                     saveProgressDialog.dismiss();
                                     progressDialog.dismiss();
-                                    if (isCustomQuestionNew) {
-                                        Intent intent = new Intent(GeneratesActivity.this, MainActivity.class);
-                                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                        startActivity(intent);
-                                        finish();
-                                    } else {
-                                        startActivity(new Intent(GeneratesActivity.this, MapsActivity.class));
-                                        finish();
-                                    }
-
+                                    // Navigate to RecordPreviewActivity after successful save
+                                    Intent intent = new Intent(GeneratesActivity.this, RecordPreviewActivity.class);
+                                    startActivity(intent);
+                                    finish();
                                 },
                                 e -> {
                                     saveProgressDialog.dismiss();
                                     progressDialog.dismiss();
                                     Toast.makeText(GeneratesActivity.this, e.getMessage(), Toast.LENGTH_LONG).show();
-                                    binding.btnSave.setEnabled(true); // Re-enable button if failed
+                                    binding.btnSave.setEnabled(true); // Re-enable buttons if failed
+                                    binding.btnUpload.setEnabled(true);
                                 });
 
                         // Dismiss the progress dialog
@@ -584,63 +716,84 @@ public class GeneratesActivity extends AppCompatActivity {
                     dataModel.setIdCustomer(SessionManager.getId(GeneratesActivity.this));
                     binding.tvQuestion.setText(apiResponse.getQuestions());
 
-                    // Reset all image views to GONE at the start
+                    // Reset all image views to GONE and clear any previous images
                     binding.iv.setVisibility(View.GONE);
+                    binding.iv.setImageDrawable(null);
                     binding.iv2.setVisibility(View.GONE);
+                    binding.iv2.setImageDrawable(null);
                     binding.iv3.setVisibility(View.GONE);
+                    binding.iv3.setImageDrawable(null);
                     binding.iv4.setVisibility(View.GONE);
+                    binding.iv4.setImageDrawable(null);
                     binding.iv5.setVisibility(View.GONE);
+                    binding.iv5.setImageDrawable(null);
 
                     // Handle Graph Images (graphImages -> iv)
                     if (apiResponse.getGraphImages() != null && !apiResponse.getGraphImages().isEmpty()) {
-                        dataModel.setBase64(apiResponse.getGraphImages().get(0));
-                        Log.d("getGraphImages --&> ", "" + apiResponse.getGraphImages().get(0));
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getGraphImages().get(0), GeneratesActivity.this), binding.iv);
+                        String originalBase64 = apiResponse.getGraphImages().get(0);
+                        String compressedBase64 = compressBase64ForFirestore(originalBase64);
+                        dataModel.setBase64(compressedBase64);
+                        Log.d("IMAGE_LOAD", "Loading GraphImage to iv: " + originalBase64.substring(0, Math.min(50, originalBase64.length())));
+                        loadImageWithGlide(base64ToDrawable(originalBase64, GeneratesActivity.this), binding.iv);
                         binding.iv.setVisibility(View.VISIBLE);
                     }
                     // Handle Image (image1_base64 -> iv2)
                     if (apiResponse.getImage1_base64() != null && !apiResponse.getImage1_base64().isEmpty()) {
-                        dataModel.setBase64_2(apiResponse.getImage1_base64());
-                        Log.d("getImage1_base64 --&> ", "" + apiResponse.getImage1_base64());
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getImage1_base64(), GeneratesActivity.this), binding.iv2);
+                        String originalBase64_2 = apiResponse.getImage1_base64();
+                        String compressedBase64_2 = compressBase64ForFirestore(originalBase64_2);
+                        dataModel.setBase64_2(compressedBase64_2);
+                        Log.d("IMAGE_LOAD", "Loading Image1 to iv2: " + originalBase64_2.substring(0, Math.min(50, originalBase64_2.length())));
+                        loadImageWithGlide(base64ToDrawable(originalBase64_2, GeneratesActivity.this), binding.iv2);
                         binding.iv2.setVisibility(View.VISIBLE);
                     }
                     // Handle Table 1 (table_img_base64_1 -> iv3)
                     if (apiResponse.getTable_img_base64_1() != null && !apiResponse.getTable_img_base64_1().isEmpty()) {
-                        dataModel.setBase64_3(apiResponse.getTable_img_base64_1());
-                        Log.d("getTable_img_base64_1 --&> ", "" + apiResponse.getTable_img_base64_1());
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getTable_img_base64_1(), GeneratesActivity.this), binding.iv3);
+                        String originalBase64_3 = apiResponse.getTable_img_base64_1();
+                        String compressedBase64_3 = compressBase64ForFirestore(originalBase64_3);
+                        dataModel.setBase64_3(compressedBase64_3);
+                        Log.d("getTable_img_base64_1 --&> ", "" + originalBase64_3.substring(0, Math.min(50, originalBase64_3.length())));
+                        loadImageWithGlide(base64ToDrawable(originalBase64_3, GeneratesActivity.this), binding.iv3);
                         binding.iv3.setVisibility(View.VISIBLE);
                     }
                     // Handle Table 2 (table_img_base64_2 -> iv4)
                     if (apiResponse.getTable_img_base64_2() != null && !apiResponse.getTable_img_base64_2().isEmpty()) {
-                        dataModel.setBase64_4(apiResponse.getTable_img_base64_2());
-                        Log.d("getTable_img_base64_2 --&> ", "" + apiResponse.getTable_img_base64_2());
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getTable_img_base64_2(), GeneratesActivity.this), binding.iv4);
+                        String originalBase64_4 = apiResponse.getTable_img_base64_2();
+                        String compressedBase64_4 = compressBase64ForFirestore(originalBase64_4);
+                        dataModel.setBase64_4(compressedBase64_4);
+                        Log.d("getTable_img_base64_2 --&> ", "" + originalBase64_4.substring(0, Math.min(50, originalBase64_4.length())));
+                        loadImageWithGlide(base64ToDrawable(originalBase64_4, GeneratesActivity.this), binding.iv4);
                         binding.iv4.setVisibility(View.VISIBLE);
                     }
 
-                    // (Optional) Handle table_img_base64 (lama) jika masih dipakai untuk iv3
-                    if (apiResponse.getTable_img_base64() != null && !apiResponse.getTable_img_base64().isEmpty()) {
-                        dataModel.setBase64_3(apiResponse.getTable_img_base64());
-                        Log.d("getTable_img_base64 --&> ", "" + apiResponse.getTable_img_base64());
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getTable_img_base64(), GeneratesActivity.this), binding.iv3);
+                    // Handle table_img_base64 (fallback jika table_img_base64_1 kosong)
+                    if ((apiResponse.getTable_img_base64_1() == null || apiResponse.getTable_img_base64_1().isEmpty()) 
+                        && apiResponse.getTable_img_base64() != null && !apiResponse.getTable_img_base64().isEmpty()) {
+                        String originalFallback3 = apiResponse.getTable_img_base64();
+                        String compressedFallback3 = compressBase64ForFirestore(originalFallback3);
+                        dataModel.setBase64_3(compressedFallback3);
+                        Log.d("getTable_img_base64 fallback --&> ", "" + originalFallback3.substring(0, Math.min(50, originalFallback3.length())));
+                        loadImageWithGlide(base64ToDrawable(originalFallback3, GeneratesActivity.this), binding.iv3);
                         binding.iv3.setVisibility(View.VISIBLE);
                     }
 
-                    // (Optional) Handle local_image_base64 jika ingin tetap tampilkan di iv2
-                    if (apiResponse.getLocal_image_base64() != null && !apiResponse.getLocal_image_base64().isEmpty()) {
-                        dataModel.setBase64_2(apiResponse.getLocal_image_base64());
-                        Log.d("getLocal_image_base64 --&> ", "" + apiResponse.getLocal_image_base64());
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getLocal_image_base64(), GeneratesActivity.this), binding.iv2);
+                    // Handle local_image_base64 (fallback jika image1_base64 kosong)
+                    if ((apiResponse.getImage1_base64() == null || apiResponse.getImage1_base64().isEmpty()) 
+                        && apiResponse.getLocal_image_base64() != null && !apiResponse.getLocal_image_base64().isEmpty()) {
+                        String originalFallback2 = apiResponse.getLocal_image_base64();
+                        String compressedFallback2 = compressBase64ForFirestore(originalFallback2);
+                        dataModel.setBase64_2(compressedFallback2);
+                        Log.d("getLocal_image_base64 fallback --&> ", "" + originalFallback2.substring(0, Math.min(50, originalFallback2.length())));
+                        loadImageWithGlide(base64ToDrawable(originalFallback2, GeneratesActivity.this), binding.iv2);
                         binding.iv2.setVisibility(View.VISIBLE);
                     }
 
                     // Handle image2_base64 (baru) -> iv5
                     if (apiResponse.getImage2_base64() != null && !apiResponse.getImage2_base64().isEmpty()) {
-                        dataModel.setBase64_5(apiResponse.getImage2_base64());
-                        Log.d("getImage2_base64 --&> ", "" + apiResponse.getImage2_base64());
-                        loadImageWithGlide(base64ToDrawable(apiResponse.getImage2_base64(), GeneratesActivity.this), binding.iv5);
+                        String originalBase64_5 = apiResponse.getImage2_base64();
+                        String compressedBase64_5 = compressBase64ForFirestore(originalBase64_5);
+                        dataModel.setBase64_5(compressedBase64_5);
+                        Log.d("getImage2_base64 --&> ", "" + originalBase64_5.substring(0, Math.min(50, originalBase64_5.length())));
+                        loadImageWithGlide(base64ToDrawable(originalBase64_5, GeneratesActivity.this), binding.iv5);
                         binding.iv5.setVisibility(View.VISIBLE);
                     }
 

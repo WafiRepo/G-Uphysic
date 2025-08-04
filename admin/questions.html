@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questions - P-MAGIC Physics Admin</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            background: #f8f9fa;
+        }
+        .sidebar-sticky {
+            position: relative;
+            top: 0;
+            height: calc(100vh - 48px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        main {
+            margin-left: 240px;
+            padding: 20px;
+            padding-top: 80px; /* Add padding to prevent navbar overlap */
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+            z-index: 1030; /* Ensure navbar is above other elements */
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: #333 !important;
+        }
+        .question-preview {
+            max-height: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+        .select-all-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .delete-selected-btn {
+            display: inline-block;
+            opacity: 0.3;
+            pointer-events: none;
+            background-color: #6c757d !important;
+            border-color: #6c757d !important;
+        }
+        .delete-selected-btn.show {
+            opacity: 1;
+            pointer-events: auto;
+            background-color: #dc3545 !important;
+            border-color: #dc3545 !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">P-MAGIC Physics Admin</a>
+            <div class="d-flex">
+                <button class="btn btn-outline-danger" onclick="logout()">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <nav class="col-md-3 col-lg-2 d-md-block sidebar">
+        <div class="sidebar-sticky">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="dashboard.html">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="users.html">
+                        <i class="bi bi-people"></i> Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="questions.html">
+                        <i class="bi bi-question-circle"></i> Questions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="records.html">
+                        <i class="bi bi-journal-text"></i> Records
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="fix_existing_users.html">
+                        <i class="bi bi-tools"></i> Fix Users
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main role="main">
+        <div class="container-fluid">
+            <h1 class="h2 mb-4">Questions Management</h1>
+
+            <!-- Search and Filter -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" id="searchInput" placeholder="Search questions...">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="topicFilter">
+                                <option value="">All Topics</option>
+                                <!-- Topics will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="difficultyFilter">
+                                <option value="">All Difficulties</option>
+                                <option value="easy">Easy</option>
+                                <option value="medium">Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Actions -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="select-all-container">
+                            <input type="checkbox" class="form-check-input" id="selectAllCheckbox">
+                            <label for="selectAllCheckbox" class="form-check-label">Select All</label>
+                            <span id="selectedCount" class="badge bg-primary ms-2">0 selected</span>
+                        </div>
+                        <button class="btn btn-danger delete-selected-btn" id="deleteSelectedBtn" onclick="deleteSelectedQuestions()">
+                            <i class="bi bi-trash"></i> Delete Selected
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            Note: You can only delete questions that you created. Other questions will have disabled checkboxes.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questions List -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th width="50">Select</th>
+                                    <th>Topic</th>
+                                    <th>Question</th>
+                                    <th>Created By</th>
+                                    <th>Difficulty</th>
+                                    <th>Views</th>
+                                    <th>Created At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="questionsTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- View Question Modal -->
+    <div class="modal fade" id="viewQuestionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Question Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Question</h6>
+                            <p id="modalQuestion"></p>
+                            <h6>Topic</h6>
+                            <p id="modalTopic"></p>
+                            <h6>Difficulty</h6>
+                            <p id="modalDifficulty"></p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Created By</h6>
+                            <p id="modalCreator"></p>
+                            <h6>Views</h6>
+                            <p id="modalViews"></p>
+                            <h6>Created At</h6>
+                            <p id="modalCreatedAt"></p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Images</h6>
+                            <div id="modalImages" class="d-flex flex-wrap gap-2">
+                                <!-- Images will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <!-- Add Firebase products that you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script>
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZL5oSEVbDLrN2hbZeDXSchr8wDWAW4ok",
+            authDomain: "phyphox-34aed.firebaseapp.com",
+            projectId: "phyphox-34aed",
+            storageBucket: "phyphox-34aed.firebasestorage.app",
+            messagingSenderId: "602030706614",
+            appId: "1:602030706614:web:f0d8a44a4c4012749b3b17",
+            measurementId: "G-M7SKB5YS91"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Global variables
+        let currentUser = null;
+        let questionsData = [];
+
+        // Check authentication
+        firebase.auth().onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+            } else {
+                currentUser = user;
+                loadQuestions();
+            }
+        });
+
+        // Logout function
+        function logout() {
+            firebase.auth().signOut().then(() => {
+                window.location.href = 'index.html';
+            });
+        }
+
+        // Load questions
+        async function loadQuestions() {
+            try {
+                const snapshot = await db.collection('questions').get();
+                questionsData = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                const questionsHtml = await Promise.all(questionsData.map(async (questionData, index) => {
+                    try {
+                        let userData = { name: 'Unknown' };
+
+                        // Only attempt to fetch user data if idCustomer is a non-empty string
+                        if (questionData.idCustomer && typeof questionData.idCustomer === 'string' && questionData.idCustomer.trim() !== '') {
+                            try {
+                                const userDoc = await db.collection('user').doc(questionData.idCustomer.trim()).get();
+                                if (userDoc.exists) {
+                                    userData = userDoc.data();
+                                } else {
+                                    console.warn(`User not found for ID: ${questionData.idCustomer}`);
+                                }
+                            } catch (userError) {
+                                console.warn('Error fetching user:', userError);
+                            }
+                        } else {
+                            console.warn(`Invalid or missing idCustomer for question: ${questionData.id}`);
+                        }
+
+                        // Check if current user is the creator
+                        const isCreator = currentUser && questionData.idCustomer && 
+                                        currentUser.uid === questionData.idCustomer.trim();
+                        
+                        console.log('Question ID:', questionData.id, 'Creator ID:', questionData.idCustomer, 'Current User:', currentUser?.uid, 'Is Creator:', isCreator);
+                        
+                        return `
+                            <tr data-question-id="${questionData.id}">
+                                <td>
+                                    <input type="checkbox" class="form-check-input question-checkbox" 
+                                           data-question-id="${questionData.id}" 
+                                           data-creator-id="${questionData.idCustomer || ''}"
+                                           ${isCreator ? '' : 'disabled'}
+                                           onchange="updateSelectedCount()">
+                                </td>
+                                <td>${questionData.topics || 'N/A'}</td>
+                                <td class="question-preview">${questionData.question || 'N/A'}</td>
+                                <td>${userData.name}</td>
+                                <td>
+                                    <span class="badge bg-${getDifficultyColor(questionData.typeQuestion)}">
+                                        ${questionData.typeQuestion || 'N/A'}
+                                    </span>
+                                </td>
+                                <td>${questionData.views || 0}</td>
+                                <td>${formatDate(questionData.dateTime)}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewQuestion('${questionData.id}')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    ${isCreator ? `
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteQuestion('${questionData.id}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    ` : `
+                                        <button class="btn btn-sm btn-outline-secondary" disabled title="Only creator can delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    `}
+                                </td>
+                            </tr>
+                        `;
+                    } catch (error) {
+                        console.error('Error processing question:', error, 'Question ID:', questionData.id);
+                        return `
+                            <tr>
+                                <td colspan="8" class="text-danger">
+                                    Error loading question data: ${error.message}
+                                </td>
+                            </tr>
+                        `;
+                    }
+                }));
+
+                document.getElementById('questionsTableBody').innerHTML = questionsHtml.join('') || '<tr><td colspan="8" class="text-center">No questions found</td></tr>';
+
+                // Load unique topics for filter
+                const topics = new Set(questionsData.map(q => q.topics).filter(Boolean));
+                const topicOptions = Array.from(topics).map(topic => 
+                    `<option value="${topic}">${topic}</option>`
+                ).join('');
+                document.getElementById('topicFilter').innerHTML += topicOptions;
+
+            } catch (error) {
+                console.error('Error loading questions:', error);
+                document.getElementById('questionsTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-danger text-center">
+                            Error loading questions: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // View question details
+        async function viewQuestion(questionId) {
+            try {
+                const doc = await db.collection('questions').doc(questionId).get();
+                if (!doc.exists) {
+                    throw new Error('Question not found');
+                }
+
+                const data = doc.data();
+                let userData = { name: 'Unknown' };
+
+                // Only attempt to fetch user data if idCustomer is a non-empty string
+                if (data.idCustomer && typeof data.idCustomer === 'string' && data.idCustomer.trim() !== '') {
+                    try {
+                        const userDoc = await db.collection('user').doc(data.idCustomer.trim()).get();
+                        if (userDoc.exists) {
+                            userData = userDoc.data();
+                        } else {
+                            console.warn(`User not found for ID: ${data.idCustomer}`);
+                        }
+                    } catch (userError) {
+                        console.warn('Error fetching user:', userError);
+                    }
+                }
+
+                document.getElementById('modalQuestion').textContent = data.question || 'N/A';
+                document.getElementById('modalTopic').textContent = data.topics || 'N/A';
+                document.getElementById('modalDifficulty').textContent = data.typeQuestion || 'N/A';
+                document.getElementById('modalCreator').textContent = userData.name;
+                document.getElementById('modalViews').textContent = data.views || 0;
+                document.getElementById('modalCreatedAt').textContent = formatDate(data.dateTime);
+
+                // Load images
+                const imagesHtml = [];
+                if (data.base64) imagesHtml.push(createImageElement(data.base64));
+                if (data.base64_2) imagesHtml.push(createImageElement(data.base64_2));
+                if (data.base64_3) imagesHtml.push(createImageElement(data.base64_3));
+                if (data.base64_4) imagesHtml.push(createImageElement(data.base64_4));
+                if (data.base64_5) imagesHtml.push(createImageElement(data.base64_5));
+
+                document.getElementById('modalImages').innerHTML = imagesHtml.join('') || 'No images available';
+
+                // Show modal
+                new bootstrap.Modal(document.getElementById('viewQuestionModal')).show();
+            } catch (error) {
+                console.error('Error viewing question:', error);
+                alert('Error viewing question details: ' + error.message);
+            }
+        }
+
+        // Delete question
+        async function deleteQuestion(questionId) {
+            if (!confirm('Are you sure you want to delete this question?')) return;
+
+            try {
+                await db.collection('questions').doc(questionId).delete();
+                loadQuestions();
+            } catch (error) {
+                console.error('Error deleting question:', error);
+                alert('Error deleting question: ' + error.message);
+            }
+        }
+
+        // Delete selected questions
+        async function deleteSelectedQuestions() {
+            const selectedCheckboxes = document.querySelectorAll('.question-checkbox:checked');
+            
+            if (selectedCheckboxes.length === 0) {
+                alert('Please select questions to delete');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete ${selectedCheckboxes.length} selected question(s)?`)) {
+                return;
+            }
+
+            try {
+                const deletePromises = Array.from(selectedCheckboxes).map(checkbox => {
+                    const questionId = checkbox.getAttribute('data-question-id');
+                    return db.collection('questions').doc(questionId).delete();
+                });
+
+                await Promise.all(deletePromises);
+                alert(`Successfully deleted ${selectedCheckboxes.length} question(s)`);
+                loadQuestions();
+                updateSelectedCount();
+            } catch (error) {
+                console.error('Error deleting selected questions:', error);
+                alert('Error deleting selected questions: ' + error.message);
+            }
+        }
+
+        // Update selected count and show/hide delete button
+        function updateSelectedCount() {
+            const selectedCheckboxes = document.querySelectorAll('.question-checkbox:checked');
+            const selectedCount = selectedCheckboxes.length;
+            
+            console.log('Selected count:', selectedCount);
+            document.getElementById('selectedCount').textContent = `${selectedCount} selected`;
+            
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            if (selectedCount > 0) {
+                deleteBtn.classList.add('show');
+                console.log('Delete button shown');
+            } else {
+                deleteBtn.classList.remove('show');
+                console.log('Delete button hidden');
+            }
+        }
+
+        // Select all functionality
+        document.getElementById('selectAllCheckbox').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.question-checkbox:not(:disabled)');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelectedCount();
+        });
+
+        // Helper functions
+        function getDifficultyColor(difficulty) {
+            switch (difficulty?.toLowerCase()) {
+                case 'easy':
+                case 'mudah':
+                    return 'success';
+                case 'medium':
+                case 'sedang':
+                    return 'warning';
+                case 'hard':
+                case 'sulit':
+                    return 'danger';
+                default:
+                    return 'secondary';
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            try {
+                return new Date(dateString).toLocaleString();
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        function createImageElement(base64) {
+            return `
+                <div class="position-relative" style="width: 100px; height: 100px;">
+                    <img src="${base64}" class="img-thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+            `;
+        }
+
+        // Search and filter functionality
+        document.getElementById('searchInput').addEventListener('input', filterQuestions);
+        document.getElementById('topicFilter').addEventListener('change', filterQuestions);
+        document.getElementById('difficultyFilter').addEventListener('change', filterQuestions);
+
+        function filterQuestions() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const topic = document.getElementById('topicFilter').value.toLowerCase();
+            const difficulty = document.getElementById('difficultyFilter').value.toLowerCase();
+            
+            const rows = document.querySelectorAll('#questionsTableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const topicCell = row.cells[1]?.textContent.toLowerCase();
+                const difficultyCell = row.cells[4]?.textContent.toLowerCase();
+                
+                const matchesSearch = text.includes(searchTerm);
+                const matchesTopic = !topic || topicCell.includes(topic);
+                const matchesDifficulty = !difficulty || difficultyCell.includes(difficulty);
+                
+                row.style.display = (matchesSearch && matchesTopic && matchesDifficulty) ? '' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>

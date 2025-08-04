@@ -3,16 +3,15 @@ package de.rwth_aachen.phyphox.adapter;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -21,9 +20,9 @@ import java.util.List;
 import de.rwth_aachen.phyphox.App;
 import de.rwth_aachen.phyphox.R;
 import de.rwth_aachen.phyphox.activity.DetailRecordActivity;
-import de.rwth_aachen.phyphox.activity.FeedbackActivity;
 import de.rwth_aachen.phyphox.activity.GeneratesActivity;
 import de.rwth_aachen.phyphox.activity.GeneratesClassQuestionActivity;
+import de.rwth_aachen.phyphox.activity.RecordPreviewActivity;
 import de.rwth_aachen.phyphox.model.DataModel;
 
 public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdapter.ViewHolder> {
@@ -34,7 +33,7 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
 
     public HistoryRecordAdapter(Context context, Application application) {
         this.context = context;
-        this.application= application;
+        this.application = application;
         this.progressList = new ArrayList<>();
     }
 
@@ -56,62 +55,73 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         DataModel item = progressList.get(position);
 
-        holder.tvTopic.setText(item.getTopics());
-        holder.tvType.setText(item.getTypeQuestion());
+        // Set topic title
+        String topicTitle = item.getTopics();
+        if (topicTitle == null || topicTitle.isEmpty()) {
+            topicTitle = "Eksperimen Fisika";
+        }
+        holder.tvTopic.setText(topicTitle);
+
+        // Set type info with consistent difficulty format
+        String typeInfo = item.getTypeQuestion();
+        if (typeInfo == null || typeInfo.isEmpty()) {
+            typeInfo = "Sedang"; // Default to medium instead of Advanced
+        }
+        String formattedDifficulty = getDifficultyWithEmoji(typeInfo);
+        holder.tvType.setText(formattedDifficulty);
+
+        // Set checkbox state
         holder.cbSelect.setChecked(selectedList.get(position));
         holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
             selectedList.set(position, isChecked);
         });
 
-        if (item.getFinished()) {
+        // Handle finished vs in-progress states
+        if (item.getFinished() != null && item.getFinished()) {
+            // Completed experiment
             holder.ivCompletedAction.setVisibility(View.VISIBLE);
-            holder.tvEdit.setVisibility(View.VISIBLE);
-            holder.tvInProgressAction.setVisibility(View.GONE);
-            holder.tvStatus.setText("Completed");
-            holder.tvStatus.setBackgroundResource(R.drawable.background_8_gray);
+            holder.cvEdit.setVisibility(View.VISIBLE);
+            holder.cvContinue.setVisibility(View.GONE);
+            holder.tvStatus.setText("✅ Selesai");
+            
+            // Click to view details
             holder.itemView.setOnClickListener(view -> {
                 App app = (App) ((Application) context.getApplicationContext());
                 app.setDataModel(item);
-                Intent intent = new Intent(context, DetailRecordActivity.class);
+                Intent intent = new Intent(context, RecordPreviewActivity.class);
                 context.startActivity(intent);
             });
-            holder.tvEdit.setOnClickListener(view -> {
-                if (item.getTopics().equals("Out Class") || item.getTopics().equals("In Class")) {
-                    Intent intent = new Intent(context, GeneratesClassQuestionActivity.class);
-                    intent.putExtra("isFromMainMenu", false);
-                    App app = (App) application;
-                    app.setDataModel(item);
-                    context.startActivity(intent);
-                }else{
-                    Intent intent = new Intent(context, GeneratesActivity.class);
-                    intent.putExtra("isFromMainMenu", false);
-                    App app = (App) application;
-                    app.setDataModel(item);
-                    context.startActivity(intent);
-                }
-            });
-        } else {
-            holder.ivCompletedAction.setVisibility(View.GONE);
-            holder.tvInProgressAction.setVisibility(View.VISIBLE);
-            holder.tvStatus.setText("In Progress");
-            holder.tvStatus.setBackgroundResource(R.drawable.background_8_orange);
-            holder.tvInProgressAction.setOnClickListener(view -> {
-                if (item.getTopics().equals("Out Class") || item.getTopics().equals("In Class")) {
-                    Intent intent = new Intent(context, GeneratesClassQuestionActivity.class);
-                    intent.putExtra("isFromMainMenu", false);
-                    App app = (App) application;
-                    app.setDataModel(item);
-                    context.startActivity(intent);
-                }else{
-                    Intent intent = new Intent(context, GeneratesActivity.class);
-                    intent.putExtra("isFromMainMenu", false);
-                    App app = (App) application;
-                    app.setDataModel(item);
-                    context.startActivity(intent);
-                }
 
+            // Edit button click
+            holder.cvEdit.setOnClickListener(view -> {
+                navigateToExperiment(item, false);
+            });
+
+        } else {
+            // In-progress experiment
+            holder.ivCompletedAction.setVisibility(View.GONE);
+            holder.cvEdit.setVisibility(View.GONE);
+            holder.cvContinue.setVisibility(View.VISIBLE);
+            holder.tvStatus.setText("🔄 Berlanjut");
+
+            // Continue button click
+            holder.cvContinue.setOnClickListener(view -> {
+                navigateToExperiment(item, false);
             });
         }
+    }
+
+    private void navigateToExperiment(DataModel item, boolean isFromMainMenu) {
+        Intent intent;
+        if (item.getTopics().equals("Out Class") || item.getTopics().equals("In Class")) {
+            intent = new Intent(context, GeneratesClassQuestionActivity.class);
+        } else {
+            intent = new Intent(context, GeneratesActivity.class);
+        }
+        intent.putExtra("isFromMainMenu", isFromMainMenu);
+        App app = (App) application;
+        app.setDataModel(item);
+        context.startActivity(intent);
     }
 
     @Override
@@ -127,21 +137,42 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
         return selected;
     }
 
+    private String getDifficultyWithEmoji(String difficulty) {
+        switch (difficulty.toLowerCase()) {
+            case "easy":
+            case "mudah":
+                return "🟢 Mudah";
+            case "medium":
+            case "sedang":
+            case "intermediate":
+                return "🟡 Sedang";
+            case "hard":
+            case "sulit":
+            case "lanjutan":
+            case "advanced":
+                return "🔴 Sulit";
+            default:
+                return "🟡 Sedang"; // Default to medium
+        }
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTopic, tvType, tvStatus, tvInProgressAction, tvEdit;
-        Button btnAction;
+        TextView tvTopic, tvType, tvStatus, tvDifficultyBadge;
         ImageView ivCompletedAction;
         CheckBox cbSelect;
+        CardView cvAdvanced, cvContinue, cvEdit;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTopic = itemView.findViewById(R.id.tvTopic);
             tvType = itemView.findViewById(R.id.tvType);
-            tvEdit = itemView.findViewById(R.id.tvEdit);
             tvStatus = itemView.findViewById(R.id.tvStatus);
-            tvInProgressAction = itemView.findViewById(R.id.tvInProgressAction);
+            tvDifficultyBadge = itemView.findViewById(R.id.tvDifficultyBadge);
             ivCompletedAction = itemView.findViewById(R.id.ivCompletedAction);
             cbSelect = itemView.findViewById(R.id.cbSelect);
+            cvAdvanced = itemView.findViewById(R.id.cvAdvanced);
+            cvContinue = itemView.findViewById(R.id.cvContinue);
+            cvEdit = itemView.findViewById(R.id.cvEdit);
         }
     }
 }

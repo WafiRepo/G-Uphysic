@@ -1,121 +1,348 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
     android:id="@+id/rlView"
+    android:background="@drawable/gradient_background"
     tools:context=".activity.DrawActivity">
 
-    <!-- Drawing pad -->
-    <LinearLayout
-        android:id="@+id/iv_screenshot"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        tools:background="@drawable/iv_answer"
-        android:gravity="bottom"
-        android:orientation="vertical"
-        android:weightSum="1.0">
+    <!-- Top Toolbar - More Compact -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/top_toolbar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="@color/phyphox_white_100"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
-            android:id="@+id/view_drawing_pad"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:orientation="horizontal"></LinearLayout>
-    </LinearLayout>
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:gravity="center">
 
-    <!-- Top background for Undo, Redo, Clear buttons, and Calculator button -->
-    <LinearLayout
-        android:id="@+id/top_button_container"
-        android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="✏️ Canvas Menggambar"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/phyphox_purple" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Gambar analisis fisika Anda"
+                    android:textSize="11sp"
+                    android:textColor="@color/phyphox_black_60"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+            <!-- Info/Help Button -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/ivSign"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                app:backgroundTint="@color/phyphox_black_100"
+                android:src="@drawable/knowledge"
+                app:fabSize="mini"
+                android:contentDescription="Bantuan" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- Large Drawing Area Container -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/drawing_container"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_margin="8dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="@color/phyphox_white_100"
+        app:layout_constraintTop_toBottomOf="@id/top_toolbar"
+        app:layout_constraintBottom_toTopOf="@id/bottom_toolbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Drawing pad with screenshot background -->
+        <LinearLayout
+            android:id="@+id/iv_screenshot"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:background="@drawable/iv_answer"
+            android:gravity="bottom"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/view_drawing_pad"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal" />
+        </LinearLayout>
+
+        <!-- Color Picker Overlay -->
+        <LinearLayout
+            android:id="@+id/color_picker_overlay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="16dp"
+            android:background="@drawable/bg_button_group"
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎨 Pilih Warna"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/phyphox_purple"
+                android:layout_marginBottom="8dp"
+                android:gravity="center" />
+
+            <!-- Color Buttons Row 1 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="4dp">
+
+                <View
+                    android:id="@+id/color_black"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/color_selector_black"
+                    android:tag="#000000" />
+
+                <View
+                    android:id="@+id/color_red"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/color_selector_red"
+                    android:tag="#FF0000" />
+
+                <View
+                    android:id="@+id/color_blue"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/color_selector_blue"
+                    android:tag="#0000FF" />
+
+                <View
+                    android:id="@+id/color_green"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/color_selector_green"
+                    android:tag="#00FF00" />
+
+            </LinearLayout>
+
+            <!-- Color Buttons Row 2 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/color_orange"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/color_selector_orange"
+                    android:tag="#FF9800" />
+
+                <View
+                    android:id="@+id/color_purple"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/color_selector_purple"
+                    android:tag="#9C27B0" />
+
+                <View
+                    android:id="@+id/color_pink"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/color_selector_pink"
+                    android:tag="#E91E63" />
+
+                <View
+                    android:id="@+id/color_brown"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/color_selector_brown"
+                    android:tag="#795548" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Drawing Tools Floating Panel -->
+        <LinearLayout
+            android:id="@+id/floating_tools"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_margin="16dp"
+            android:background="@drawable/bg_button_group"
+            android:orientation="horizontal"
+            android:padding="8dp">
+
+            <!-- Color Picker Toggle -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_color_picker"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                app:backgroundTint="@color/phyphox_magenta"
+                android:src="@drawable/ic_palette"
+                app:fabSize="mini" />
+
+            <!-- Current Color Indicator -->
+            <View
+                android:id="@+id/current_color_indicator"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/color_indicator_black"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Undo -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_undo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                app:backgroundTint="@color/phyphox_purple"
+                android:src="@drawable/ic_undo"
+                app:fabSize="mini" />
+
+            <!-- Redo -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_redo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:backgroundTint="@color/phyphox_purple"
+                android:src="@drawable/ic_redo"
+                app:fabSize="mini" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- Compact Bottom Toolbar -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/bottom_toolbar"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="@color/phyphox_white_100"
-        android:layout_alignParentTop="true"
-        android:padding="27dp"
-        android:gravity="start">
+        android:layout_margin="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="@color/phyphox_white_100"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Undo Button -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_undo"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:backgroundTint="@color/phyphox_purple"
-            android:src="@drawable/ic_undo"
-            android:layout_marginEnd="16dp" />
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:gravity="center_vertical">
 
-        <!-- Redo Button -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_redo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:backgroundTint="@color/phyphox_purple"
-            android:src="@drawable/ic_redo"
-            android:layout_marginEnd="16dp" />
+            <!-- Clear Button -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
 
-        <!-- Clear Button -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_clear"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:backgroundTint="@color/phyphox_purple"
-            android:src="@drawable/ic_delete_outline"
-            android:layout_marginEnd="16dp" />
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/fab_clear"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:backgroundTint="@color/phyphox_orange"
+                    android:src="@drawable/ic_delete_outline"
+                    app:fabSize="mini" />
 
-        <!-- Calculator Button -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_calculator"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:backgroundTint="@color/phyphox_purple"
-            android:src="@drawable/ic_calculator"
-            android:layout_marginEnd="16dp" />
-    </LinearLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Hapus"
+                    android:textSize="10sp"
+                    android:textColor="@color/phyphox_black_60" />
 
-    <!-- Bottom container with Next button and input form -->
-    <LinearLayout
-        android:id="@+id/bottom_button_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="@color/phyphox_white_100"
-        android:layout_alignParentBottom="true"
-        android:padding="20dp"
-        android:gravity="center_vertical">
+            </LinearLayout>
 
-        <!-- Input box for entering a value -->
-        <EditText
-            android:id="@+id/input_value"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Enter value"
-            android:inputType="numberDecimal"
-            android:padding="10dp"
-            android:textColor="@android:color/black"
-            android:textSize="16sp"
-            android:background="@drawable/custom_edittext_background"
-            android:layout_marginEnd="16dp"/>
+            <!-- Calculator Button -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
 
-        <!-- Next Button -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_next"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:backgroundTint="@color/phyphox_purple"
-            android:src="@drawable/ic_next"/>
-    </LinearLayout>
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/fab_calculator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:backgroundTint="@color/phyphox_blue_60"
+                    android:src="@drawable/ic_calculator"
+                    app:fabSize="mini" />
 
-    <ImageView
-        android:id="@+id/ivSign"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:background="@drawable/ic_sign"
-        android:contentDescription="Introduction Info"
-        android:elevation="10dp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Kalkulator"
+                    android:textSize="10sp"
+                    android:textColor="@color/phyphox_black_60" />
 
-</RelativeLayout>
+            </LinearLayout>
+
+            <!-- Next Button -->
+            <Button
+                android:id="@+id/fab_next"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="3"
+                android:layout_marginStart="16dp"
+                android:text="📝 Lanjut ke Pertanyaan"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textAllCaps="false"
+                android:background="@drawable/btn_next_selector"
+                android:textColor="@color/btn_next_text_selector" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

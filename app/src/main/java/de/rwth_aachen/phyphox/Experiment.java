@@ -1484,17 +1484,71 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
             // Debug: Log status measurement dan data
             Log.d("SCREENSHOT_DEBUG", "[DRAW] Measuring: " + measuring);
             Log.d("SCREENSHOT_DEBUG", "[DRAW] Experiment loaded: " + (experiment != null));
+
+            // Check if we have sufficient data before proceeding
+            boolean hasEnoughData = false;
+            int accCount = 0, gyrCount = 0, gyrSquaredCount = 0, tCount = 0;
+
             if (experiment != null) {
                 Log.d("SCREENSHOT_DEBUG", "[DRAW] New data: " + experiment.newData);
                 Log.d("SCREENSHOT_DEBUG", "[DRAW] Data buffers count: " + experiment.dataBuffers.size());
+
                 for (DataBuffer buffer : experiment.dataBuffers) {
-                    Log.d("SCREENSHOT_DEBUG", "[DRAW] Buffer " + buffer.name + ": " + buffer.getFilledSize() + " values");
+                    int bufferSize = buffer.getFilledSize();
+                    Log.d("SCREENSHOT_DEBUG", "[DRAW] Buffer " + buffer.name + ": " + bufferSize + " values");
+
+                    switch (buffer.name) {
+                        case "acc":
+                            accCount = bufferSize;
+                            break;
+                        case "gyr":
+                            gyrCount = bufferSize;
+                            break;
+                        case "gyr_squared":
+                            gyrSquaredCount = bufferSize;
+                            break;
+                        case "t":
+                            tCount = bufferSize;
+                            break;
+                    }
                 }
+
+                // Server needs at least 10 points for acc and gyr_squared
+                hasEnoughData = (accCount >= 10 && gyrSquaredCount >= 10);
+
+                Log.d("SCREENSHOT_DEBUG", "[DRAW] Data counts - acc: " + accCount + ", gyr: " + gyrCount +
+                      ", gyr_squared: " + gyrSquaredCount + ", t: " + tCount);
+                Log.d("SCREENSHOT_DEBUG", "[DRAW] Has enough data: " + hasEnoughData);
             }
 
-            // Panggil getRadius() untuk menampilkan dialog konfirmasi radius
-            // Navigasi ke DrawActivity hanya akan terjadi setelah user mengkonfirmasi radius
-            getRadius();
+            if (!hasEnoughData) {
+                // Show helpful dialog to user with specific data counts
+                String message = "Untuk menghitung radius, diperlukan minimal 20 data points untuk accelerometer dan gyroscope.\n\n" +
+                               "Status saat ini:\n" +
+                               "• Accelerometer: " + accCount + "/20 points\n" +
+                               "• Gyroscope Squared: " + gyrSquaredCount + "/10 points\n\n" +
+                               "Silakan:\n" +
+                               "1. Mulai pengukuran jika belum dimulai\n" +
+                               "2. Lakukan gerakan melingkar yang konsisten\n" +
+                               "3. Tunggu minimal 30-40 detik untuk mengumpulkan data\n" +
+                               "4. Coba lagi klik tombol drawing ini, jika data sudah memadai";
+
+                new AlertDialog.Builder(this)
+                    .setTitle("Data Tidak Cukup")
+                    .setMessage(message)
+                    .setPositiveButton("OK", null)
+                    .setNegativeButton("Langsung ke Drawing", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            takeScreenshotOnly();
+                        }
+                    })
+                    .show();
+                return true;
+            }
+
+            // Collect and send buffer data first, then proceed to radius calculation
+            collectAndSendBufferData();
             return true;
         }
 
@@ -1923,6 +1977,34 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
 
     // Method untuk mengirim data buffer ke server
     private void sendBufferData(List<Double> acc, List<Double> gyr, List<Double> gyrSquared, List<Double> t) {
+        // Validasi data terlebih dahulu - setiap buffer harus memiliki minimal 10 data points
+        Log.d("Experiment", "Data validation:");
+        Log.d("Experiment", "acc: " + acc.size() + " points");
+        Log.d("Experiment", "gyr: " + gyr.size() + " points");
+        Log.d("Experiment", "gyr_squared: " + gyrSquared.size() + " points");
+        Log.d("Experiment", "t: " + t.size() + " points");
+
+        // Server memerlukan minimal 10 data points untuk acc dan gyr_squared
+        if (acc.size() < 10 || gyrSquared.size() < 10) {
+            Log.w("Experiment", "Insufficient data for radius calculation:");
+            Log.w("Experiment", "acc: " + acc.size() + " (need ≥10), gyr_squared: " + gyrSquared.size() + " (need ≥10)");
+            showErrorDialog("Data tidak cukup untuk menghitung radius.\n\n" +
+                           "Diperlukan:\n" +
+                           "• Minimal 10 data accelerometer (saat ini: " + acc.size() + ")\n" +
+                           "• Minimal 10 data gyroscope (saat ini: " + gyrSquared.size() + ")\n\n" +
+                           "Silakan lakukan pengukuran dengan gerakan melingkar yang konsisten selama minimal 5-10 detik.");
+            return;
+        }
+
+        // Additional check for total data quality
+        int totalDataPoints = acc.size() + gyr.size() + gyrSquared.size() + t.size();
+        if (totalDataPoints < 50) { // More conservative check
+            Log.w("Experiment", "Total data points too low: " + totalDataPoints + " (recommended ≥50)");
+            showErrorDialog("Data pengukuran masih terbatas (total: " + totalDataPoints + " points).\n\n" +
+                           "Untuk hasil yang optimal, lakukan pengukuran lebih lama dengan gerakan melingkar yang stabil.");
+            return;
+        }
+
         // Ambil user_id dari SessionManager
         String userId = de.rwth_aachen.phyphox.Helper.SessionManager.getId(this);
         // Buat objek BufferData dengan data buffer yang akan dikirim
@@ -1938,15 +2020,17 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
                     Log.d("Experiment", "Data berhasil dikirim ke server");
+                    getRadius();
                 } else {
                     Log.e("Experiment", "Gagal mengirim data. Kode respons: " + response.code());
+                    showErrorDialog("Gagal mengirim data ke server. Silakan coba lagi.");
                 }
-                getRadius();
             }
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
                 Log.e("Experiment", "Error: " + t.getMessage());
+                showErrorDialog("Koneksi ke server gagal. Periksa koneksi internet Anda.");
             }
         });
     }
@@ -2318,7 +2402,13 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
                     showRadiusDialog(radius, userId);
                 } else {
                     Log.e("getRadius", "Response unsuccessful: " + response.message());
-                    showErrorDialog("Gagal mendapatkan radius: " + response.message());
+
+                    // Handle specific error for insufficient data
+                    if (response.code() == 400) {
+                        showErrorDialog("Data tidak cukup untuk menghitung radius. Silakan lakukan pengukuran lebih lama dengan gerakan yang konsisten untuk mendapatkan data yang memadai.");
+                    } else {
+                        showErrorDialog("Gagal mendapatkan radius: " + response.message());
+                    }
                 }
             }
 
@@ -2342,7 +2432,7 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
         etRadius.setTextColor(Color.BLACK);
 
         builder.setView(dialogView)
-                .setTitle("Radius Lingkaran")
+                .setTitle("Masukkan Radius Lingkaran")
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -2562,7 +2652,7 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
     // Method untuk mengambil screenshot tanpa mengirim data ke server
     private void takeScreenshotOnly() {
         Log.d("SCREENSHOT_DEBUG", "Taking screenshot without sending data to server...");
-        
+
         // Existing Screenshot and Intent code
         final String fileName = experiment != null ? experiment.title.replaceAll("[^0-9a-zA-Z \\-_]", "") : "phyphox";
         File file = new File(this.getCacheDir(), "/" + (fileName.isEmpty() ? "phyphox" : fileName) + " " + (new SimpleDateFormat("yyyy-MM-dd HH-mm-ss")).format(new Date()) + ".png");
@@ -2620,5 +2710,65 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
         } else {
             Log.e("SCREENSHOT_DEBUG", "No suitable view found for screenshot");
         }
+    }
+
+    // Method untuk mengumpulkan dan mengirim buffer data saat klik icon pencil
+    private void collectAndSendBufferData() {
+        Log.d("SCREENSHOT_DEBUG", "Collecting and sending buffer data...");
+        Log.d("SCREENSHOT_DEBUG", "Measuring: " + measuring);
+        Log.d("SCREENSHOT_DEBUG", "Experiment loaded: " + (experiment != null));
+
+        if (experiment != null) {
+            Log.d("SCREENSHOT_DEBUG", "New data: " + experiment.newData);
+            Log.d("SCREENSHOT_DEBUG", "Data buffers count: " + experiment.dataBuffers.size());
+            for (DataBuffer buffer : experiment.dataBuffers) {
+                Log.d("SCREENSHOT_DEBUG", "Buffer " + buffer.name + ": " + buffer.getFilledSize() + " values");
+            }
+        }
+
+        // Collect buffer data
+        List<String> targetBufferNames = Arrays.asList("acc", "gyr", "gyr_squared", "t");
+
+        // Data lists for buffers
+        List<Double> accData = new ArrayList<>();
+        List<Double> gyrData = new ArrayList<>();
+        List<Double> gyrSquaredData = new ArrayList<>();
+        List<Double> tData = new ArrayList<>();
+
+        // Collect buffer data
+        if (experiment != null) {
+            for (DataBuffer buffer : experiment.dataBuffers) {
+                if (targetBufferNames.contains(buffer.name)) {
+                    try {
+                        // Get data as a list
+                        List<Double> dataList = buffer.getDataAsList();
+
+                        // Add data to the corresponding list based on buffer name
+                        switch (buffer.name) {
+                            case "acc":
+                                accData.addAll(dataList);
+                                break;
+                            case "gyr":
+                                gyrData.addAll(dataList);
+                                break;
+                            case "gyr_squared":
+                                gyrSquaredData.addAll(dataList);
+                                break;
+                            case "t":
+                                tData.addAll(dataList);
+                                break;
+                        }
+
+                        Log.d("DataBuffer JSON", "Data for buffer " + buffer.name + ": " + dataList.toString());
+
+                    } catch (Exception e) {
+                        Log.e("DataBuffer JSON", "Error processing buffer " + buffer.name, e);
+                    }
+                }
+            }
+        }
+
+        // Send buffer data to server (this will call getRadius() after successful send)
+        sendBufferData(accData, gyrData, gyrSquaredData, tData);
     }
 }

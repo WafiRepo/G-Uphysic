@@ -34,6 +34,7 @@ public class DataModel implements Parcelable {
     private String typeData;
     private String desc;
     private int totalEdit;
+    private int views;
 
     public DataModel(){
         this.photo = "";
@@ -57,6 +58,7 @@ public class DataModel implements Parcelable {
         this.desc = "";
         this.isFinished = false;
         this.totalEdit = 0;
+        this.views = 0;
         Date now = Calendar.getInstance().getTime();
 
         // Format waktu
@@ -315,6 +317,22 @@ public class DataModel implements Parcelable {
 
     public void setTotalEdit(int totalEdit) {
         this.totalEdit = totalEdit;
+    }
+
+    public String getDateTime() {
+        return dateTime;
+    }
+
+    public void setDateTime(String dateTime) {
+        this.dateTime = dateTime;
+    }
+
+    public int getViews() {
+        return views;
+    }
+
+    public void setViews(int views) {
+        this.views = views;
     }
 }
 

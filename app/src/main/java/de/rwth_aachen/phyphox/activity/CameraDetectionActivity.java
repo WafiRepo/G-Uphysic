@@ -87,7 +87,7 @@ public class CameraDetectionActivity extends AppCompatActivity implements Camera
                         runOnUiThread(() -> {
                             Toast.makeText(CameraDetectionActivity.this,
                                     "Foto dengan circle detection berhasil diambil!", Toast.LENGTH_SHORT).show();
-                            
+
                             // Reset status save dan disable tombol Next
                             isImageSaved = false;
                             binding.btnSave.setEnabled(false);
