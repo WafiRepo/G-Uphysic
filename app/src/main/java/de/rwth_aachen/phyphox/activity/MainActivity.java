@@ -212,69 +212,147 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         };
 
 
+        // Load artifacts from both "record" and "questions" collections
+        loadArtifactsFromRecord();
+    }
+    
+    private void loadArtifactsFromRecord() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
         db.collection("record")
                 .orderBy("id", Query.Direction.DESCENDING)
                 .limit(5)
                 .get()
                 .addOnSuccessListener(snapshot -> {
-                    Map<String, String> userNameCache = new HashMap<>();
-                    List<DocumentSnapshot> docs = snapshot.getDocuments();
-                    final int[] counter = {0};
-                    allArtifacts.clear();
-
-                    if (docs.isEmpty()) {
-                        adapter.notifyDataSetChanged();
-                        return;
-                    }
-
-                    for (DocumentSnapshot doc : docs) {
-                        String photoUrl = doc.getString("photo");
-                        String location = doc.getString("locationName");
-                        String idCustomer = doc.getString("idCustomer");
-
-                        if (photoUrl != null && photoUrl.contains(".googleapis.com") &&
-                                location != null && !location.isEmpty() &&
-                                idCustomer != null && !idCustomer.isEmpty()) {
-
-                            if (userNameCache.containsKey(idCustomer)) {
-                                String userName = userNameCache.get(idCustomer);
-                                if (userName != null && !userName.isEmpty()) {
-                                    allArtifacts.add(new ArtifactSliderAdapter.ArtifactItem(photoUrl, location, userName, ""));
-                                }
-                                counter[0]++;
-                                if (counter[0] == docs.size()) {
-                                    adapter.notifyDataSetChanged();
-                                }
-                                continue;
-                            }
-
-                            db.collection("user").document(idCustomer).get().addOnSuccessListener(userDoc -> {
-                                String userName = userDoc.getString("name");
-                                if (userName != null && !userName.isEmpty()) {
-                                    userNameCache.put(idCustomer, userName);
-                                    allArtifacts.add(new ArtifactSliderAdapter.ArtifactItem(photoUrl, location, userName, ""));
-                                }
-                                counter[0]++;
-                                if (counter[0] == docs.size()) {
-                                    adapter.notifyDataSetChanged();
-                                }
-                            }).addOnFailureListener(e -> {
-                                counter[0]++;
-                                if (counter[0] == docs.size()) {
-                                    adapter.notifyDataSetChanged();
-                                }
-                            });
-
-                        } else {
-                            counter[0]++;
-                            if (counter[0] == docs.size()) {
-                                adapter.notifyDataSetChanged();
-                            }
-                        }
-                    }
-                    autoScrollHandler.postDelayed(autoScrollRunnable, 3000);
-
+                    android.util.Log.d("Slider", "Record collection loaded: " + snapshot.size() + " documents");
+                    processArtifactDocuments(snapshot.getDocuments());
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("Slider", "Failed to load record collection: " + e.getMessage());
+                    // Try loading from questions collection if record fails
+                    loadArtifactsFromQuestions();
                 });
     }
+    
+    private void loadArtifactsFromQuestions() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        db.collection("questions")
+                .orderBy("id", Query.Direction.DESCENDING)
+                .limit(5)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    android.util.Log.d("Slider", "Questions collection loaded: " + snapshot.size() + " documents");
+                    processArtifactDocuments(snapshot.getDocuments());
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("Slider", "Failed to load questions collection: " + e.getMessage());
+                    adapter.notifyDataSetChanged();
+                });
+    }
+    
+    private void processArtifactDocuments(List<DocumentSnapshot> docs) {
+        android.util.Log.d("Slider", "Processing " + docs.size() + " documents for artifacts");
+        
+        Map<String, String> userNameCache = new HashMap<>();
+        final int[] counter = {0};
+        allArtifacts.clear();
 
+        if (docs.isEmpty()) {
+            android.util.Log.d("Slider", "No documents found");
+            adapter.notifyDataSetChanged();
+            return;
+        }
+
+        for (DocumentSnapshot doc : docs) {
+            String photoUrl = doc.getString("photo");
+            String location = doc.getString("locationName");
+            String idCustomer = doc.getString("idCustomer");
+            
+            android.util.Log.d("Slider", "Document: " + doc.getId() + 
+                ", photoUrl: " + (photoUrl != null && !photoUrl.trim().isEmpty() ? "exists" : "empty") + 
+                ", location: " + (location != null ? location : "null") + 
+                ", idCustomer: " + (idCustomer != null ? "exists" : "null"));
+
+            // Enhanced debugging for photoUrl
+            if (photoUrl != null && !photoUrl.trim().isEmpty()) {
+                android.util.Log.d("Slider", "PhotoUrl details: " + photoUrl.substring(0, Math.min(100, photoUrl.length())) + 
+                    (photoUrl.length() > 100 ? "..." : ""));
+                android.util.Log.d("Slider", "✅ Photo field contains object detection image - using photo field");
+            } else {
+                android.util.Log.d("Slider", "❌ Photo field empty - NO object detection image available - skipping");
+            }
+
+            // Only show artifacts with object detection images (Firebase Storage URLs)
+            if (photoUrl != null && !photoUrl.trim().isEmpty() &&
+                    photoUrl.contains(".googleapis.com") &&
+                    idCustomer != null && !idCustomer.isEmpty()) {
+                
+                // Use fallback location if empty
+                String displayLocation = (location != null && !location.isEmpty()) ? 
+                    location : "Unknown Location";
+                
+                android.util.Log.d("Slider", "Processing document with location: " + displayLocation);
+
+                if (userNameCache.containsKey(idCustomer)) {
+                    String userName = userNameCache.get(idCustomer);
+                    if (userName != null && !userName.isEmpty()) {
+                        allArtifacts.add(new ArtifactSliderAdapter.ArtifactItem(photoUrl, displayLocation, userName, ""));
+                        android.util.Log.d("Slider", "Added artifact from cache: " + userName + " at " + displayLocation);
+                    }
+                    counter[0]++;
+                    if (counter[0] == docs.size()) {
+                        android.util.Log.d("Slider", "Item count: " + allArtifacts.size());
+                        adapter.notifyDataSetChanged();
+                        startAutoScroll();
+                    }
+                    continue;
+                }
+
+                // Make variables effectively final for lambda
+                final String finalPhotoUrl = photoUrl;
+                final String finalDisplayLocation = displayLocation;
+                final String finalIdCustomer = idCustomer;
+                
+                FirebaseFirestore.getInstance().collection("user").document(finalIdCustomer).get()
+                    .addOnSuccessListener(userDoc -> {
+                        String userName = userDoc.getString("name");
+                        if (userName != null && !userName.isEmpty()) {
+                            userNameCache.put(finalIdCustomer, userName);
+                            allArtifacts.add(new ArtifactSliderAdapter.ArtifactItem(finalPhotoUrl, finalDisplayLocation, userName, ""));
+                            android.util.Log.d("Slider", "Added artifact: " + userName + " at " + finalDisplayLocation);
+                        }
+                        counter[0]++;
+                        if (counter[0] == docs.size()) {
+                            android.util.Log.d("Slider", "Item count: " + allArtifacts.size());
+                            adapter.notifyDataSetChanged();
+                            startAutoScroll();
+                        }
+                    }).addOnFailureListener(e -> {
+                        android.util.Log.w("Slider", "Failed to load user: " + finalIdCustomer);
+                        counter[0]++;
+                        if (counter[0] == docs.size()) {
+                            android.util.Log.d("Slider", "Item count: " + allArtifacts.size());
+                            adapter.notifyDataSetChanged();
+                            startAutoScroll();
+                        }
+                    });
+
+            } else {
+                android.util.Log.d("Slider", "Document doesn't meet criteria - skipping");
+                counter[0]++;
+                if (counter[0] == docs.size()) {
+                    android.util.Log.d("Slider", "Item count: " + allArtifacts.size());
+                    adapter.notifyDataSetChanged();
+                    startAutoScroll();
+                }
+            }
+        }
+    }
+    
+    private void startAutoScroll() {
+        if (allArtifacts.size() > 0) {
+            autoScrollHandler.postDelayed(autoScrollRunnable, 3000);
+        }
+    }
 }

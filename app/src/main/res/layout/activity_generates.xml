@@ -205,47 +205,70 @@
 
                         </LinearLayout>
 
+                        <!-- Main Graph/Diagram Image -->
                         <com.github.chrisbanes.photoview.PhotoView
                             android:id="@+id/iv"
                             android:layout_width="match_parent"
                             android:layout_height="300dp"
-                            android:scaleType="fitXY"
+                            android:scaleType="fitCenter"
                             android:background="@drawable/bg_button_group"
                             android:visibility="gone" />
 
+                        <!-- Additional Image -->
                         <com.github.chrisbanes.photoview.PhotoView
                             android:id="@+id/iv2"
                             android:layout_width="match_parent"
                             android:layout_height="300dp"
                             android:layout_marginTop="16dp"
-                            android:scaleType="fitXY"
+                            android:scaleType="fitCenter"
                             android:background="@drawable/bg_button_group"
                             android:visibility="gone" />
 
-                        <com.github.chrisbanes.photoview.PhotoView
-                            android:id="@+id/iv3"
+                        <!-- Table Images Container -->
+                        <LinearLayout
+                            android:id="@+id/table_images_container"
                             android:layout_width="match_parent"
-                            android:layout_height="300dp"
+                            android:layout_height="wrap_content"
                             android:layout_marginTop="16dp"
-                            android:scaleType="fitXY"
-                            android:background="@drawable/bg_button_group"
-                            android:visibility="gone" />
+                            android:orientation="vertical"
+                            android:visibility="gone">
 
-                        <com.github.chrisbanes.photoview.PhotoView
-                            android:id="@+id/iv4"
-                            android:layout_width="match_parent"
-                            android:layout_height="300dp"
-                            android:layout_marginTop="16dp"
-                            android:scaleType="fitXY"
-                            android:background="@drawable/bg_button_group"
-                            android:visibility="gone" />
+                            <!-- Table Image 1 -->
+                            <com.github.chrisbanes.photoview.PhotoView
+                                android:id="@+id/iv3"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:minHeight="200dp"
+                                android:maxHeight="400dp"
+                                android:adjustViewBounds="true"
+                                android:scaleType="fitCenter"
+                                android:background="@drawable/bg_button_group"
+                                android:visibility="gone"
+                                android:contentDescription="Table Image 1 with enhanced zoom" />
 
+                            <!-- Table Image 2 -->
+                            <com.github.chrisbanes.photoview.PhotoView
+                                android:id="@+id/iv4"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:minHeight="200dp"
+                                android:maxHeight="400dp"
+                                android:layout_marginTop="8dp"
+                                android:adjustViewBounds="true"
+                                android:scaleType="fitCenter"
+                                android:background="@drawable/bg_button_group"
+                                android:visibility="gone"
+                                android:contentDescription="Table Image 2 with enhanced zoom" />
+
+                        </LinearLayout>
+
+                        <!-- Additional Image 2 -->
                         <com.github.chrisbanes.photoview.PhotoView
                             android:id="@+id/iv5"
                             android:layout_width="match_parent"
                             android:layout_height="300dp"
                             android:layout_marginTop="16dp"
-                            android:scaleType="fitXY"
+                            android:scaleType="fitCenter"
                             android:background="@drawable/bg_button_group"
                             android:visibility="gone" />
 
@@ -448,6 +471,33 @@
                             android:textSize="12sp"
                             android:textColor="@color/phyphox_black_60"
                             android:layout_marginBottom="8dp" />
+
+                        <!-- Photo Documentation Preview -->
+                        <LinearLayout
+                            android:id="@+id/llDocumentationPhoto"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone">
+                            
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📸 Foto Dokumentasi:"
+                                android:textColor="@color/phyphox_purple"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="8dp"/>
+                            
+                            <com.github.chrisbanes.photoview.PhotoView
+                                android:id="@+id/ivDocumentationPhoto"
+                                android:layout_width="match_parent"
+                                android:layout_height="200dp"
+                                android:scaleType="fitCenter"
+                                android:background="@drawable/custom_edittext_background_2"
+                                android:padding="4dp"
+                                android:layout_marginBottom="8dp"/>
+                        </LinearLayout>
 
                     </LinearLayout>
 

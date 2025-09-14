@@ -27,10 +27,13 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">P-MAGIC Physics Admin</a>
-            <div class="d-flex">
-                <button class="btn btn-outline-danger" onclick="logout()">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </button>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link active" href="dashboard.html"><i class="bi bi-house"></i> Dashboard</a>
+                <a class="nav-link" href="users.html"><i class="bi bi-people"></i> Users</a>
+                <a class="nav-link" href="user_questions.html"><i class="bi bi-question-circle"></i> User Questions</a>
+                <a class="nav-link" href="canvas_answers.html"><i class="bi bi-palette"></i> Canvas Files Analysis</a>
+                <a class="nav-link" href="storage_matching.html"><i class="bi bi-link-45deg"></i> Storage Matching</a>
+                <a class="nav-link" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</a>
             </div>
         </div>
     </nav>
@@ -50,18 +53,13 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="questions.html">
-                        <i class="bi bi-question-circle"></i> Questions
+                    <a class="nav-link" href="user_questions.html">
+                        <i class="bi bi-question-circle"></i> User Questions
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="records.html">
-                        <i class="bi bi-journal-text"></i> Records
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="fix_existing_users.html">
-                        <i class="bi bi-tools"></i> Fix Users
+                    <a class="nav-link" href="canvas_answers.html">
+                        <i class="bi bi-palette"></i> Canvas Files Analysis
                     </a>
                 </li>
             </ul>
@@ -78,53 +76,102 @@
                 <div class="col-md-4">
                     <div class="card stat-card bg-primary text-white">
                         <div class="card-body">
-                            <h5 class="card-title">Total Users</h5>
-                            <h2 class="card-text" id="totalUsers">Loading...</h2>
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="card-title">Total Users</h5>
+                                    <h2 class="card-text" id="totalUsers">Loading...</h2>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="bi bi-people" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card stat-card bg-success text-white">
                         <div class="card-body">
-                            <h5 class="card-title">Total Questions</h5>
-                            <h2 class="card-text" id="totalQuestions">Loading...</h2>
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="card-title">Active Users</h5>
+                                    <h2 class="card-text" id="activeUsers">Loading...</h2>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="bi bi-person-check" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card stat-card bg-info text-white">
                         <div class="card-body">
-                            <h5 class="card-title">Total Views</h5>
-                            <h2 class="card-text" id="totalViews">Loading...</h2>
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="card-title">Admin Users</h5>
+                                    <h2 class="card-text" id="adminUsers">Loading...</h2>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="bi bi-shield-check" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-file-earmark-image text-primary" style="font-size: 2rem;"></i>
+                            <h5 class="card-title mt-2">Canvas Answer Files</h5>
+                            <p class="card-text">Analyze all canvas_answer files from Firebase Storage</p>
+                            <a href="canvas_answers.html" class="btn btn-primary">
+                                <i class="bi bi-palette"></i> View Canvas Files
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Recent Activity -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Recent Activity</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Time</th>
-                                    <th>User</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recentActivity">
-                                <tr>
-                                    <td colspan="3" class="text-center">Loading...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <!-- Quick Actions -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row justify-content-center">
+                                <div class="col-md-3">
+                                    <a href="users.html" class="btn btn-primary w-100 mb-2">
+                                        <i class="bi bi-people"></i><br>
+                                        User Management
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="all_records.html" class="btn btn-success w-100 mb-2">
+                                        <i class="bi bi-database"></i><br>
+                                        All Records
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="user_questions.html" class="btn btn-info w-100 mb-2">
+                                        <i class="bi bi-question-circle"></i><br>
+                                        User Questions
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="storage_matching.html" class="btn btn-warning w-100 mb-2">
+                                        <i class="bi bi-link-45deg"></i><br>
+                                        Storage Matching
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+
         </div>
     </main>
 
@@ -160,45 +207,37 @@
         function logout() {
             firebase.auth().signOut().then(() => {
                 window.location.href = 'index.html';
+            }).catch((error) => {
+                console.error('Error signing out:', error);
             });
         }
 
         // Load statistics
         async function loadStatistics() {
             try {
-                // Get total users
-                const usersSnapshot = await db.collection('user').get(); // Changed from 'users' to 'user'
-                document.getElementById('totalUsers').textContent = usersSnapshot.size;
+                // Get all users
+                const usersSnapshot = await db.collection('user').get();
+                let totalUsers = usersSnapshot.size;
+                let activeUsers = 0;
+                let adminUsers = 0;
 
-                // Get total questions
-                const questionsSnapshot = await db.collection('questions').get();
-                document.getElementById('totalQuestions').textContent = questionsSnapshot.size;
-
-                // Calculate total views
-                let totalViews = 0;
-                questionsSnapshot.forEach(doc => {
-                    totalViews += doc.data().views || 0;
+                // Count active and admin users
+                usersSnapshot.forEach(doc => {
+                    const userData = doc.data();
+                    if (userData.active) {
+                        activeUsers++;
+                    }
+                    if (userData.role === 'admin') {
+                        adminUsers++;
+                    }
                 });
-                document.getElementById('totalViews').textContent = totalViews;
 
-                // Load recent activity
-                const activitySnapshot = await db.collection('activity')
-                    .orderBy('timestamp', 'desc')
-                    .limit(5)
-                    .get();
+                // Update statistics
+                document.getElementById('totalUsers').textContent = totalUsers;
+                document.getElementById('activeUsers').textContent = activeUsers;
+                document.getElementById('adminUsers').textContent = adminUsers;
 
-                const activityHtml = activitySnapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return `
-                        <tr>
-                            <td>${new Date(data.timestamp).toLocaleString()}</td>
-                            <td>${data.user}</td>
-                            <td>${data.action}</td>
-                        </tr>
-                    `;
-                }).join('');
 
-                document.getElementById('recentActivity').innerHTML = activityHtml || '<tr><td colspan="3" class="text-center">No recent activity</td></tr>';
 
             } catch (error) {
                 console.error('Error loading statistics:', error);

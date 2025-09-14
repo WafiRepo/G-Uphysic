@@ -290,6 +290,81 @@
 
                 </androidx.cardview.widget.CardView>
 
+                <!-- Table Images Section -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/table_images_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="#F0F8FF"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📊"
+                                android:textSize="20sp" />
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginStart="8dp"
+                                android:text="Tabel dan Grafik Tambahan"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/phyphox_purple" />
+
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="💡 Tabel dan grafik tambahan untuk melengkapi pertanyaan"
+                            android:textSize="12sp"
+                            android:textColor="@color/phyphox_black_60"
+                            android:layout_marginBottom="8dp" />
+
+                        <!-- Table 1 -->
+                        <com.github.chrisbanes.photoview.PhotoView
+                            android:id="@+id/iv3"
+                            android:layout_width="match_parent"
+                            android:layout_height="200dp"
+                            android:scaleType="fitCenter"
+                            android:background="@drawable/bg_button_group"
+                            android:visibility="gone"
+                            android:contentDescription="Table 1" />
+
+                        <!-- Table 2 -->
+                        <com.github.chrisbanes.photoview.PhotoView
+                            android:id="@+id/iv4"
+                            android:layout_width="match_parent"
+                            android:layout_height="200dp"
+                            android:layout_marginTop="8dp"
+                            android:scaleType="fitCenter"
+                            android:background="@drawable/bg_button_group"
+                            android:visibility="gone"
+                            android:contentDescription="Table 2" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
                 <!-- Drawing Section -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"

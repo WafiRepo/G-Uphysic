@@ -16,10 +16,13 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">P-MAGIC Physics Admin</a>
-            <div class="d-flex">
-                <button class="btn btn-outline-danger" onclick="logout()">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </button>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="dashboard.html"><i class="bi bi-house"></i> Dashboard</a>
+                <a class="nav-link active" href="users.html"><i class="bi bi-people"></i> Users</a>
+                <a class="nav-link" href="user_questions.html"><i class="bi bi-question-circle"></i> User Questions</a>
+                <a class="nav-link" href="canvas_answers.html"><i class="bi bi-palette"></i> Canvas Files Analysis</a>
+                <a class="nav-link" href="storage_matching.html"><i class="bi bi-link-45deg"></i> Storage Matching</a>
+                <a class="nav-link" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</a>
             </div>
         </div>
     </nav>
@@ -39,18 +42,18 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="questions.html">
-                        <i class="bi bi-question-circle"></i> Questions
+                    <a class="nav-link" href="user_questions.html">
+                        <i class="bi bi-question-circle"></i> User Questions
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="records.html">
-                        <i class="bi bi-journal-text"></i> Records
+                    <a class="nav-link" href="canvas_answers.html">
+                        <i class="bi bi-palette"></i> Canvas Files Analysis
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="fix_existing_users.html">
-                        <i class="bi bi-tools"></i> Fix Users
+                    <a class="nav-link" href="storage_matching.html">
+                        <i class="bi bi-link-45deg"></i> Storage Matching
                     </a>
                 </li>
             </ul>
@@ -100,14 +103,13 @@
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Role</th>
-                                    <th>Questions</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="usersTableBody">
                                 <tr>
-                                    <td colspan="6" class="text-center">Loading...</td>
+                                    <td colspan="5" class="text-center">Loading...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -488,21 +490,15 @@
                 const snapshot = await db.collection('user').get(); // Changed from 'users' to 'user'
                 console.log('Users data received:', snapshot.size, 'users found');
                 
-                const usersHtml = await Promise.all(snapshot.docs.map(async doc => {
+                const usersHtml = snapshot.docs.map(doc => {
                     const userData = doc.data();
                     console.log('Processing user:', userData.email);
-                    
-                    // Get user's questions count
-                    const questionsSnapshot = await db.collection('questions')
-                        .where('idCustomer', '==', doc.id)
-                        .get();
                     
                     return `
                         <tr>
                             <td>${userData.name || 'N/A'}</td>
                             <td>${userData.email}</td>
                             <td><span class="badge bg-${userData.role === 'admin' ? 'danger' : 'primary'}">${userData.role || 'user'}</span></td>
-                            <td>${questionsSnapshot.size}</td>
                             <td><span class="badge bg-${userData.active ? 'success' : 'secondary'}">${userData.active ? 'Active' : 'Inactive'}</span></td>
                             <td>
                                 <button class="btn btn-sm btn-outline-primary" onclick="editUser('${doc.id}')">
@@ -514,9 +510,9 @@
                             </td>
                         </tr>
                     `;
-                }));
+                });
 
-                const tableContent = usersHtml.join('') || '<tr><td colspan="6" class="text-center">No users found</td></tr>';
+                const tableContent = usersHtml.join('') || '<tr><td colspan="5" class="text-center">No users found</td></tr>';
                 console.log('Rendering table with content length:', tableContent.length);
                 document.getElementById('usersTableBody').innerHTML = tableContent;
 
@@ -524,7 +520,7 @@
                 console.error('Error loading users:', error);
                 document.getElementById('usersTableBody').innerHTML = `
                     <tr>
-                        <td colspan="6" class="text-center text-danger">
+                        <td colspan="5" class="text-center text-danger">
                             Error loading users: ${error.message}<br>
                             <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadUsers()">
                                 <i class="bi bi-arrow-clockwise"></i> Retry

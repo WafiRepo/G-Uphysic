@@ -310,6 +310,12 @@
                 android:name="autoStoreLocales"
                 android:value="true" />
         </service>
+        
+        <!-- Data Recovery Service -->
+        <service
+            android:name=".service.DataRecoveryService"
+            android:enabled="true"
+            android:exported="false" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

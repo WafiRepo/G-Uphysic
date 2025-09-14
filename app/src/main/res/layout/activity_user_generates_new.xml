@@ -75,36 +75,59 @@
                 android:minLines="8"
                 android:padding="16dp"
                 android:textColor="@color/phyphox_black_100" />
+            <!-- Main Graph/Diagram Image -->
             <com.github.chrisbanes.photoview.PhotoView
                 android:id="@+id/iv"
-                android:scaleType="fitXY"
+                android:scaleType="fitCenter"
                 android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="300dp"/>
+            <!-- Additional Image -->
             <com.github.chrisbanes.photoview.PhotoView
                 android:id="@+id/iv2"
-                android:scaleType="fitXY"
+                android:scaleType="fitCenter"
                 android:visibility="gone"
                 android:layout_marginTop="16dp"
                 android:layout_width="match_parent"
                 android:layout_height="300dp"/>
-            <com.github.chrisbanes.photoview.PhotoView
-                android:id="@+id/iv3"
-                android:scaleType="fitXY"
-                android:visibility="gone"
-                android:layout_marginTop="16dp"
+            <!-- Table Images Container -->
+            <LinearLayout
+                android:id="@+id/table_images_container"
                 android:layout_width="match_parent"
-                android:layout_height="300dp"/>
-            <com.github.chrisbanes.photoview.PhotoView
-                android:id="@+id/iv4"
-                android:scaleType="fitXY"
-                android:visibility="gone"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:layout_width="match_parent"
-                android:layout_height="300dp"/>
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- Table Image 1 -->
+                <com.github.chrisbanes.photoview.PhotoView
+                    android:id="@+id/iv3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="200dp"
+                    android:maxHeight="400dp"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone"/>
+
+                <!-- Table Image 2 -->
+                <com.github.chrisbanes.photoview.PhotoView
+                    android:id="@+id/iv4"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="200dp"
+                    android:maxHeight="400dp"
+                    android:layout_marginTop="8dp"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone"/>
+
+            </LinearLayout>
+
+            <!-- Additional Image -->
             <com.github.chrisbanes.photoview.PhotoView
                 android:id="@+id/iv5"
-                android:scaleType="fitXY"
+                android:scaleType="fitCenter"
                 android:visibility="gone"
                 android:layout_marginTop="16dp"
                 android:layout_width="match_parent"
@@ -202,6 +225,36 @@
                 android:textColor="@color/phyphox_black_100"
                 android:textColorHint="@color/phyphox_white_50_black_50"
                 android:textSize="16sp" />
+                
+            <!-- Photo Preview di atas canvas -->
+            <LinearLayout
+                android:id="@+id/llPhotoPreview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+                
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Preview Foto:"
+                    android:textColor="@color/phyphox_black_100"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp"/>
+                
+                <com.github.chrisbanes.photoview.PhotoView
+                    android:id="@+id/ivPhoto"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:scaleType="fitCenter"
+                    android:background="@drawable/custom_edittext_background_2"
+                    android:padding="4dp"
+                    android:layout_marginBottom="8dp"/>
+            </LinearLayout>
+            
             <de.rwth_aachen.phyphox.activity.DrawView
                 android:id="@+id/drawView"
                 android:layout_width="match_parent"
@@ -216,13 +269,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
             </LinearLayout>
-
-            <ImageView
-                android:id="@+id/ivPhoto"
-                android:scaleType="fitXY"
-                android:visibility="gone"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
         </LinearLayout>
     </ScrollView>
 

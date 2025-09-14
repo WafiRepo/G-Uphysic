@@ -53,7 +53,7 @@ public class UserQuestionsAdapter extends RecyclerView.Adapter<UserQuestionsAdap
         // Set topic with fallback
         String topic = item.getTopics();
         if (topic == null || topic.isEmpty()) {
-            topic = "Fisika Umum";
+            topic = "Real World Eksperimen";
         }
         holder.tvTopic.setText(topic);
 
@@ -62,7 +62,7 @@ public class UserQuestionsAdapter extends RecyclerView.Adapter<UserQuestionsAdap
         if (difficulty == null || difficulty.isEmpty()) {
             difficulty = "Medium";
         }
-        
+
         String difficultyWithEmoji = getDifficultyWithEmoji(difficulty);
         holder.tvType.setText(difficultyWithEmoji);
 
@@ -121,7 +121,7 @@ public class UserQuestionsAdapter extends RecyclerView.Adapter<UserQuestionsAdap
         if (dateString == null || dateString.isEmpty()) {
             return "Baru saja";
         }
-        
+
         try {
             // Try multiple date formats
             String[] formats = {
@@ -132,7 +132,7 @@ public class UserQuestionsAdapter extends RecyclerView.Adapter<UserQuestionsAdap
                 "yyyy-MM-dd",
                 "dd/MM/yyyy"
             };
-            
+
             Date date = null;
             for (String format : formats) {
                 try {
@@ -143,14 +143,14 @@ public class UserQuestionsAdapter extends RecyclerView.Adapter<UserQuestionsAdap
                     // Continue to next format
                 }
             }
-            
+
             if (date != null) {
                 // Calculate time difference
                 long timeDiff = System.currentTimeMillis() - date.getTime();
                 long daysDiff = timeDiff / (24 * 60 * 60 * 1000);
                 long hoursDiff = timeDiff / (60 * 60 * 1000);
                 long minutesDiff = timeDiff / (60 * 1000);
-                
+
                 if (daysDiff > 0) {
                     if (daysDiff == 1) {
                         return "1 hari lalu";
@@ -168,10 +168,10 @@ public class UserQuestionsAdapter extends RecyclerView.Adapter<UserQuestionsAdap
                     return "Baru saja";
                 }
             }
-            
+
             // If parsing fails, return original string
             return dateString;
-            
+
         } catch (Exception e) {
             return "Baru saja";
         }

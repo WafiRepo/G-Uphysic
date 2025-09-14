@@ -43,6 +43,15 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
         for (int i = 0; i < progressList.size(); i++) selectedList.add(false);
         notifyDataSetChanged();
     }
+    
+    /**
+     * Clear all data from adapter
+     */
+    public void clearData() {
+        this.progressList.clear();
+        this.selectedList.clear();
+        notifyDataSetChanged();
+    }
 
     @NonNull
     @Override
@@ -70,7 +79,8 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
         String formattedDifficulty = getDifficultyWithEmoji(typeInfo);
         holder.tvType.setText(formattedDifficulty);
 
-        // Set checkbox state
+        // Set checkbox state and ensure visibility
+        holder.cbSelect.setVisibility(View.VISIBLE);
         holder.cbSelect.setChecked(selectedList.get(position));
         holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
             selectedList.set(position, isChecked);

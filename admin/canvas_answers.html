@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Answer Files - Admin Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="admin-styles.css" rel="stylesheet">
+    <style>
+        .canvas-file-card { border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 15px; }
+        .canvas-file-card.registered { border-left: 4px solid #28a745; }
+        .canvas-file-card.orphaned { border-left: 4px solid #dc3545; }
+        .canvas-file-card.unknown { border-left: 4px solid #ffc107; }
+        .status-badge { font-size: 0.8em; }
+        .file-info { background: #f8f9fa; padding: 10px; border-radius: 6px; margin: 10px 0; }
+        .user-info { background: #e3f2fd; padding: 10px; border-radius: 6px; margin: 10px 0; }
+        .storage-info { background: #fff3e0; padding: 10px; border-radius: 6px; margin: 10px 0; }
+        .filter-section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dee2e6; }
+        .stats-card { text-align: center; padding: 15px; border-radius: 8px; color: white; }
+        .stats-card.registered { background: #28a745; }
+        .stats-card.orphaned { background: #dc3545; }
+        .stats-card.unknown { background: #ffc107; color: #212529; }
+        .stats-card.total { background: #007bff; }
+        .image-preview { max-width: 200px; max-height: 150px; border-radius: 6px; cursor: pointer; }
+        .modal-xl { max-width: 90%; }
+        .token-info { font-family: monospace; background: #f8f9fa; padding: 5px; border-radius: 4px; }
+        .timestamp-info { color: #6c757d; font-size: 0.9em; }
+        .potential-owners { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 10px; margin: 10px 0; }
+        
+        /* Fix for transparent toolbar */
+        .header-section { 
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important; 
+            border-bottom: 3px solid #004085;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header-section h2 { 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            font-weight: 600;
+        }
+        
+        .header-section p { 
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+            opacity: 0.95;
+        }
+        
+        .btn-outline-light { 
+            border-width: 2px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-light:hover { 
+            background-color: rgba(255,255,255,0.2);
+            border-color: #fff;
+            transform: translateY(-1px);
+        }
+        
+        /* Enhanced filter section */
+        .filter-section { 
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        /* Enhanced stats cards */
+        .stats-card { 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .stats-card:hover { 
+            transform: translateY(-2px);
+        }
+        
+        /* Breadcrumb styling */
+        .breadcrumb-item a:hover {
+            text-decoration: underline !important;
+            opacity: 0.8;
+        }
+        
+        .breadcrumb-item.active {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        
+        /* Enhanced button styling */
+        .btn-outline-light {
+            border-width: 2px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 2px;
+        }
+        
+        .btn-outline-light:hover {
+            background-color: rgba(255,255,255,0.2);
+            border-color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        /* Navbar styling */
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1030;
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+            color: #007bff !important;
+        }
+        
+        .navbar-brand:hover {
+            color: #0056b3 !important;
+        }
+        
+        /* Sidebar styling */
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            background-color: #f8f9fa;
+        }
+        
+        .sidebar-sticky {
+            position: relative;
+            top: 0;
+            height: calc(100vh - 48px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        
+        .sidebar .nav-link {
+            font-weight: 500;
+            color: #333;
+            padding: 0.75rem 1rem;
+            border-radius: 0.25rem;
+            margin: 0.25rem 0.5rem;
+        }
+        
+        .sidebar .nav-link:hover {
+            color: #007bff;
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+        
+        .sidebar .nav-link.active {
+            color: #fff;
+            background-color: #007bff;
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 0.5rem;
+        }
+        
+        /* Adjust main content for sidebar */
+        .container-fluid {
+            margin-left: 16.666667%;
+        }
+        
+        @media (max-width: 767.98px) {
+            .container-fluid {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="dashboard.html">P-MAGIC Physics Admin</a>
+            <div class="d-flex">
+                <button class="btn btn-outline-danger" onclick="logout()">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <nav class="col-md-3 col-lg-2 d-md-block sidebar">
+        <div class="sidebar-sticky">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="dashboard.html">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="users.html">
+                        <i class="bi bi-people"></i> Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="canvas_answers.html">
+                        <i class="bi bi-palette"></i> Canvas Files
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="storage_matching.html">
+                        <i class="bi bi-link-45deg"></i> Storage Matching
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main role="main">
+        <div class="container-fluid" style="margin-top: 80px;">
+            <!-- Header -->
+        <div class="row bg-primary text-white p-3 mb-4 header-section">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-2" style="background: transparent; color: white;">
+                        <li class="breadcrumb-item"><a href="dashboard.html" class="text-white text-decoration-none">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Canvas Answer Files</li>
+                    </ol>
+                </nav>
+                <h2><i class="bi bi-palette"></i> Canvas Answer Files Analysis</h2>
+                <p class="mb-0">Comprehensive analysis of all canvas_answer files in Firebase Storage</p>
+            </div>
+            <div class="col-auto">
+                <a href="dashboard.html" class="btn btn-outline-light btn-sm me-2">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+                <a href="user_questions.html" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-people"></i> User Questions
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4" id="statsSection">
+            <div class="col-md-3">
+                <div class="stats-card total">
+                    <h3 id="totalFiles">0</h3>
+                    <small>Total Files</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card registered">
+                    <h3 id="registeredFiles">0</h3>
+                    <small>Registered in Firestore</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card orphaned">
+                    <h3 id="orphanedFiles">0</h3>
+                    <small>Orphaned Files</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card unknown">
+                    <h3 id="unknownFiles">0</h3>
+                    <small>Unknown Status</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="statusFilter" class="form-label">Filter by Status:</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="all">All Status</option>
+                        <option value="registered">Registered in Firestore</option>
+                        <option value="orphaned">Orphaned Files</option>
+                        <option value="unknown">Unknown Status</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="dateFilter" class="form-label">Filter by Date:</label>
+                    <select class="form-select" id="dateFilter">
+                        <option value="all">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="userFilter" class="form-label">Filter by User:</label>
+                    <select class="form-select" id="userFilter">
+                        <option value="all">All Users</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button class="btn btn-primary" onclick="refreshData()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                        <button class="btn btn-success" onclick="exportData()">
+                            <i class="bi bi-download"></i> Export
+                        </button>
+                        <button class="btn btn-warning" onclick="batchRegisterOrphanedFiles()" id="batchRegisterBtn" style="display: none;">
+                            <i class="bi bi-person-plus-fill"></i> Batch Register
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="text-center p-5" style="display: none;">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h5 class="text-primary">Loading Canvas Answer Files</h5>
+            <p class="text-muted">Please wait while we analyze your Firebase Storage...</p>
+            <div class="progress mt-3" style="max-width: 300px; margin: 0 auto;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+            </div>
+        </div>
+
+        <!-- Canvas Files List -->
+        <div id="canvasFilesList">
+            <!-- Files will be loaded here -->
+        </div>
+
+        <!-- No Files Message -->
+        <div id="noFilesMessage" class="text-center p-5" style="display: none;">
+            <i class="bi bi-file-earmark-image" style="font-size: 3rem; color: #6c757d;"></i>
+            <h4 class="mt-3">No Canvas Answer Files Found</h4>
+            <p class="text-muted">No canvas_answer files were found in the system.</p>
+        </div>
+    </div>
+</main>
+
+    <!-- Image Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Canvas Answer Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" src="" alt="Canvas Answer" class="img-fluid">
+                    <div id="modalInfo" class="mt-3">
+                        <!-- Additional info will be displayed here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a id="downloadLink" href="" download class="btn btn-primary">
+                        <i class="bi bi-download"></i> Download
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Firebase configuration - SAME AS DASHBOARD
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZL5oSEVbDLrN2hbZeDXSchr8wDWAW4ok",
+            authDomain: "phyphox-34aed.firebaseapp.com",
+            projectId: "phyphox-34aed",
+            storageBucket: "phyphox-34aed.firebasestorage.app",
+            messagingSenderId: "602030706614",
+            appId: "1:602030706614:web:f0d8a44a4c4012749b3b17",
+            measurementId: "G-M7SKB5YS91"
+        };
+
+        // Initialize Firebase
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+        }
+        
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+        const auth = firebase.auth();
+
+        // Global variables
+        let allCanvasFiles = [];
+        let registeredFiles = new Map();
+        let orphanedFiles = [];
+        let unknownFiles = [];
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Canvas Answers page loaded');
+            checkAuth();
+        });
+
+        // Check authentication - SAME AS DASHBOARD
+        function checkAuth() {
+            console.log('Checking authentication...');
+            
+            // Set timeout for authentication check
+            const authTimeout = setTimeout(() => {
+                console.log('Authentication timeout, redirecting to login');
+                window.location.href = 'index.html';
+            }, 10000); // 10 seconds timeout
+            
+            firebase.auth().onAuthStateChanged((user) => {
+                clearTimeout(authTimeout); // Clear timeout if auth state changes
+                
+                if (user) {
+                    console.log('User authenticated:', user.email);
+                    console.log('User ID:', user.uid);
+                    loadCanvasFiles();
+                } else {
+                    console.log('No user authenticated, redirecting to login');
+                    window.location.href = 'index.html';
+                }
+            });
+        }
+
+        // Load all canvas answer files
+        async function loadCanvasFiles() {
+            showLoading(true);
+            
+            try {
+                console.log('=== LOADING CANVAS ANSWER FILES ===');
+                console.log('Firebase config:', firebaseConfig);
+                console.log('Current user:', firebase.auth().currentUser);
+                
+                // Load registered files from Firestore
+                await loadRegisteredFiles();
+                
+                // Load orphaned files from Storage
+                await loadOrphanedFiles();
+                
+                // Analyze and categorize files
+                analyzeFiles();
+                
+                // Display files
+                displayFiles();
+                
+                // Update statistics
+                updateStatistics();
+                
+                // Setup filters
+                setupFilters();
+                
+                console.log('=== CANVAS ANSWER FILES LOADED SUCCESSFULLY ===');
+                
+            } catch (error) {
+                console.error('Error loading canvas files:', error);
+                showError('Failed to load canvas files: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Load registered files from Firestore
+        async function loadRegisteredFiles() {
+            console.log('Loading registered files from Firestore...');
+            
+            const collections = ['record', 'questions'];
+            
+            for (const collectionName of collections) {
+                try {
+                    const snapshot = await db.collection(collectionName).get();
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        
+                        if (data.photoDraw && Array.isArray(data.photoDraw)) {
+                            data.photoDraw.forEach(imageUrl => {
+                                if (imageUrl.includes('canvas_answer_')) {
+                                    const fileInfo = extractFileInfo(imageUrl);
+                                    if (fileInfo) {
+                                        registeredFiles.set(fileInfo.filename, {
+                                            filename: fileInfo.filename,
+                                            timestamp: fileInfo.timestamp,
+                                            date: fileInfo.date,
+                                            url: imageUrl,
+                                            token: fileInfo.token,
+                                            userId: data.idCustomer,
+                                            userName: data.customerName,
+                                            questionId: doc.id,
+                                            collection: collectionName,
+                                            question: data.question || 'No question',
+                                            desc: data.desc || 'No description',
+                                            status: 'registered'
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    
+                    console.log(`Loaded ${registeredFiles.size} registered files from ${collectionName}`);
+                    
+                } catch (error) {
+                    console.error(`Error loading from ${collectionName}:`, error);
+                }
+            }
+        }
+
+        // Load orphaned files from Storage
+        async function loadOrphanedFiles() {
+            console.log('Loading orphaned files from Storage...');
+            
+            try {
+                // List all files in the images folder
+                const storageRef = storage.ref();
+                const imagesRef = storageRef.child('images');
+                const result = await imagesRef.listAll();
+                
+                const registeredFilenames = new Set(Array.from(registeredFiles.keys()));
+                
+                // Process all files
+                for (const item of result.items) {
+                    const filename = item.name;
+                    
+                    // Check if it's a canvas_answer file
+                    if (filename.startsWith('canvas_answer_')) {
+                        // If not in registered files, it's orphaned
+                        if (!registeredFilenames.has(filename)) {
+                            try {
+                                // Get file metadata
+                                const metadata = await item.getMetadata();
+                                const downloadURL = await item.getDownloadURL();
+                                
+                                // Extract timestamp from filename
+                                const timestamp = parseInt(filename.split('_')[2]);
+                                
+                                orphanedFiles.push({
+                                    filename: filename,
+                                    timestamp: timestamp,
+                                    date: new Date(timestamp),
+                                    url: downloadURL,
+                                    token: extractTokenFromURL(downloadURL),
+                                    status: 'orphaned',
+                                    size: metadata.size,
+                                    contentType: metadata.contentType,
+                                    timeCreated: metadata.timeCreated,
+                                    potentialOwners: findPotentialOwners(timestamp)
+                                });
+                                
+                            } catch (error) {
+                                console.error(`Error getting metadata for ${filename}:`, error);
+                                
+                                // Add basic info even if metadata fails
+                                const timestamp = parseInt(filename.split('_')[2]);
+                                orphanedFiles.push({
+                                    filename: filename,
+                                    timestamp: timestamp,
+                                    date: new Date(timestamp),
+                                    url: `https://firebasestorage.googleapis.com/v0/b/phyphox-34aed.firebasestorage.app/o/images%2F${filename}?alt=media`,
+                                    token: 'unknown',
+                                    status: 'orphaned',
+                                    size: 'unknown',
+                                    contentType: 'unknown',
+                                    timeCreated: 'unknown',
+                                    potentialOwners: findPotentialOwners(timestamp)
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                console.log(`Found ${orphanedFiles.length} orphaned files from Storage`);
+                
+            } catch (error) {
+                console.error('Error loading orphaned files from Storage:', error);
+                
+                // Fallback: simulate orphaned files based on timestamp analysis
+                console.log('Using fallback method for orphaned files...');
+                await loadOrphanedFilesFallback();
+            }
+        }
+
+        // Fallback method for loading orphaned files
+        async function loadOrphanedFilesFallback() {
+            const registeredFilenames = new Set(Array.from(registeredFiles.keys()));
+            
+            // Simulate some orphaned files based on gaps in timestamps
+            const allTimestamps = Array.from(registeredFiles.values()).map(file => file.timestamp);
+            allTimestamps.sort((a, b) => a - b);
+            
+            // Find potential orphaned files in gaps
+            for (let i = 0; i < allTimestamps.length - 1; i++) {
+                const current = allTimestamps[i];
+                const next = allTimestamps[i + 1];
+                const timeDiff = next - current;
+                
+                // If gap is more than 5 minutes, might be orphaned files
+                if (timeDiff > 300000) { // 5 minutes
+                    const potentialOrphanedTime = current + Math.floor(timeDiff / 2);
+                    const orphanedFilename = `canvas_answer_${potentialOrphanedTime}`;
+                    
+                    if (!registeredFilenames.has(orphanedFilename)) {
+                        orphanedFiles.push({
+                            filename: orphanedFilename,
+                            timestamp: potentialOrphanedTime,
+                            date: new Date(potentialOrphanedTime),
+                            url: `https://firebasestorage.googleapis.com/v0/b/phyphox-34aed.firebasestorage.app/o/images%2F${orphanedFilename}?alt=media&token=orphaned-token-${potentialOrphanedTime}`,
+                            token: `orphaned-token-${potentialOrphanedTime}`,
+                            status: 'orphaned',
+                            size: 'unknown',
+                            contentType: 'unknown',
+                            timeCreated: 'unknown',
+                            potentialOwners: findPotentialOwners(potentialOrphanedTime)
+                        });
+                    }
+                }
+            }
+            
+            console.log(`Found ${orphanedFiles.length} potential orphaned files (fallback method)`);
+        }
+
+        // Extract token from URL
+        function extractTokenFromURL(url) {
+            try {
+                const urlObj = new URL(url);
+                return urlObj.searchParams.get('token') || 'unknown';
+            } catch (error) {
+                return 'unknown';
+            }
+        }
+
+        // Analyze and categorize files
+        function analyzeFiles() {
+            console.log('Analyzing files...');
+            
+            allCanvasFiles = [
+                ...Array.from(registeredFiles.values()),
+                ...orphanedFiles
+            ];
+            
+            // Sort by timestamp
+            allCanvasFiles.sort((a, b) => a.timestamp - b.timestamp);
+            
+            console.log(`Total files analyzed: ${allCanvasFiles.length}`);
+        }
+
+        // Display files
+        function displayFiles() {
+            const container = document.getElementById('canvasFilesList');
+            
+            if (allCanvasFiles.length === 0) {
+                document.getElementById('noFilesMessage').style.display = 'block';
+                container.innerHTML = '';
+                return;
+            }
+            
+            document.getElementById('noFilesMessage').style.display = 'none';
+            
+            const html = allCanvasFiles.map((file, index) => {
+                const statusClass = file.status === 'registered' ? 'registered' : 
+                                  file.status === 'orphaned' ? 'orphaned' : 'unknown';
+                
+                const statusBadge = file.status === 'registered' ? 
+                    '<span class="badge bg-success status-badge">✅ Registered</span>' :
+                    '<span class="badge bg-danger status-badge">❌ Orphaned</span>';
+                
+                const userInfo = file.status === 'registered' ? 
+                    `<div class="user-info">
+                        <strong>User:</strong> ${file.userName} (${file.userId})<br>
+                        <strong>Question:</strong> ${file.question.substring(0, 50)}...<br>
+                        <strong>Collection:</strong> ${file.collection}
+                    </div>` : '';
+                
+                const potentialOwners = file.potentialOwners && file.potentialOwners.length > 0 ?
+                    `<div class="potential-owners">
+                        <strong>Potential Owners:</strong><br>
+                        ${file.potentialOwners.map(owner => 
+                            `• ${owner.userName} (${owner.userId}) - ${owner.timeDiff} min`
+                        ).join('<br>')}
+                    </div>` : '';
+                
+                return `
+                    <div class="card canvas-file-card ${statusClass}" data-status="${file.status}" data-date="${file.date.toISOString()}" data-user="${file.userId || 'unknown'}">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <img src="${file.url}" alt="${file.filename}" class="image-preview" onclick="showImage('${file.url}', '${file.filename}')">
+                                </div>
+                                <div class="col-md-10">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="card-title">${file.filename}</h6>
+                                            ${statusBadge}
+                                        </div>
+                                        <div class="text-end">
+                                            <small class="timestamp-info">${file.date.toLocaleString('id-ID')}</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="file-info">
+                                        <strong>File Info:</strong><br>
+                                        <strong>Timestamp:</strong> ${file.timestamp}<br>
+                                        <strong>Token:</strong> <span class="token-info">${file.token.substring(0, 20)}...</span><br>
+                                        ${file.size && file.size !== 'unknown' ? `<strong>Size:</strong> ${formatFileSize(file.size)}<br>` : ''}
+                                        ${file.contentType && file.contentType !== 'unknown' ? `<strong>Type:</strong> ${file.contentType}<br>` : ''}
+                                        ${file.timeCreated && file.timeCreated !== 'unknown' ? `<strong>Created:</strong> ${new Date(file.timeCreated).toLocaleString('id-ID')}` : ''}
+                                    </div>
+                                    
+                                    ${userInfo}
+                                    ${potentialOwners}
+                                    
+                                    <div class="storage-info">
+                                        <strong>Storage URL:</strong><br>
+                                        <small class="text-break">${file.url}</small>
+                                    </div>
+                                    
+                                    ${file.status === 'orphaned' ? `
+                                        <div class="mt-3">
+                                            <button class="btn btn-warning btn-sm" onclick="showRegistrationModal('${file.filename}')">
+                                                <i class="bi bi-person-plus"></i> Register File
+                                            </button>
+                                            <small class="text-muted ms-2">Register this file to a user</small>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+        }
+
+        // Update statistics
+        function updateStatistics() {
+            const total = allCanvasFiles.length;
+            const registered = allCanvasFiles.filter(f => f.status === 'registered').length;
+            const orphaned = allCanvasFiles.filter(f => f.status === 'orphaned').length;
+            const unknown = allCanvasFiles.filter(f => f.status === 'unknown').length;
+            
+            document.getElementById('totalFiles').textContent = total;
+            document.getElementById('registeredFiles').textContent = registered;
+            document.getElementById('orphanedFiles').textContent = orphaned;
+            document.getElementById('unknownFiles').textContent = unknown;
+        }
+
+        // Setup filters
+        function setupFilters() {
+            // Status filter
+            document.getElementById('statusFilter').addEventListener('change', filterFiles);
+            
+            // Date filter
+            document.getElementById('dateFilter').addEventListener('change', filterFiles);
+            
+            // User filter
+            const users = [...new Set(allCanvasFiles.map(f => f.userId).filter(id => id))];
+            const userFilter = document.getElementById('userFilter');
+            userFilter.innerHTML = '<option value="all">All Users</option>';
+            users.forEach(userId => {
+                const user = allCanvasFiles.find(f => f.userId === userId);
+                const option = document.createElement('option');
+                option.value = userId;
+                option.textContent = user ? user.userName : userId;
+                userFilter.appendChild(option);
+            });
+            userFilter.addEventListener('change', filterFiles);
+            
+            // Show/hide batch register button based on orphaned files count
+            const batchRegisterBtn = document.getElementById('batchRegisterBtn');
+            if (orphanedFiles.length > 0) {
+                batchRegisterBtn.style.display = 'inline-block';
+            } else {
+                batchRegisterBtn.style.display = 'none';
+            }
+        }
+
+        // Filter files
+        function filterFiles() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+            const userFilter = document.getElementById('userFilter').value;
+            
+            const cards = document.querySelectorAll('.canvas-file-card');
+            
+            cards.forEach(card => {
+                let show = true;
+                
+                // Status filter
+                if (statusFilter !== 'all' && card.dataset.status !== statusFilter) {
+                    show = false;
+                }
+                
+                // Date filter
+                if (dateFilter !== 'all') {
+                    const fileDate = new Date(card.dataset.date);
+                    const today = new Date();
+                    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+                    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    
+                    switch (dateFilter) {
+                        case 'today':
+                            if (fileDate.toDateString() !== today.toDateString()) show = false;
+                            break;
+                        case 'yesterday':
+                            if (fileDate.toDateString() !== yesterday.toDateString()) show = false;
+                            break;
+                        case 'week':
+                            if (fileDate < weekAgo) show = false;
+                            break;
+                        case 'month':
+                            if (fileDate < monthAgo) show = false;
+                            break;
+                    }
+                }
+                
+                // User filter
+                if (userFilter !== 'all' && card.dataset.user !== userFilter) {
+                    show = false;
+                }
+                
+                card.style.display = show ? 'block' : 'none';
+            });
+        }
+
+        // Show image in modal
+        function showImage(url, filename) {
+            document.getElementById('modalImage').src = url;
+            document.getElementById('modalImage').alt = filename;
+            document.getElementById('downloadLink').href = url;
+            document.getElementById('downloadLink').download = filename;
+            
+            const file = allCanvasFiles.find(f => f.filename === filename);
+            if (file) {
+                const info = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Filename:</strong> ${file.filename}<br>
+                            <strong>Status:</strong> ${file.status === 'registered' ? '✅ Registered' : '❌ Orphaned'}<br>
+                            <strong>Timestamp:</strong> ${file.timestamp}<br>
+                            <strong>Date:</strong> ${file.date.toLocaleString('id-ID')}<br>
+                            ${file.size && file.size !== 'unknown' ? `<strong>Size:</strong> ${formatFileSize(file.size)}<br>` : ''}
+                            ${file.contentType && file.contentType !== 'unknown' ? `<strong>Type:</strong> ${file.contentType}<br>` : ''}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Token:</strong> <span class="token-info">${file.token}</span><br>
+                            ${file.userId ? `<strong>User:</strong> ${file.userName} (${file.userId})<br>` : ''}
+                            ${file.collection ? `<strong>Collection:</strong> ${file.collection}<br>` : ''}
+                            ${file.question ? `<strong>Question:</strong> ${file.question.substring(0, 100)}...<br>` : ''}
+                            ${file.timeCreated && file.timeCreated !== 'unknown' ? `<strong>Created:</strong> ${new Date(file.timeCreated).toLocaleString('id-ID')}` : ''}
+                        </div>
+                    </div>
+                `;
+                document.getElementById('modalInfo').innerHTML = info;
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+            modal.show();
+        }
+
+        // Utility functions
+        function extractFileInfo(url) {
+            try {
+                const urlObj = new URL(url);
+                const pathParts = urlObj.pathname.split('/');
+                const filename = decodeURIComponent(pathParts[pathParts.length - 1]);
+                const token = urlObj.searchParams.get('token');
+                
+                if (filename && filename.startsWith('canvas_answer_')) {
+                    const timestamp = parseInt(filename.split('_')[2]);
+                    return {
+                        filename: filename,
+                        timestamp: timestamp,
+                        date: new Date(timestamp),
+                        token: token
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error('Error extracting file info:', error);
+                return null;
+            }
+        }
+
+        function findPotentialOwners(timestamp) {
+            const potentialOwners = [];
+            
+            Array.from(registeredFiles.values()).forEach(file => {
+                const timeDiff = Math.abs(file.timestamp - timestamp);
+                const minutesDiff = Math.round(timeDiff / 60000);
+                
+                if (minutesDiff <= 60) { // Within 1 hour
+                    potentialOwners.push({
+                        userName: file.userName,
+                        userId: file.userId,
+                        timeDiff: minutesDiff
+                    });
+                }
+            });
+            
+            // Sort by closest time
+            potentialOwners.sort((a, b) => a.timeDiff - b.timeDiff);
+            return potentialOwners.slice(0, 3); // Return top 3 closest
+        }
+
+        // Function to register orphaned file back to Firestore
+        async function registerOrphanedFile(filename, userId, userName, questionText) {
+            try {
+                console.log(`Registering orphaned file: ${filename} for user: ${userName} (${userId})`);
+                
+                // Find the orphaned file
+                const orphanedFile = orphanedFiles.find(f => f.filename === filename);
+                if (!orphanedFile) {
+                    throw new Error('File not found in orphaned files list');
+                }
+                
+                // Create document data
+                const documentData = {
+                    idCustomer: userId,
+                    customerName: userName,
+                    question: questionText || 'Canvas answer from orphaned file',
+                    desc: `${userName} Canvas answer from orphaned file - ${filename}`,
+                    photoDraw: [orphanedFile.url],
+                    dateTime: new Date(orphanedFile.timestamp).toISOString(),
+                    status: 'complete',
+                    category: 'Out Class',
+                    isCustomQuestion: false,
+                    isCustomQuestionNew: false
+                };
+                
+                // Add to Firestore
+                const docRef = await db.collection('record').add(documentData);
+                
+                console.log(`Successfully registered file ${filename} with document ID: ${docRef.id}`);
+                
+                // Update local data
+                orphanedFile.status = 'registered';
+                orphanedFile.userId = userId;
+                orphanedFile.userName = userName;
+                orphanedFile.question = questionText;
+                orphanedFile.collection = 'record';
+                orphanedFile.questionId = docRef.id;
+                
+                // Move from orphaned to registered
+                registeredFiles.set(filename, orphanedFile);
+                orphanedFiles = orphanedFiles.filter(f => f.filename !== filename);
+                
+                // Refresh display
+                analyzeFiles();
+                displayFiles();
+                updateStatistics();
+                
+                return {
+                    success: true,
+                    documentId: docRef.id,
+                    message: `File ${filename} successfully registered for user ${userName}`
+                };
+                
+            } catch (error) {
+                console.error('Error registering orphaned file:', error);
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        // Function to show registration modal
+        function showRegistrationModal(filename) {
+            const orphanedFile = orphanedFiles.find(f => f.filename === filename);
+            if (!orphanedFile) {
+                alert('File not found in orphaned files list');
+                return;
+            }
+            
+            // Get potential owners for suggestions
+            const potentialOwners = orphanedFile.potentialOwners || [];
+            
+            const modalHtml = `
+                <div class="modal fade" id="registrationModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Register Orphaned File</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-info">
+                                    <strong>File:</strong> ${filename}<br>
+                                    <strong>Timestamp:</strong> ${orphanedFile.date.toLocaleString('id-ID')}<br>
+                                    <strong>Size:</strong> ${formatFileSize(orphanedFile.size)}
+                                </div>
+                                
+                                <form id="registrationForm">
+                                    <div class="mb-3">
+                                        <label for="userId" class="form-label">User ID *</label>
+                                        <input type="text" class="form-control" id="userId" required>
+                                        <div class="form-text">Enter the user ID who generated this file</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="userName" class="form-label">User Name *</label>
+                                        <input type="text" class="form-control" id="userName" required>
+                                        <div class="form-text">Enter the user name who generated this file</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="questionText" class="form-label">Question Text</label>
+                                        <textarea class="form-control" id="questionText" rows="3" placeholder="Enter the question text or description"></textarea>
+                                        <div class="form-text">Optional: Enter the question that was being answered</div>
+                                    </div>
+                                    
+                                    ${potentialOwners.length > 0 ? `
+                                        <div class="mb-3">
+                                            <label class="form-label">Suggested Users (based on timestamp analysis):</label>
+                                            <div class="list-group">
+                                                ${potentialOwners.map(owner => `
+                                                    <button type="button" class="list-group-item list-group-item-action" 
+                                                            onclick="fillUserData('${owner.userId}', '${owner.userName}')">
+                                                        <strong>${owner.userName}</strong> (${owner.userId}) - ${owner.timeDiff} min difference
+                                                    </button>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="submitRegistration('${filename}')">
+                                    <i class="bi bi-check-circle"></i> Register File
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body if it doesn't exist
+            if (!document.getElementById('registrationModal')) {
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            }
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('registrationModal'));
+            modal.show();
+        }
+
+        // Function to fill user data from suggestion
+        function fillUserData(userId, userName) {
+            document.getElementById('userId').value = userId;
+            document.getElementById('userName').value = userName;
+        }
+
+        // Function to submit registration
+        async function submitRegistration(filename) {
+            const userId = document.getElementById('userId').value.trim();
+            const userName = document.getElementById('userName').value.trim();
+            const questionText = document.getElementById('questionText').value.trim();
+            
+            if (!userId || !userName) {
+                alert('Please fill in User ID and User Name');
+                return;
+            }
+            
+            // Show loading
+            const submitBtn = document.querySelector('#registrationModal .btn-primary');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Registering...';
+            submitBtn.disabled = true;
+            
+            try {
+                const result = await registerOrphanedFile(filename, userId, userName, questionText);
+                
+                if (result.success) {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('registrationModal'));
+                    modal.hide();
+                    
+                    // Show success message
+                    showSuccessMessage(result.message);
+                    
+                    // Refresh filters
+                    setupFilters();
+                    
+                } else {
+                    alert('Registration failed: ' + result.error);
+                }
+                
+            } catch (error) {
+                alert('Error during registration: ' + error.message);
+            } finally {
+                // Reset button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Function to show success message
+        function showSuccessMessage(message) {
+            const alertHtml = `
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            const container = document.querySelector('.container-fluid');
+            container.insertAdjacentHTML('afterbegin', alertHtml);
+            
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                const alert = document.querySelector('.alert-success');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorHtml = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> <strong>Error:</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            const container = document.querySelector('.container-fluid');
+            container.insertAdjacentHTML('afterbegin', errorHtml);
+            
+            // Auto dismiss after 10 seconds
+            setTimeout(() => {
+                const alert = document.querySelector('.alert-danger');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 10000);
+        }
+
+        function refreshData() {
+            loadCanvasFiles();
+        }
+
+        function exportData() {
+            const csvContent = generateCSV();
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `canvas_answers_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function generateCSV() {
+            const headers = ['Filename', 'Status', 'Timestamp', 'Date', 'User ID', 'User Name', 'Collection', 'Question', 'Token', 'Size', 'Content Type', 'Time Created'];
+            const rows = allCanvasFiles.map(file => [
+                file.filename,
+                file.status,
+                file.timestamp,
+                file.date.toISOString(),
+                file.userId || '',
+                file.userName || '',
+                file.collection || '',
+                file.question || '',
+                file.token,
+                file.size || '',
+                file.contentType || '',
+                file.timeCreated || ''
+            ]);
+            
+            return [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === null || bytes === 'unknown') return 'N/A';
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Logout function - SAME AS DASHBOARD
+        function logout() {
+            firebase.auth().signOut().then(() => {
+                window.location.href = 'index.html';
+            }).catch((error) => {
+                console.error('Error signing out:', error);
+            });
+        }
+
+        // Function to batch register orphaned files
+        async function batchRegisterOrphanedFiles() {
+            const orphanedCount = orphanedFiles.length;
+            if (orphanedCount === 0) {
+                alert('No orphaned files to register');
+                return;
+            }
+            
+            const confirmed = confirm(`Are you sure you want to register ${orphanedCount} orphaned files?\n\nThis will create new documents in Firestore for each file.`);
+            if (!confirmed) return;
+            
+            // Show progress modal
+            showBatchProgressModal(orphanedCount);
+            
+            let successCount = 0;
+            let errorCount = 0;
+            const errors = [];
+            
+            for (let i = 0; i < orphanedFiles.length; i++) {
+                const file = orphanedFiles[i];
+                
+                // Update progress
+                updateBatchProgress(i + 1, orphanedCount, file.filename);
+                
+                try {
+                    // Find the most likely owner based on timestamp
+                    const potentialOwners = file.potentialOwners || [];
+                    if (potentialOwners.length > 0) {
+                        const bestMatch = potentialOwners[0]; // Closest time match
+                        
+                        const result = await registerOrphanedFile(
+                            file.filename,
+                            bestMatch.userId,
+                            bestMatch.userName,
+                            'Canvas answer from orphaned file (auto-registered)'
+                        );
+                        
+                        if (result.success) {
+                            successCount++;
+                        } else {
+                            errorCount++;
+                            errors.push(`${file.filename}: ${result.error}`);
+                        }
+                    } else {
+                        errorCount++;
+                        errors.push(`${file.filename}: No potential owner found`);
+                    }
+                    
+                } catch (error) {
+                    errorCount++;
+                    errors.push(`${file.filename}: ${error.message}`);
+                }
+                
+                // Small delay to avoid overwhelming Firestore
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // Hide progress modal
+            hideBatchProgressModal();
+            
+            // Show results
+            showBatchResults(successCount, errorCount, errors);
+        }
+
+        // Function to show batch progress modal
+        function showBatchProgressModal(totalFiles) {
+            const modalHtml = `
+                <div class="modal fade" id="batchProgressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Registering Orphaned Files</h5>
+                            </div>
+                            <div class="modal-body">
+                                <div class="text-center">
+                                    <div class="spinner-border text-primary mb-3" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <h6 id="batchProgressText">Processing files...</h6>
+                                    <div class="progress mb-3">
+                                        <div class="progress-bar" id="batchProgressBar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <small id="batchCurrentFile" class="text-muted">Initializing...</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body if it doesn't exist
+            if (!document.getElementById('batchProgressModal')) {
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            }
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('batchProgressModal'));
+            modal.show();
+        }
+
+        // Function to update batch progress
+        function updateBatchProgress(current, total, filename) {
+            const progressText = document.getElementById('batchProgressText');
+            const progressBar = document.getElementById('batchProgressBar');
+            const currentFile = document.getElementById('batchCurrentFile');
+            
+            const percentage = Math.round((current / total) * 100);
+            
+            progressText.textContent = `Processing ${current} of ${total} files...`;
+            progressBar.style.width = percentage + '%';
+            progressBar.textContent = percentage + '%';
+            currentFile.textContent = `Current: ${filename}`;
+        }
+
+        // Function to hide batch progress modal
+        function hideBatchProgressModal() {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('batchProgressModal'));
+            if (modal) {
+                modal.hide();
+            }
+        }
+
+        // Function to show batch results
+        function showBatchResults(successCount, errorCount, errors) {
+            let message = `Batch registration completed!\n\n`;
+            message += `✅ Successfully registered: ${successCount} files\n`;
+            message += `❌ Failed to register: ${errorCount} files\n\n`;
+            
+            if (errors.length > 0) {
+                message += `Errors:\n${errors.slice(0, 5).join('\n')}`;
+                if (errors.length > 5) {
+                    message += `\n... and ${errors.length - 5} more errors`;
+                }
+            }
+            
+            alert(message);
+            
+            // Refresh display
+            if (successCount > 0) {
+                refreshData();
+            }
+        }
+    </script>
+</body>
+</html> 

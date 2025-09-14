@@ -35,6 +35,27 @@ public class DataModel implements Parcelable {
     private String desc;
     private int totalEdit;
     private int views;
+    
+    // New fields for photo documentation and storage
+    private ArrayList<String> photoDocumentation; // URLs to Firebase Storage
+    private ArrayList<String> photoDocumentationPaths; // Storage paths
+    private ArrayList<String> notePhotos; // Note photo URLs
+    private ArrayList<String> notePhotoPaths; // Note photo storage paths
+    private String experimentPhotoUrl; // Main experiment photo URL
+    private String experimentPhotoPath; // Main experiment photo storage path
+    private String documentationNotes; // Text notes for documentation
+    private String storageUserId; // User ID for storage organization
+    private long lastPhotoUpdate; // Timestamp of last photo update
+    
+    // Photo upload fields
+    private String localPhotoPath; // Local file path for photo to be uploaded
+    private String localPhotoBase64; // Base64 data for photo to be uploaded
+    
+    // Admin tracking fields
+    private String creatorName; // Name of the person who created the question
+    private String dibuatOleh; // Indonesian: "Dibuat Oleh" (Created By)
+    private String sourceQuestionId; // ID of the source question if this is a copy
+    private String createdBy; // Alternative field for creator tracking
 
     public DataModel(){
         this.photo = "";
@@ -59,6 +80,28 @@ public class DataModel implements Parcelable {
         this.isFinished = false;
         this.totalEdit = 0;
         this.views = 0;
+        
+        // Initialize new fields
+        this.photoDocumentation = new ArrayList<>();
+        this.photoDocumentationPaths = new ArrayList<>();
+        this.notePhotos = new ArrayList<>();
+        this.notePhotoPaths = new ArrayList<>();
+        this.experimentPhotoUrl = "";
+        this.experimentPhotoPath = "";
+        this.documentationNotes = "";
+        this.storageUserId = "";
+        this.lastPhotoUpdate = System.currentTimeMillis();
+        
+        // Initialize photo upload fields
+        this.localPhotoPath = "";
+        this.localPhotoBase64 = "";
+        
+        // Initialize admin tracking fields
+        this.creatorName = "";
+        this.dibuatOleh = "";
+        this.sourceQuestionId = "";
+        this.createdBy = "";
+
         Date now = Calendar.getInstance().getTime();
 
         // Format waktu
@@ -96,6 +139,34 @@ public class DataModel implements Parcelable {
         base64_4 = in.readString();
         photoAnswer = in.readString();
         totalEdit = in.readInt();
+        
+        // Read new fields
+        dateTime = in.readString();
+        base64_5 = in.readString();
+        typeData = in.readString();
+        desc = in.readString();
+        views = in.readInt();
+        
+        // Read photo documentation fields
+        photoDocumentation = in.createStringArrayList();
+        photoDocumentationPaths = in.createStringArrayList();
+        notePhotos = in.createStringArrayList();
+        notePhotoPaths = in.createStringArrayList();
+        experimentPhotoUrl = in.readString();
+        experimentPhotoPath = in.readString();
+        documentationNotes = in.readString();
+        storageUserId = in.readString();
+        lastPhotoUpdate = in.readLong();
+        
+        // Read photo upload fields
+        localPhotoPath = in.readString();
+        localPhotoBase64 = in.readString();
+        
+        // Read admin tracking fields
+        creatorName = in.readString();
+        dibuatOleh = in.readString();
+        sourceQuestionId = in.readString();
+        createdBy = in.readString();
     }
 
     @Override
@@ -119,6 +190,34 @@ public class DataModel implements Parcelable {
         dest.writeString(base64_4);
         dest.writeString(photoAnswer);
         dest.writeInt(totalEdit);
+        
+        // Write new fields
+        dest.writeString(dateTime);
+        dest.writeString(base64_5);
+        dest.writeString(typeData);
+        dest.writeString(desc);
+        dest.writeInt(views);
+        
+        // Write photo documentation fields
+        dest.writeStringList(photoDocumentation);
+        dest.writeStringList(photoDocumentationPaths);
+        dest.writeStringList(notePhotos);
+        dest.writeStringList(notePhotoPaths);
+        dest.writeString(experimentPhotoUrl);
+        dest.writeString(experimentPhotoPath);
+        dest.writeString(documentationNotes);
+        dest.writeString(storageUserId);
+        dest.writeLong(lastPhotoUpdate);
+        
+        // Write photo upload fields
+        dest.writeString(localPhotoPath);
+        dest.writeString(localPhotoBase64);
+        
+        // Write admin tracking fields
+        dest.writeString(creatorName);
+        dest.writeString(dibuatOleh);
+        dest.writeString(sourceQuestionId);
+        dest.writeString(createdBy);
     }
 
     @Override
@@ -330,9 +429,201 @@ public class DataModel implements Parcelable {
     public int getViews() {
         return views;
     }
-
+    
     public void setViews(int views) {
         this.views = views;
+    }
+    
+    // New getters and setters for photo documentation
+    public ArrayList<String> getPhotoDocumentation() {
+        return photoDocumentation;
+    }
+    
+    public void setPhotoDocumentation(ArrayList<String> photoDocumentation) {
+        this.photoDocumentation = photoDocumentation;
+    }
+    
+    public ArrayList<String> getPhotoDocumentationPaths() {
+        return photoDocumentationPaths;
+    }
+    
+    public void setPhotoDocumentationPaths(ArrayList<String> photoDocumentationPaths) {
+        this.photoDocumentationPaths = photoDocumentationPaths;
+    }
+    
+    public ArrayList<String> getNotePhotos() {
+        return notePhotos;
+    }
+    
+    public void setNotePhotos(ArrayList<String> notePhotos) {
+        this.notePhotos = notePhotos;
+    }
+    
+    public ArrayList<String> getNotePhotoPaths() {
+        return notePhotoPaths;
+    }
+    
+    public void setNotePhotoPaths(ArrayList<String> notePhotoPaths) {
+        this.notePhotoPaths = notePhotoPaths;
+    }
+    
+    public String getExperimentPhotoUrl() {
+        return experimentPhotoUrl;
+    }
+    
+    public void setExperimentPhotoUrl(String experimentPhotoUrl) {
+        this.experimentPhotoUrl = experimentPhotoUrl;
+    }
+    
+    public String getExperimentPhotoPath() {
+        return experimentPhotoPath;
+    }
+    
+    public void setExperimentPhotoPath(String experimentPhotoPath) {
+        this.experimentPhotoPath = experimentPhotoPath;
+    }
+    
+    public String getDocumentationNotes() {
+        return documentationNotes;
+    }
+    
+    public void setDocumentationNotes(String documentationNotes) {
+        this.documentationNotes = documentationNotes;
+    }
+    
+    public String getStorageUserId() {
+        return storageUserId;
+    }
+    
+    public void setStorageUserId(String storageUserId) {
+        this.storageUserId = storageUserId;
+    }
+    
+    public long getLastPhotoUpdate() {
+        return lastPhotoUpdate;
+    }
+    
+    public void setLastPhotoUpdate(long lastPhotoUpdate) {
+        this.lastPhotoUpdate = lastPhotoUpdate;
+    }
+    
+    // Photo upload getters and setters
+    public String getLocalPhotoPath() {
+        return localPhotoPath;
+    }
+
+    public void setLocalPhotoPath(String localPhotoPath) {
+        this.localPhotoPath = localPhotoPath;
+    }
+
+    public String getLocalPhotoBase64() {
+        return localPhotoBase64;
+    }
+
+    public void setLocalPhotoBase64(String localPhotoBase64) {
+        this.localPhotoBase64 = localPhotoBase64;
+    }
+    
+    // Admin tracking getters and setters
+    public String getCreatorName() {
+        return creatorName;
+    }
+    
+    public void setCreatorName(String creatorName) {
+        this.creatorName = creatorName;
+    }
+    
+    public String getDibuatOleh() {
+        return dibuatOleh;
+    }
+    
+    public void setDibuatOleh(String dibuatOleh) {
+        this.dibuatOleh = dibuatOleh;
+    }
+    
+    public String getSourceQuestionId() {
+        return sourceQuestionId;
+    }
+    
+    public void setSourceQuestionId(String sourceQuestionId) {
+        this.sourceQuestionId = sourceQuestionId;
+    }
+    
+    public String getCreatedBy() {
+        return createdBy;
+    }
+    
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+    
+    /**
+     * Add photo documentation URL and path
+     */
+    public void addPhotoDocumentation(String photoUrl, String storagePath) {
+        if (this.photoDocumentation == null) {
+            this.photoDocumentation = new ArrayList<>();
+        }
+        if (this.photoDocumentationPaths == null) {
+            this.photoDocumentationPaths = new ArrayList<>();
+        }
+        
+        this.photoDocumentation.add(photoUrl);
+        this.photoDocumentationPaths.add(storagePath);
+        this.lastPhotoUpdate = System.currentTimeMillis();
+    }
+    
+    /**
+     * Add note photo URL and path
+     */
+    public void addNotePhoto(String photoUrl, String storagePath) {
+        if (this.notePhotos == null) {
+            this.notePhotos = new ArrayList<>();
+        }
+        if (this.notePhotoPaths == null) {
+            this.notePhotoPaths = new ArrayList<>();
+        }
+        
+        this.notePhotos.add(photoUrl);
+        this.notePhotoPaths.add(storagePath);
+        this.lastPhotoUpdate = System.currentTimeMillis();
+    }
+    
+    /**
+     * Remove photo documentation by index
+     */
+    public void removePhotoDocumentation(int index) {
+        if (this.photoDocumentation != null && index >= 0 && index < this.photoDocumentation.size()) {
+            this.photoDocumentation.remove(index);
+            if (this.photoDocumentationPaths != null && index < this.photoDocumentationPaths.size()) {
+                this.photoDocumentationPaths.remove(index);
+            }
+            this.lastPhotoUpdate = System.currentTimeMillis();
+        }
+    }
+    
+    /**
+     * Remove note photo by index
+     */
+    public void removeNotePhoto(int index) {
+        if (this.notePhotos != null && index >= 0 && index < this.notePhotos.size()) {
+            this.notePhotos.remove(index);
+            if (this.notePhotoPaths != null && index < this.notePhotoPaths.size()) {
+                this.notePhotoPaths.remove(index);
+            }
+            this.lastPhotoUpdate = System.currentTimeMillis();
+        }
+    }
+    
+    /**
+     * Get total photo count (documentation + notes + experiment)
+     */
+    public int getTotalPhotoCount() {
+        int count = 0;
+        if (this.photoDocumentation != null) count += this.photoDocumentation.size();
+        if (this.notePhotos != null) count += this.notePhotos.size();
+        if (this.experimentPhotoUrl != null && !this.experimentPhotoUrl.isEmpty()) count++;
+        return count;
     }
 }
 

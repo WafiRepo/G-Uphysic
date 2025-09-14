@@ -207,6 +207,33 @@
                             android:background="@drawable/bg_button_group"
                             android:visibility="gone" />
 
+                        <!-- Documentation Photo Preview -->
+                        <LinearLayout
+                            android:id="@+id/llDocumentationPhotoPreview"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone"
+                            android:layout_marginTop="16dp">
+                            
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📸 Dokumentasi Catatan"
+                                android:textColor="@color/phyphox_purple"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="8dp"/>
+                            
+                            <com.github.chrisbanes.photoview.PhotoView
+                                android:id="@+id/ivDocumentationPhotoPreview"
+                                android:layout_width="match_parent"
+                                android:layout_height="250dp"
+                                android:scaleType="fitCenter"
+                                android:background="@drawable/bg_button_group"
+                                android:layout_marginBottom="8dp"/>
+                        </LinearLayout>
+
                     </LinearLayout>
 
                 </androidx.cardview.widget.CardView>

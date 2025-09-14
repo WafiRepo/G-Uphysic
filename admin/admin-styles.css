@@ -99,6 +99,96 @@ main {
 
 /* Table Styles */
 .table {
+    background: white;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.table-responsive {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+/* Table Image Styles */
+.table-image {
+    max-width: 100px;
+    max-height: 100px;
+    object-fit: contain;
+    border-radius: 0.25rem;
+    border: 1px solid #dee2e6;
+    background: #f8f9fa;
+    transition: transform 0.2s ease-in-out;
+}
+
+.table-image:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+    z-index: 10;
+    position: relative;
+}
+
+/* Table Cell Styles */
+.table td {
+    vertical-align: middle;
+    padding: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    padding: 1rem 0.75rem;
+}
+
+/* Table Row Hover Effect */
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.15s ease-in-out;
+}
+
+/* Table Content Overflow */
+.table-content {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.table-content.expanded {
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+/* Table Image Container */
+.table-image-container {
+    position: relative;
+    display: inline-block;
+}
+
+.table-image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+}
+
+.table-image-container:hover .table-image-overlay {
+    opacity: 1;
+}
+.table {
     border-radius: 0.5rem;
     overflow: hidden;
 }

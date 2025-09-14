@@ -47,7 +47,7 @@ public class HomeFragment extends Fragment {
                 App app = (App) requireActivity().getApplication();
                 DataModel dataModel = new DataModel();
                 dataModel.setId(String.valueOf(System.currentTimeMillis()));
-                dataModel.setTopics("Centripetal Acceleration");
+                dataModel.setTopics("Out Class");
                 app.setDataModel(dataModel);
                 startActivity(new Intent(getActivity(), LinearActivity.class));
             });

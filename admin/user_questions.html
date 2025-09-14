@@ -1,0 +1,3487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Questions - P-MAGIC Admin</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- JSZip for creating ZIP files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- FileSaver for downloading files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link href="admin-styles.css" rel="stylesheet">
+    <style>
+        .canvas-gallery { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .canvas-image { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid #dee2e6; }
+        .canvas-image:hover { border-color: #007bff; transform: scale(1.05); transition: all 0.2s; }
+        .question-card { border: 1px solid #dee2e6; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .question-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 12px 12px 0 0; }
+        .question-body { padding: 20px; }
+        .user-info { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .stats-card { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .collection-badge { font-size: 0.8em; }
+        .location-info { background: #e3f2fd; border-radius: 6px; padding: 8px; margin: 5px 0; }
+        .base64-images { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .base64-image { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid #dee2e6; }
+        .input-type-badge { font-size: 0.7em; margin: 2px; }
+        .visit-info { background: #e8f5e8; border-radius: 6px; padding: 8px; margin: 5px 0; }
+        .text-answer { background: #f8f9fa; border-radius: 6px; padding: 10px; margin: 5px 0; border-left: 4px solid #007bff; }
+        .image-container { position: relative; display: inline-block; }
+        .firebase-storage-image { border: 2px solid #ff6b35; }
+        .firebase-badge { position: absolute; top: 5px; right: 5px; background: #ff6b35; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7em; }
+        .canvas-badge { position: absolute; top: 5px; left: 5px; background: #28a745; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7em; }
+        .question-pair { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 10px 0; }
+        .question-pair-header { font-weight: bold; color: #856404; margin-bottom: 10px; }
+        .storage-user-info { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 8px; margin-top: 5px; font-size: 0.8em; }
+        .storage-user-info strong { color: #495057; }
+        .bg-bronze { background-color: #cd7f32 !important; color: white !important; }
+        .table-warning { background-color: rgba(255, 193, 7, 0.1) !important; }
+        .ranking-badge { font-size: 0.9em; }
+        
+        /* Navbar Styling */
+        .navbar-dark.bg-dark {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .navbar-brand i {
+            font-size: 1.6rem;
+        }
+        
+        .nav-link {
+            font-weight: 500;
+            padding: 0.75rem 1rem !important;
+            margin: 0 0.25rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(255,255,255,0.1);
+            transform: translateY(-1px);
+        }
+        
+        .nav-link.active {
+            background-color: rgba(255,193,7,0.2);
+            color: #ffc107 !important;
+            border: 1px solid rgba(255,193,7,0.3);
+        }
+        
+        .navbar-toggler {
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.2rem rgba(255,193,7,0.25);
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress {
+            height: 25px;
+            font-size: 14px;
+        }
+        
+        .progress-bar {
+            line-height: 25px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading State -->
+    <div id="loading" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="mt-2">Loading...</div>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-question-circle-fill text-warning"></i>
+                <strong class="ms-2">P-MAGIC Physics Admin</strong>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="dashboard.html">
+                        <i class="bi bi-house"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="users.html">
+                        <i class="bi bi-people"></i> Users
+                    </a>
+                    <a class="nav-link active" href="user_questions.html">
+                        <i class="bi bi-question-circle"></i> User Questions
+                    </a>
+                    <a class="nav-link" href="canvas_answers.html">
+                        <i class="bi bi-palette"></i> Canvas Files Analysis
+                    </a>
+                    <a class="nav-link" href="storage_matching.html">
+                        <i class="bi bi-link-45deg"></i> Storage Matching
+                    </a>
+                    <a class="nav-link" href="#" onclick="logout()">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container-fluid mt-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-search"></i> Select User to View All Data</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label for="userSelect" class="form-label">Choose User:</label>
+                                <select id="userSelect" class="form-select" onchange="loadUserQuestions()">
+                                    <option value="">Select a user...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="categoryFilter" class="form-label">Filter by Category:</label>
+                                <select id="categoryFilter" class="form-select" onchange="filterQuestions()">
+                                    <option value="">All Categories</option>
+                                    <option value="In Class">In Class</option>
+                                    <option value="Out Class">Out Class</option>
+                                    <option value="Buat Pertanyaan Sendiri">Buat Pertanyaan Sendiri</option>
+                                    <option value="Buat Pertanyaan dengan AI">Buat Pertanyaan dengan AI</option>
+                                    <option value="Question from List">Question from List</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="collectionFilter" class="form-label">Filter by Collection:</label>
+                                <select id="collectionFilter" class="form-select" onchange="filterQuestions()">
+                                    <option value="">All Collections</option>
+                                    <option value="questions">Questions Collection</option>
+                                    <option value="record">Record Collection</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="levelQuestionFilter" class="form-label">Filter by Level:</label>
+                                <select id="levelQuestionFilter" class="form-select" onchange="filterQuestions()">
+                                    <option value="">All Levels</option>
+                                    <option value="Easy">Easy</option>
+                                    <option value="Intermediate">Intermediate</option>
+                                    <option value="Advanced">Advanced</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-4">
+                                <label class="form-label">User Search</label>
+                                <input type="text" class="form-control" id="userSearch" placeholder="Search by user email...">
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button class="btn btn-primary" onclick="filterQuestions()">
+                                    <i class="bi bi-search"></i> Apply Filters
+                                </button>
+                                <button class="btn btn-secondary" onclick="clearFilters()">
+                                    <i class="bi bi-x-circle"></i> Clear Filters
+                                </button>
+                                <button class="btn btn-success ms-2" onclick="showUserRanking()">
+                                    <i class="bi bi-trophy"></i> Ranking
+                                </button>
+                                <button class="btn btn-primary ms-2" onclick="downloadAllDataAsZip()">
+                                    <i class="bi bi-download"></i> Download All Data (ZIP)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="userInfoSection" style="display: none;">
+            <div class="user-info">
+                <h4 id="userName">User Name</h4>
+                <p id="userEmail" class="mb-0">user@example.com</p>
+            </div>
+        </div>
+
+        <div id="statsSection" style="display: none;">
+            <div class="stats-card">
+                <div class="row">
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h5 id="totalQuestions">0</h5>
+                            <small class="text-muted">Total Questions</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h5 id="completedQuestions">0</h5>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h5 id="questionsCollection">0</h5>
+                            <small class="text-muted">From Questions</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h5 id="recordCollection">0</h5>
+                            <small class="text-muted">From Record</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h5 id="questionListCount">0</h5>
+                            <small class="text-muted">From Question List</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h5 id="totalVisits">0</h5>
+                            <small class="text-muted">Total Visits</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 id="totalDuration">0 min</h5>
+                            <small class="text-muted">Total Duration</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 id="customQuestionsCount">0</h5>
+                            <small class="text-muted">Custom Questions</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 id="firebaseStorageCount">0</h5>
+                            <small class="text-muted">Firebase Storage</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 id="canvasAnswerCount">0</h5>
+                            <small class="text-muted">Canvas Answer</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 id="easyQuestionsCount">0</h5>
+                            <small class="text-muted">Easy Level</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 id="intermediateQuestionsCount">0</h5>
+                            <small class="text-muted">Intermediate Level</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 id="advancedQuestionsCount">0</h5>
+                            <small class="text-muted">Advanced Level</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 id="unknownLevelCount">0</h5>
+                            <small class="text-muted">Unknown Level</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="questionsSection" style="display: none;">
+            <div class="row">
+                <div class="col-12">
+                    <h4>All Data from <span id="selectedUserName">User</span></h4>
+                </div>
+            </div>
+            <div id="questionsList"></div>
+        </div>
+
+        <div id="loadingState" class="text-center py-5" style="display: none;">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3">Loading user data...</p>
+        </div>
+
+        <div id="emptyState" class="text-center py-5" style="display: none;">
+            <i class="bi bi-inbox" style="font-size: 4rem; color: #6c757d;"></i>
+            <h4 class="mt-3 text-muted">No Data Found</h4>
+            <p class="text-muted">This user hasn't completed any questions or experiments yet.</p>
+        </div>
+    </main>
+
+    <!-- Image Preview Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Image Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" class="img-fluid" src="" alt="Preview" style="max-height: 80vh;">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="downloadImage()">
+                        <i class="bi bi-download"></i> Download
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Ranking Modal -->
+    <div class="modal fade" id="rankingModal" tabindex="-1" aria-labelledby="rankingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rankingModalLabel">🏆 User Ranking</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="rankingTable">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Completed Questions</th>
+                                    <th>Total Questions</th>
+                                    <th>Completion Rate</th>
+                                    <th>Last Activity</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rankingTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" onclick="exportRankingToCSV()">
+                        📥 Export to CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Progress Modal -->
+    <div class="modal fade" id="downloadProgressModal" tabindex="-1" aria-labelledby="downloadProgressModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="downloadProgressModalLabel">📦 Downloading All Data</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="downloadProgressBar" class="form-label">Progress:</label>
+                        <div class="d-flex justify-content-between">
+                            <span id="downloadStatusText">Preparing download...</span>
+                            <span id="downloadProgressText">0%</span>
+                        </div>
+                        <progress id="downloadProgressBar" class="form-range" value="0" max="100" style="width: 100%;"></progress>
+                    </div>
+                    <div class="alert alert-info">
+                        <small>
+                            <strong>Note:</strong> This process may take several minutes depending on the amount of data and images.
+                            <br>Please do not close this window until the download is complete.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZL5oSEVbDLrN2hbZeDXSchr8wDWAW4ok",
+            authDomain: "phyphox-34aed.firebaseapp.com",
+            projectId: "phyphox-34aed",
+            storageBucket: "phyphox-34aed.firebasestorage.app",
+            messagingSenderId: "602030706614",
+            appId: "1:602030706614:web:f0d8a44a4c4012749b3b17",
+            measurementId: "G-M7SKB5YS91"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let allUsers = [];
+        let selectedUserQuestions = [];
+        let currentSelectedUserName = '';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+        });
+
+        function checkAuth() {
+            auth.onAuthStateChanged(function(user) {
+                if (user) {
+                    db.collection('user').doc(user.uid).get().then(doc => {
+                        if (doc.exists && doc.data().role === 'admin') {
+                            loadUsers();
+                        } else {
+                            window.location.href = 'index.html';
+                        }
+                    }).catch(() => {
+                        window.location.href = 'index.html';
+                    });
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+        }
+
+        async function loadUsers() {
+            try {
+                const userSelect = document.getElementById('userSelect');
+                userSelect.innerHTML = '<option value="">Select a user...</option>';
+
+                const collections = ['user', 'users', 'customers'];
+                allUsers = [];
+
+                for (const collectionName of collections) {
+                    try {
+                        const snapshot = await db.collection(collectionName).get();
+                        snapshot.docs.forEach(doc => {
+                            const userData = doc.data();
+                            const userInfo = {
+                                id: doc.id,
+                                name: userData.name || userData.displayName || userData.fullName || userData.nama || 'Unknown',
+                                email: userData.email || userData.userEmail || userData.mail || 'Unknown',
+                                collection: collectionName
+                            };
+                            allUsers.push(userInfo);
+                        });
+                    } catch (error) {
+                        console.log(`Collection ${collectionName} not found:`, error.message);
+                    }
+                }
+
+                allUsers.sort((a, b) => a.name.localeCompare(b.name));
+
+                allUsers.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = `${user.name} (${user.email})`;
+                    userSelect.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('Error loading users:', error);
+                alert('Failed to load users: ' + error.message);
+            }
+        }
+
+        async function loadUserQuestions() {
+            const userId = document.getElementById('userSelect').value;
+            if (!userId) {
+                hideUserInfo();
+                return;
+            }
+
+            const selectedUser = allUsers.find(u => u.id === userId);
+            if (!selectedUser) {
+                alert('User not found');
+                return;
+            }
+            // Keep current selected user's name for description rendering
+            currentSelectedUserName = selectedUser.name || '';
+
+            showLoading(true);
+            hideUserInfo();
+
+            try {
+                const questions = [];
+                // Update visit introduction from user profile
+                await updateVisitStats(userId);
+                
+                // Load from questions collection
+                const questionsSnapshot = await db.collection('questions')
+                    .where('idCustomer', '==', userId)
+                    .get();
+                
+                questionsSnapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    const question = processQuestionData(doc.id, 'questions', data);
+                    questions.push(question);
+                });
+
+                // Load from record collection
+                const recordSnapshot = await db.collection('record')
+                    .where('idCustomer', '==', userId)
+                    .get();
+                
+                recordSnapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    const question = processQuestionData(doc.id, 'record', data);
+                    questions.push(question);
+                });
+
+                questions.sort((a, b) => b.date - a.date);
+                selectedUserQuestions = questions;
+                
+                updateUserInfo(selectedUser, questions);
+                updateStats(questions);
+                displayQuestions(questions);
+                addStorageUsersButton();
+                
+                showLoading(false);
+
+            } catch (error) {
+                console.error('Error loading user questions:', error);
+                alert('Failed to load questions: ' + error.message);
+                showLoading(false);
+            }
+        }
+
+        function processQuestionData(id, collection, data) {
+            // Determine date
+            let date;
+            if (data.id && !isNaN(data.id)) {
+                date = new Date(parseInt(data.id));
+            } else if (data.dateTime) {
+                try {
+                    date = new Date(data.dateTime);
+                } catch (e) {
+                    date = new Date();
+                }
+            } else if (data.createdAt) {
+                date = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+            } else {
+                date = new Date();
+            }
+
+            // Determine category and source
+            let category = data.topics || 'Unknown';
+            let source = 'Unknown';
+            let isFromQuestionList = false;
+            
+            if (collection === 'questions') {
+                if (data.desc && data.desc.includes('Buat Pertanyaan Sendiri')) {
+                    category = 'Buat Pertanyaan Sendiri';
+                    source = 'User Created';
+                } else if (data.desc && data.desc.includes('Buat Pertanyaan dengan AI')) {
+                    category = 'Buat Pertanyaan dengan AI';
+                    source = 'AI Generated';
+                } else if (data.desc && data.desc.includes('Mengerjakan pertanyaan dari list')) {
+                    category = 'Question from List';
+                    source = 'Question List';
+                    isFromQuestionList = true;
+                } else if (data.desc && data.desc.includes('Mengerjakan pertanyaan dari')) {
+                    category = 'Question from List';
+                    source = 'Question List';
+                    isFromQuestionList = true;
+                } else {
+                    category = 'Custom Question';
+                    source = 'User Created';
+                }
+            } else if (collection === 'record') {
+                if (data.desc && data.desc.includes('Mengerjakan pertanyaan dari Sistem')) {
+                    category = data.topics || 'System Question';
+                    source = 'System Generated';
+                } else if (data.desc && data.desc.includes('Mengerjakan pertanyaan dari')) {
+                    category = 'Question from List';
+                    source = 'Question List';
+                    isFromQuestionList = true;
+                } else {
+                    category = data.topics || 'Experiment';
+                    source = 'System Generated';
+                }
+            }
+
+            // Determine status
+            let status = 'In Progress';
+            if (data.status) {
+                status = data.status;
+            } else if (data.isFinished === true) {
+                status = 'Completed';
+            } else if (collection === 'questions') {
+                status = 'Completed';
+            } else if (data.photoDraw && data.photoDraw.length > 0) {
+                status = 'Completed';
+            } else if (data.photo || data.base64 || data.photoAnswer) {
+                status = 'In Progress';
+            }
+
+            // Process photoDraw array - check for Firebase Storage URLs
+            let photoDraw = [];
+            if (data.photoDraw && Array.isArray(data.photoDraw)) {
+                photoDraw = data.photoDraw;
+            } else if (data.photoDraw && typeof data.photoDraw === 'string') {
+                photoDraw = [data.photoDraw];
+            }
+
+            // Ensure capture image (object detection) is included if present
+            if (data.photo && String(data.photo).trim()) {
+                photoDraw.unshift(String(data.photo).trim());
+            }
+
+            // Check for answer_image in Firebase Storage
+            if (data.answer_image && data.answer_image.trim()) {
+                photoDraw.push(data.answer_image);
+            }
+
+            // Check for other possible Firebase Storage paths
+            const firebaseStoragePaths = [
+                'answer_image',
+                'canvas_image',
+                'drawing_image',
+                'photo_answer',
+                'answer_photo'
+            ];
+
+            firebaseStoragePaths.forEach(path => {
+                if (data[path] && data[path].trim()) {
+                    photoDraw.push(data[path]);
+                }
+            });
+
+            // Remove duplicates
+            photoDraw = [...new Set(photoDraw)];
+
+            // Process base64 images
+            const base64Images = [];
+            if (data.base64 && data.base64.trim()) base64Images.push({ field: 'base64', data: data.base64 });
+            if (data.base64_2 && data.base64_2.trim()) base64Images.push({ field: 'base64_2', data: data.base64_2 });
+            if (data.base64_3 && data.base64_3.trim()) base64Images.push({ field: 'base64_3', data: data.base64_3 });
+            if (data.base64_4 && data.base64_4.trim()) base64Images.push({ field: 'base64_4', data: data.base64_4 });
+            if (data.base64_5 && data.base64_5.trim()) base64Images.push({ field: 'base64_5', data: data.base64_5 });
+
+            // Compute Graph Acceleration image: prefer photoAcceleration, fallback to base64 images
+            let graphAcceleration = '';
+            if (data.photoAcceleration && String(data.photoAcceleration).trim()) {
+                graphAcceleration = String(data.photoAcceleration).trim();
+            } else if (data.base64 && String(data.base64).trim()) {
+                graphAcceleration = String(data.base64).trim();
+            } else if (base64Images.length > 0) {
+                graphAcceleration = base64Images[0].data;
+            }
+
+            // Process visit introduction data
+            // Note: Individual question visit data is limited, overall stats come from user collection
+            const visitData = {
+                count: data.totalVisitingIntroduction || data.visitCount || 0,
+                duration: data.totalVisitDurationMillis || data.visitDuration || 0,
+                formatted: ''
+            };
+
+            if (visitData.count > 0 && visitData.duration > 0) {
+                const durationMinutes = Math.round(visitData.duration / 60000);
+                visitData.formatted = `${visitData.count} visits (${durationMinutes} min)`;
+            } else if (visitData.count > 0) {
+                visitData.formatted = `${visitData.count} visits`;
+            } else if (visitData.duration > 0) {
+                const durationMinutes = Math.round(visitData.duration / 60000);
+                visitData.formatted = `${durationMinutes} min`;
+            } else {
+                visitData.formatted = 'Individual visit data not available';
+            }
+
+            // Process input type data
+            const typeDataValue = data.typeData || data.topics || '';
+
+            // Get original question for question list items
+            let originalQuestion = '';
+            if (isFromQuestionList && data.question) {
+                originalQuestion = data.question;
+            }
+
+            // Compute description per requirement using 'Dibuat Oleh' if available
+            let computedDescription = data.desc || '';
+            if (isFromQuestionList) {
+                const workerName = currentSelectedUserName || 'Unknown';
+                // Prefer explicit 'Dibuat Oleh' field names if present
+                const createdByFields = [
+                    'dibuatOleh', 'Dibuat Oleh', 'createdBy', 'creator', 'creatorName', 'author', 'authorName', 'pembuat', 'namaPembuat'
+                ];
+                let creatorName = '';
+                for (const key of createdByFields) {
+                    if (data[key] && String(data[key]).trim()) {
+                        creatorName = String(data[key]).trim();
+                        break;
+                    }
+                }
+                if (!creatorName) {
+                    creatorName = (data.customerName && data.customerName.trim()) ? data.customerName : 'Unknown';
+                }
+                computedDescription = `${workerName} Mengerjakan pertanyaan dari ${creatorName})`;
+            }
+
+            // Determine original creator name for display (independent from description)
+            const creatorFieldPriority = ['dibuatOleh', 'Dibuat Oleh', 'createdBy', 'creator', 'creatorName', 'author', 'authorName', 'pembuat', 'namaPembuat'];
+            let originalCreator = '';
+            for (const key of creatorFieldPriority) {
+                if (data[key] && String(data[key]).trim()) {
+                    originalCreator = String(data[key]).trim();
+                    break;
+                }
+            }
+            if (!originalCreator) {
+                originalCreator = (data.customerName && data.customerName.trim()) ? data.customerName : '';
+            }
+
+            // Determine display question/answer per requirement
+            const displayQuestion = (category === 'Out Class' || category === 'Buat Pertanyaan Sendiri')
+                ? (data.question || 'No question')
+                : (typeDataValue || data.question || 'No question');
+            const displayAnswer = (category === 'Out Class')
+                ? (typeDataValue || '')
+                : (data.answer || '');
+                
+            // Extract level question from typeQuestion field
+            let levelQuestion = 'N/A';
+            if (data.typeQuestion) {
+                // Map typeQuestion values to display names
+                switch (data.typeQuestion) {
+                    case 'Easy':
+                        levelQuestion = 'Easy';
+                        break;
+                    case 'Intermediate':
+                        levelQuestion = 'Intermediate';
+                        break;
+                    case 'Advanced':
+                        levelQuestion = 'Advanced';
+                        break;
+                    default:
+                        levelQuestion = data.typeQuestion; // Use original value if not in our mapping
+                }
+            }
+                
+            // Log the question data for debugging
+            if (category === 'Buat Pertanyaan Sendiri') {
+                console.log('Buat Pertanyaan Sendiri - Data:', {
+                    category: category,
+                    desc: data.desc,
+                    question: data.question,
+                    typeData: data.typeData,
+                    typeQuestion: data.typeQuestion,
+                    levelQuestion: levelQuestion,
+                    displayQuestion: displayQuestion,
+                    displayAnswer: displayAnswer
+                });
+            }
+
+            return {
+                id: id,
+                collection: collection,
+                data: data,
+                date: date,
+                category: category,
+                source: source,
+                isFromQuestionList: isFromQuestionList,
+                question: displayQuestion,
+                originalQuestion: originalQuestion,
+                originalCreator: originalCreator,
+                description: computedDescription || 'No description',
+                photoDraw: photoDraw,
+                photoAnswer: data.photoAnswer || '',
+                base64Images: base64Images,
+                status: status,
+                editCount: data.totalEdit || data.editCount || 0,
+                views: data.views || 0,
+                locationName: data.locationName || '',
+                latitude: data.latitude || null,
+                longitude: data.longitude || null,
+                hasGraphAcceleration: !!graphAcceleration,
+                graphAcceleration: graphAcceleration,
+                generationType: determineGenerationType(collection, data),
+                levelQuestion: levelQuestion,
+                visitData: visitData,
+                typeDataValue: typeDataValue,
+                answer: displayAnswer,
+                photoAcceleration: data.photoAcceleration || '',
+                answerImage: data.answer_image || ''
+            };
+        }
+
+        // Update visit introduction stats from user profile document
+        async function updateVisitStats(userId) {
+            try {
+                const doc = await db.collection('user').doc(userId).get();
+                if (doc.exists) {
+                    const u = doc.data() || {};
+                    const totalVisits = u.totalVisitingIntroduction || 0;
+                    const totalDurationFormatted = u.totalVisitDurationFormatted || '0 min';
+                    
+                    // Update the stats display
+                    const visitsEl = document.getElementById('totalVisits');
+                    const durationEl = document.getElementById('totalDuration');
+                    if (visitsEl) visitsEl.textContent = totalVisits;
+                    if (durationEl) durationEl.textContent = totalDurationFormatted;
+                    
+                    console.log('Visit stats loaded from user collection:', {
+                        userId: userId,
+                        totalVisitingIntroduction: totalVisits,
+                        totalVisitDurationFormatted: totalDurationFormatted
+                    });
+                }
+            } catch (e) {
+                console.warn('Failed to load visit stats:', e?.message || e);
+            }
+        }
+
+        function determineGenerationType(collection, data) {
+            if (collection === 'questions') {
+                if (data.desc && data.desc.includes('Buat Pertanyaan Sendiri')) {
+                    return 'Manual Generated';
+                } else if (data.desc && data.desc.includes('Buat Pertanyaan dengan AI')) {
+                    return 'AI Generated';
+                } else {
+                    return 'Manual Generated';
+                }
+            } else {
+                return 'System Generated';
+            }
+        }
+
+        function getLevelQuestionBadgeClass(levelQuestion) {
+            switch (levelQuestion) {
+                case 'Easy':
+                    return 'bg-success';
+                case 'Intermediate':
+                    return 'bg-info';
+                case 'Advanced':
+                    return 'bg-warning';
+                default:
+                    return 'bg-secondary';
+            }
+        }
+
+        function updateUserInfo(user, questions) {
+            document.getElementById('userName').textContent = user.name;
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('selectedUserName').textContent = user.name;
+            document.getElementById('userInfoSection').style.display = 'block';
+            document.getElementById('statsSection').style.display = 'block';
+            document.getElementById('questionsSection').style.display = 'block';
+            
+            // Update visit stats from user collection
+            updateVisitStats(user.id);
+        }
+
+        function updateStats(questions) {
+            const safeQuestions = Array.isArray(questions) ? questions : [];
+            const total = safeQuestions.length;
+            const completed = safeQuestions.filter(q => q.status === 'Completed').length;
+            const fromQuestions = safeQuestions.filter(q => q.collection === 'questions').length;
+            const fromRecord = safeQuestions.filter(q => q.collection === 'record').length;
+            const questionListCount = safeQuestions.filter(q => q.isFromQuestionList).length;
+            const customQuestionsCount = safeQuestions.filter(q => q.category !== 'Question from List').length;
+            const firebaseStorageCount = safeQuestions.filter(q => q.answerImage).length;
+            const canvasAnswerCount = safeQuestions.filter(q => Array.isArray(q.photoDraw) && q.photoDraw.some(img => img.includes('canvas_answer_'))).length;
+
+            // Level question stats
+            const easyQuestionsCount = safeQuestions.filter(q => q.levelQuestion === 'Easy').length;
+            const intermediateQuestionsCount = safeQuestions.filter(q => q.levelQuestion === 'Intermediate').length;
+            const advancedQuestionsCount = safeQuestions.filter(q => q.levelQuestion === 'Advanced').length;
+            const unknownLevelCount = safeQuestions.filter(q => q.levelQuestion === 'N/A' || !q.levelQuestion).length;
+
+            // Get unique storage users
+            const storageUsers = new Set();
+            questions.forEach(q => {
+                if (q.answerImage) {
+                    const userInfo = extractUserInfoFromStorageUrl(q.answerImage);
+                    if (userInfo.userInfo && userInfo.userInfo !== 'Unknown' && userInfo.userInfo !== 'Error') {
+                        storageUsers.add(userInfo.userInfo);
+                    }
+                }
+            });
+
+            // Get canvas answer files
+            const canvasAnswerFiles = new Set();
+            questions.forEach(q => {
+                if (q.photoDraw) {
+                    q.photoDraw.forEach(img => {
+                        if (img.includes('canvas_answer_')) {
+                            const filename = extractCanvasAnswerFilename(img);
+                            if (filename) {
+                                canvasAnswerFiles.add(filename);
+                            }
+                        }
+                    });
+                }
+            });
+
+            document.getElementById('totalQuestions').textContent = total;
+            document.getElementById('completedQuestions').textContent = completed;
+            document.getElementById('questionsCollection').textContent = fromQuestions;
+            document.getElementById('recordCollection').textContent = fromRecord;
+            document.getElementById('questionListCount').textContent = questionListCount;
+
+            // Note: Visit stats are now handled by updateVisitStats() from user collection
+            // Do not override totalVisits and totalDuration here
+            
+            document.getElementById('customQuestionsCount').textContent = customQuestionsCount;
+            document.getElementById('firebaseStorageCount').textContent = firebaseStorageCount;
+            document.getElementById('canvasAnswerCount').textContent = canvasAnswerCount;
+
+            // Update level question stats
+            document.getElementById('easyQuestionsCount').textContent = easyQuestionsCount;
+            document.getElementById('intermediateQuestionsCount').textContent = intermediateQuestionsCount;
+            document.getElementById('advancedQuestionsCount').textContent = advancedQuestionsCount;
+            document.getElementById('unknownLevelCount').textContent = unknownLevelCount;
+
+            // Add Firebase Storage count if element exists
+            const firebaseStorageElement = document.getElementById('firebaseStorageCount');
+            if (firebaseStorageElement) {
+                firebaseStorageElement.textContent = firebaseStorageCount;
+            }
+
+            // Log storage users for debugging
+            console.log('Firebase Storage Users:', Array.from(storageUsers));
+            console.log('Canvas Answer Files:', Array.from(canvasAnswerFiles));
+            
+            // Log orphaned canvas answer files
+            const allCanvasFiles = Array.from(canvasAnswerFiles);
+            const timestamps = allCanvasFiles.map(filename => {
+                const timestamp = extractTimestampFromFilename(filename);
+                return { filename, timestamp, date: new Date(timestamp) };
+            });
+            
+            timestamps.sort((a, b) => a.timestamp - b.timestamp);
+            console.log('Canvas Answer Timestamps:', timestamps);
+            
+            // Find potential orphaned files
+            const orphanedFiles = [];
+            for (let i = 0; i < timestamps.length - 1; i++) {
+                const current = timestamps[i];
+                const next = timestamps[i + 1];
+                const timeDiff = next.timestamp - current.timestamp;
+                
+                if (timeDiff > 3600000) { // 1 hour gap
+                    orphanedFiles.push({
+                        file: current.filename,
+                        timestamp: current.timestamp,
+                        date: current.date,
+                        gap: Math.round(timeDiff / 60000)
+                    });
+                }
+            }
+            
+            if (orphanedFiles.length > 0) {
+                console.log('Potential Orphaned Canvas Answer Files:', orphanedFiles);
+            }
+        }
+
+        function displayQuestions(questions) {
+            const questionsList = document.getElementById('questionsList');
+            
+            if (!Array.isArray(questions) || questions.length === 0) {
+                document.getElementById('emptyState').style.display = 'block';
+                document.getElementById('questionsSection').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('emptyState').style.display = 'none';
+
+            const cards = questions.map(question => `
+                <div class="question-card">
+                    <div class="question-header">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-1">${question.category}</h6>
+                                <small>${question.date.toLocaleDateString()} at ${question.date.toLocaleTimeString()}</small>
+                                ${question.isFromQuestionList ? '<br><span class="badge bg-warning">📚 From Question List</span>' : ''}
+                                ${question.levelQuestion !== 'N/A' ? `<br><span class="badge ${getLevelQuestionBadgeClass(question.levelQuestion)}">Level: ${question.levelQuestion}</span>` : ''}
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <span class="badge ${question.status === 'Completed' ? 'bg-success' : 'bg-warning'} me-2">
+                                    ${question.status}
+                                </span>
+                                <span class="badge bg-info collection-badge">
+                                    ${question.collection}
+                                </span>
+                                <br><small class="text-white-50">${question.source}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="question-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                ${!question.isFromQuestionList ? `
+                                    <div class="mb-3">
+                                        <strong>Question:</strong><br>
+                                        ${question.question}
+                                    </div>
+                                ` : ''}
+                                
+                                ${question.isFromQuestionList && question.originalQuestion ? `
+                                    <div class="question-pair">
+                                        <div class="question-pair-header">
+                                            <i class="bi bi-question-circle"></i> Original Question from List:
+                                        </div>
+                                        <div class="mb-2">
+                                            ${question.originalQuestion}
+                                        </div>
+                                        <div class="question-pair-header">
+                                            <i class="bi bi-pencil-square"></i> User's Answer:
+                                        </div>
+                                        <div>
+                                            ${question.question}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                <!-- Debug info for Buat Pertanyaan Sendiri -->
+                                ${question.category === 'Buat Pertanyaan Sendiri' ? `
+                                    <div class="alert alert-info">
+                                        <strong>🔍 Debug Info for Buat Pertanyaan Sendiri:</strong><br>
+                                        <small>
+                                            Category: ${question.category}<br>
+                                            Level Question: <span class="badge ${getLevelQuestionBadgeClass(question.levelQuestion)}">${question.levelQuestion}</span><br>
+                                            typeQuestion Field: ${question.data.typeQuestion || 'N/A'}<br>
+                                            isFromQuestionList: ${question.isFromQuestionList}<br>
+                                            Question Field: ${question.question}<br>
+                                            Source: ${question.source}<br>
+                                            Collection: ${question.collection}
+                                        </small>
+                                    </div>
+                                ` : ''}
+                                
+                                ${question.description ? `
+                                    <div class="mb-3">
+                                        <strong>Description:</strong><br>
+                                        ${question.description}
+                                        ${question.isFromQuestionList && question.originalCreator ? 
+                                            `<br><small class="text-muted">Original Creator: ${question.originalCreator}</small>` : ''}
+                                    </div>
+                                ` : ''}
+                                
+                                ${question.isFromQuestionList ? `
+                                    <div class="mb-3">
+                                        <div class="alert alert-info">
+                                            <strong>📚 Question List Information:</strong><br>
+                                            <small>
+                                                This question was answered from the community question list.<br>
+                                                ${question.originalCreator ? `Original Creator: ${question.originalCreator}<br>` : ''}
+                                                Edit Count: ${question.editCount} (times edited)<br>
+                                                Answered on: ${question.date.toLocaleDateString()} at ${question.date.toLocaleTimeString()}
+                                                ${question.answerImage ? '<br><span class="badge bg-danger">🔥 Contains Firebase Storage Images</span>' : ''}
+                                                ${question.answerImage ? `<br>Storage User: ${extractUserInfoFromStorageUrl(question.answerImage).userInfo}` : ''}
+                                            </small>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${question.answer ? `
+                                    <div class="mb-3">
+                                        <strong>Text Answer:</strong>
+                                        ${question.isFromQuestionList ? '<span class="badge bg-warning ms-2">📚 Question List Answer</span>' : ''}
+                                        <br>
+                                        <div class="text-answer">
+                                            ${question.answer}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${question.locationName ? `
+                                    <div class="mb-3">
+                                        <strong>Location:</strong>
+                                        <div class="location-info">
+                                            <i class="bi bi-geo-alt"></i> ${question.locationName}
+                                            ${question.latitude && question.longitude ? 
+                                                `<br><small>(${question.latitude.toFixed(6)}, ${question.longitude.toFixed(6)})</small>` : ''}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <strong>Details:</strong><br>
+                                    <small class="text-muted">
+                                        Edit Count: ${question.editCount}<br>
+                                        Views: ${question.views}<br>
+                                        Generation: ${question.generationType}<br>
+                                        Level: <span class="badge ${getLevelQuestionBadgeClass(question.levelQuestion)}">${question.levelQuestion}</span><br>
+                                        Source: ${question.source}<br>
+                                        ${question.hasGraphAcceleration ? 'Has Graph Data<br>' : ''}
+                                        ${question.isFromQuestionList ? '<span class="badge bg-warning">📚 Question List</span><br>' : ''}
+                                        ${question.isFromQuestionList ? `Original Question ID: ${question.id}<br>` : ''}
+                                        ${question.answerImage ? '<span class="badge bg-danger">🔥 Firebase Storage</span><br>' : ''}
+                                        ${question.answerImage ? `Storage User: ${extractUserInfoFromStorageUrl(question.answerImage).userInfo}<br>` : ''}
+                                        ${(Array.isArray(question.photoDraw) && question.photoDraw.some(img => img.includes('canvas_answer_'))) ? '<span class="badge bg-success">🎨 Canvas Answer</span><br>' : ''}
+                                        ${(Array.isArray(question.photoDraw) && question.photoDraw.some(img => img.includes('firebasestorage'))) ? '<span class="badge bg-info">🔑 Access Token</span><br>' : ''}
+                                    </small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <strong>Visit Introduction:</strong><br>
+                                    <div class="visit-info">
+                                        <i class="bi bi-clock"></i> ${question.visitData.formatted}
+                                        ${question.isFromQuestionList ? '<br><small class="text-muted">📚 Answered from Question List</small>' : ''}
+                                        <br><small class="text-muted">💡 Note: Overall stats shown above are from user profile</small>
+                                    </div>
+                                </div>
+                                
+                                ${(question.typeDataValue && question.typeDataValue.trim()) ? `
+                                <div class="mb-3">
+                                    <strong>typeData:</strong><br>
+                                    <div class="mt-1">
+                                        <span class="badge bg-secondary input-type-badge">${question.typeDataValue || 'Unknown'}</span>
+                                        ${question.isFromQuestionList ? '<br><span class="badge bg-warning input-type-badge">📚 Question List Answer</span>' : ''}
+                                    </div>
+                                </div>
+                                ` : ''}
+                                
+                                ${(question.levelQuestion && question.levelQuestion !== 'N/A') ? `
+                                <div class="mb-3">
+                                    <strong>Level Question:</strong><br>
+                                    <div class="mt-1">
+                                        <span class="badge ${getLevelQuestionBadgeClass(question.levelQuestion)} input-type-badge">${question.levelQuestion}</span>
+                                        ${question.isFromQuestionList ? '<br><span class="badge bg-warning input-type-badge">📚 Question List Answer</span>' : ''}
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        ${Array.isArray(question.photoDraw) && question.photoDraw.length > 0 ? `
+                            <div class="mb-3">
+                                <strong>Canvas Images (${Array.isArray(question.photoDraw) ? question.photoDraw.length : 0}):</strong>
+                                ${question.isFromQuestionList ? '<span class="badge bg-warning ms-2">📚 Question List Answer</span>' : ''}
+                                ${question.answerImage ? '<span class="badge bg-danger ms-2">🔥 Firebase Storage</span>' : ''}
+                                <div class="canvas-gallery">
+                                    ${(Array.isArray(question.photoDraw) ? question.photoDraw : []).map((image, index) => {
+                                        // Check if it's a Firebase Storage URL
+                                        const isFirebaseStorage = image.includes('firebasestorage') || image.includes('answer_image');
+                                        const isCanvasAnswer = image.includes('canvas_answer_');
+                                        const imageTitle = isFirebaseStorage ? `Firebase Storage Image ${index + 1}` : `Canvas ${index + 1}`;
+                                        const imageClass = isFirebaseStorage ? 'canvas-image firebase-storage-image' : 'canvas-image';
+                                        
+                                        // Extract user info for Firebase Storage images
+                                        let userInfoHtml = '';
+                                        if (isFirebaseStorage) {
+                                            const userInfo = extractUserInfoFromStorageUrl(image);
+                                            const timestamp = new Date(parseInt(userInfo.timestamp)).toLocaleString();
+                                            
+                                            // For canvas_answer, try to find user by timestamp
+                                            let canvasUserInfo = '';
+                                            if (isCanvasAnswer) {
+                                                const canvasTimestamp = extractTimestampFromFilename(extractCanvasAnswerFilename(image));
+                                                if (canvasTimestamp) {
+                                                    const canvasUser = findUserByTimestamp(canvasTimestamp);
+                                                    if (canvasUser) {
+                                                        canvasUserInfo = `<br><strong>Canvas User:</strong> ${canvasUser.data.customerName} (${canvasUser.data.idCustomer})`;
+                                                    }
+                                                }
+                                            }
+                                            
+                                            userInfoHtml = `
+                                                <div class="storage-user-info">
+                                                    <small class="text-muted">
+                                                        <strong>File:</strong> ${userInfo.fileName}<br>
+                                                        <strong>User ID:</strong> ${userInfo.userInfo}<br>
+                                                        <strong>Uploaded:</strong> ${timestamp}
+                                                        ${canvasUserInfo}
+                                                    </small>
+                                                </div>
+                                            `;
+                                        }
+                                        
+                                        return `
+                                            <div class="image-container">
+                                                <img src="${image}" 
+                                                     alt="${imageTitle}" 
+                                                     class="${imageClass}"
+                                                     onclick="showImage('${image}', '${imageTitle}')"
+                                                     title="Click to view full size">
+                                                ${isFirebaseStorage ? '<div class="firebase-badge">🔥 Storage</div>' : ''}
+                                                ${isCanvasAnswer ? '<div class="canvas-badge">🎨 Canvas</div>' : ''}
+                                                ${userInfoHtml}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                                ${question.answerImage ? `
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle"></i> 
+                                            Some images are stored in Firebase Storage for better performance and reliability.
+                                            <br><strong>Storage User:</strong> ${extractUserInfoFromStorageUrl(question.answerImage).userInfo}
+                                        </small>
+                                    </div>
+                                ` : ''}
+                                
+                                ${(Array.isArray(question.photoDraw) && question.photoDraw.some(img => img.includes('canvas_answer_'))) ? `
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-palette"></i> 
+                                            Canvas answer images are stored in Firebase Storage with timestamp-based naming.
+                                            <br><strong>Canvas Files:</strong> ${(Array.isArray(question.photoDraw) ? question.photoDraw.filter(img => img.includes('canvas_answer_')).length : 0)} files
+                                        </small>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                        
+                        ${question.photoAnswer ? `
+                            <div class="mb-3">
+                                <strong>Documentation Photo:</strong>
+                                ${question.isFromQuestionList ? '<span class="badge bg-warning ms-2">📚 Question List Answer</span>' : ''}
+                                <div class="canvas-gallery">
+                                    <img src="${((question.photoAnswer||'').startsWith('http') ? question.photoAnswer : ((question.photoAnswer||'').startsWith('data:image') ? question.photoAnswer : ('data:image/jpeg;base64,' + question.photoAnswer)))}" 
+                                         alt="Documentation" 
+                                         class="canvas-image"
+                                         onclick="showImage('${((question.photoAnswer||'').startsWith('http') ? question.photoAnswer : ((question.photoAnswer||'').startsWith('data:image') ? question.photoAnswer : ('data:image/jpeg;base64,' + question.photoAnswer)))}', 'Documentation Photo')"
+                                         title="Click to view full size">
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        ${Array.isArray(question.base64Images) && question.base64Images.length > 0 ? `
+                            <div class="mb-3">
+                                <strong>Additional Images (${Array.isArray(question.base64Images) ? question.base64Images.length : 0}):</strong>
+                                <div class="base64-images">
+                                    ${(Array.isArray(question.base64Images) ? question.base64Images : []).map((img, index) => {
+                                        const d = String(img.data || '').trim();
+                                        const src = d.startsWith('http')
+                                            ? d
+                                            : (d.startsWith('data:image')
+                                                ? d
+                                                : `data:image/${d.startsWith('iVBOR') ? 'png' : 'jpeg'};base64,${d}`);
+                                        return `
+                                            <img src="${src}"
+                                                 alt="${img.field}"
+                                                 class="base64-image"
+                                                 onclick="showImage('${src}', '${img.field}')"
+                                                 title="Click to view full size">
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        ${question.graphAcceleration ? `
+                            <div class="mb-3">
+                                <strong>Graph Acceleration Data:</strong>
+                                <div class="canvas-gallery">
+                                    <img src="${((question.graphAcceleration||'').startsWith('http') ? question.graphAcceleration : ('data:image/jpeg;base64,' + question.graphAcceleration))}" 
+                                         alt="Graph Acceleration" 
+                                         class="canvas-image"
+                                         onclick="showImage('${((question.graphAcceleration||'').startsWith('http') ? question.graphAcceleration : ('data:image/jpeg;base64,' + question.graphAcceleration))}', 'Graph Acceleration')"
+                                         title="Click to view full size">
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        ${((!Array.isArray(question.photoDraw) || question.photoDraw.length === 0) && !question.photoAnswer && (!Array.isArray(question.base64Images) || question.base64Images.length === 0) && !question.photoAcceleration) ? 
+                            '<p class="text-muted">No images available</p>' : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            questionsList.innerHTML = cards;
+        }
+
+        function filterQuestions() {
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const collectionFilter = document.getElementById('collectionFilter').value;
+            const levelQuestionFilter = document.getElementById('levelQuestionFilter').value;
+            let filteredQuestions = selectedUserQuestions;
+
+            if (categoryFilter) {
+                filteredQuestions = filteredQuestions.filter(q => q.category === categoryFilter);
+            }
+
+            if (collectionFilter) {
+                filteredQuestions = filteredQuestions.filter(q => q.collection === collectionFilter);
+            }
+
+            if (levelQuestionFilter) {
+                filteredQuestions = filteredQuestions.filter(q => q.levelQuestion === levelQuestionFilter);
+            }
+
+            displayQuestions(filteredQuestions);
+        }
+
+        function showImage(imageUrl, title) {
+            document.getElementById('modalImage').src = imageUrl;
+            document.getElementById('imageModal').querySelector('.modal-title').textContent = title;
+            
+            // Add Firebase Storage info to modal if it's a storage image
+            const modalBody = document.getElementById('imageModal').querySelector('.modal-body');
+            const isFirebaseStorage = imageUrl.includes('firebasestorage') || imageUrl.includes('answer_image');
+            const isCanvasAnswer = imageUrl.includes('canvas_answer_');
+            
+            if (isFirebaseStorage) {
+                const userInfo = extractUserInfoFromStorageUrl(imageUrl);
+                const tokenInfo = extractTokenInfo(imageUrl);
+                const timestamp = new Date(parseInt(userInfo.timestamp)).toLocaleString();
+                
+                // For canvas_answer, try to find user by timestamp
+                let canvasUserInfo = '';
+                if (isCanvasAnswer) {
+                    const canvasTimestamp = extractTimestampFromFilename(extractCanvasAnswerFilename(imageUrl));
+                    if (canvasTimestamp) {
+                        const canvasUser = findUserByTimestamp(canvasTimestamp);
+                        if (canvasUser) {
+                            canvasUserInfo = `
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <strong>Canvas User:</strong><br>
+                                        <code>${canvasUser.data.customerName}</code>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>User ID:</strong><br>
+                                        <code>${canvasUser.data.idCustomer}</code>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+                
+                // Add storage info after the image
+                const storageInfo = document.createElement('div');
+                storageInfo.className = 'mt-3 p-3 bg-light border rounded';
+                storageInfo.innerHTML = `
+                    <h6>🔥 Firebase Storage Information:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>File Name:</strong><br>
+                            <code>${userInfo.fileName}</code>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>User ID:</strong><br>
+                            <code>${userInfo.userInfo}</code>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <strong>Upload Timestamp:</strong><br>
+                            <small>${timestamp}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Storage URL:</strong><br>
+                            <small class="text-break">${userInfo.fullUrl}</small>
+                        </div>
+                    </div>
+                    ${tokenInfo ? `
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <strong>Access Token:</strong><br>
+                            <code>${tokenInfo.token}</code>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Token Info:</strong><br>
+                            <small>Generated during upload</small>
+                        </div>
+                    </div>
+                    ` : ''}
+                    ${canvasUserInfo}
+                `;
+                
+                // Remove any existing storage info
+                const existingInfo = modalBody.querySelector('.bg-light');
+                if (existingInfo) {
+                    existingInfo.remove();
+                }
+                
+                modalBody.appendChild(storageInfo);
+            } else {
+                // Remove storage info if not a Firebase Storage image
+                const existingInfo = modalBody.querySelector('.bg-light');
+                if (existingInfo) {
+                    existingInfo.remove();
+                }
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+            modal.show();
+        }
+
+        // Show/hide loading state
+        function showLoading(show) {
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement) {
+                loadingElement.style.display = show ? 'block' : 'none';
+            }
+            
+            // Also disable/enable buttons
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(button => {
+                button.disabled = show;
+            });
+        }
+
+        function hideUserInfo() {
+            document.getElementById('userInfoSection').style.display = 'none';
+            document.getElementById('statsSection').style.display = 'none';
+            document.getElementById('questionsSection').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+        }
+
+        function logout() {
+            firebase.auth().signOut().then(() => {
+                window.location.href = 'index.html';
+            }).catch((error) => {
+                console.error('Error signing out:', error);
+            });
+        }
+
+        // Function to extract user ID from Firebase Storage URL
+        function extractUserInfoFromStorageUrl(url) {
+            try {
+                // Parse Firebase Storage URL to extract information
+                const urlParts = url.split('/');
+                const fileName = urlParts[urlParts.length - 1];
+                
+                // Extract timestamp and user info from filename
+                // Example: answer_image_1703123456789_user123.jpg
+                const fileNameParts = fileName.split('_');
+                
+                if (fileNameParts.length >= 3) {
+                    const timestamp = fileNameParts[2];
+                    const userInfo = fileNameParts.slice(3).join('_').replace(/\.[^/.]+$/, ''); // Remove file extension
+                    
+                    return {
+                        timestamp: timestamp,
+                        userInfo: userInfo,
+                        fileName: fileName,
+                        fullUrl: url
+                    };
+                }
+                
+                return {
+                    timestamp: 'Unknown',
+                    userInfo: 'Unknown',
+                    fileName: fileName,
+                    fullUrl: url
+                };
+            } catch (error) {
+                console.error('Error parsing Firebase Storage URL:', error);
+                return {
+                    timestamp: 'Error',
+                    userInfo: 'Error',
+                    fileName: 'Unknown',
+                    fullUrl: url
+                };
+            }
+        }
+
+        // Function to get user info from Firebase Storage metadata
+        async function getStorageImageInfo(imageUrl) {
+            try {
+                const userInfo = extractUserInfoFromStorageUrl(imageUrl);
+                
+                // Try to get user details from the extracted user info
+                let userDetails = null;
+                if (userInfo.userInfo && userInfo.userInfo !== 'Unknown' && userInfo.userInfo !== 'Error') {
+                    // Try to find user in our loaded users
+                    const foundUser = allUsers.find(u => u.id === userInfo.userInfo || u.email.includes(userInfo.userInfo));
+                    if (foundUser) {
+                        userDetails = foundUser;
+                    }
+                }
+                
+                return {
+                    ...userInfo,
+                    userDetails: userDetails
+                };
+            } catch (error) {
+                console.error('Error getting storage image info:', error);
+                return {
+                    timestamp: 'Error',
+                    userInfo: 'Error',
+                    fileName: 'Unknown',
+                    fullUrl: imageUrl,
+                    userDetails: null
+                };
+            }
+        }
+
+        // Function to show all Firebase Storage users
+        function showStorageUsers() {
+            const storageUsers = new Set();
+            selectedUserQuestions.forEach(q => {
+                if (q.answerImage) {
+                    const userInfo = extractUserInfoFromStorageUrl(q.answerImage);
+                    if (userInfo.userInfo && userInfo.userInfo !== 'Unknown' && userInfo.userInfo !== 'Error') {
+                        storageUsers.add(userInfo.userInfo);
+                    }
+                }
+            });
+
+            const userList = Array.from(storageUsers).join(', ');
+            alert(`Firebase Storage Users:\n${userList || 'No storage users found'}`);
+        }
+
+        // Add storage users button
+        function addStorageUsersButton() { /* removed per request */ }
+
+        // Function to find orphaned Firebase Storage images
+        async function findOrphanedImages() {
+            try {
+                console.log('=== FINDING ORPHANED FIREBASE STORAGE IMAGES ===');
+                
+                // Get all images from all users' data
+                const allImages = new Set();
+                const imageToUserMap = new Map();
+                
+                selectedUserQuestions.forEach(question => {
+                    if (question.photoDraw && question.photoDraw.length > 0) {
+                        question.photoDraw.forEach(imageUrl => {
+                            allImages.add(imageUrl);
+                            imageToUserMap.set(imageUrl, {
+                                userId: question.data.idCustomer,
+                                userName: question.data.customerName,
+                                questionId: question.id,
+                                collection: question.collection,
+                                date: question.date
+                            });
+                        });
+                    }
+                });
+                
+                console.log('Total images found in Firestore:', allImages.size);
+                console.log('Image to User mapping:', imageToUserMap);
+                
+                // Extract canvas_answer filenames from URLs
+                const canvasAnswerFiles = new Set();
+                allImages.forEach(url => {
+                    if (url.includes('canvas_answer_')) {
+                        const filename = extractCanvasAnswerFilename(url);
+                        if (filename) {
+                            canvasAnswerFiles.add(filename);
+                        }
+                    }
+                });
+                
+                console.log('Canvas answer files in Firestore:', Array.from(canvasAnswerFiles));
+                
+                // Find potential orphaned files by timestamp analysis
+                const orphanedFiles = [];
+                const timestamps = Array.from(canvasAnswerFiles).map(filename => {
+                    const timestamp = extractTimestampFromFilename(filename);
+                    return { filename, timestamp, date: new Date(timestamp) };
+                });
+                
+                timestamps.sort((a, b) => a.timestamp - b.timestamp);
+                console.log('Timestamps analysis:', timestamps);
+                
+                // Find gaps or suspicious timestamps
+                for (let i = 0; i < timestamps.length - 1; i++) {
+                    const current = timestamps[i];
+                    const next = timestamps[i + 1];
+                    const timeDiff = next.timestamp - current.timestamp;
+                    
+                    // If gap is more than 1 hour, might be orphaned
+                    if (timeDiff > 3600000) { // 1 hour in milliseconds
+                        console.log(`Potential orphaned file between ${current.filename} and ${next.filename}`);
+                        console.log(`Time gap: ${Math.round(timeDiff / 60000)} minutes`);
+                    }
+                }
+                
+                return {
+                    totalImages: allImages.size,
+                    canvasAnswerFiles: Array.from(canvasAnswerFiles),
+                    imageToUserMap: imageToUserMap,
+                    timestamps: timestamps
+                };
+                
+            } catch (error) {
+                console.error('Error finding orphaned images:', error);
+                return null;
+            }
+        }
+
+        // Function to analyze timestamps in detail
+        function analyzeTimestamps() {
+            try {
+                console.log('=== DETAILED TIMESTAMP ANALYSIS ===');
+                
+                // Get all canvas_answer files
+                const canvasAnswerFiles = new Set();
+                const imageToUserMap = new Map();
+                
+                selectedUserQuestions.forEach(question => {
+                    if (question.photoDraw && question.photoDraw.length > 0) {
+                        question.photoDraw.forEach(imageUrl => {
+                            if (imageUrl.includes('canvas_answer_')) {
+                                const filename = extractCanvasAnswerFilename(imageUrl);
+                                if (filename) {
+                                    canvasAnswerFiles.add(filename);
+                                    imageToUserMap.set(filename, {
+                                        userId: question.data.idCustomer,
+                                        userName: question.data.customerName,
+                                        questionId: question.id,
+                                        collection: question.collection,
+                                        date: question.date,
+                                        questionText: question.data.question || 'No question text'
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                // Convert to array and sort by timestamp
+                const timestampData = Array.from(canvasAnswerFiles).map(filename => {
+                    const timestamp = extractTimestampFromFilename(filename);
+                    const userInfo = imageToUserMap.get(filename);
+                    return {
+                        filename,
+                        timestamp,
+                        date: new Date(timestamp),
+                        userInfo: userInfo || null
+                    };
+                });
+                
+                timestampData.sort((a, b) => a.timestamp - b.timestamp);
+                
+                console.log('=== ALL CANVAS ANSWER FILES (SORTED BY TIME) ===');
+                timestampData.forEach((item, index) => {
+                    const timeStr = item.date.toLocaleString('id-ID');
+                    const userStr = item.userInfo ? 
+                        `${item.userInfo.userName} (${item.userInfo.userId})` : 
+                        '❌ NOT FOUND IN FIRESTORE';
+                    
+                    console.log(`${index + 1}. ${item.filename}`);
+                    console.log(`   Time: ${timeStr}`);
+                    console.log(`   User: ${userStr}`);
+                    if (item.userInfo) {
+                        console.log(`   Question: ${item.userInfo.questionText.substring(0, 50)}...`);
+                        console.log(`   Collection: ${item.userInfo.collection}`);
+                    }
+                    console.log('');
+                });
+                
+                // Find orphaned files (not in Firestore)
+                const orphanedFiles = timestampData.filter(item => !item.userInfo);
+                console.log('=== ORPHANED FILES (NOT IN FIRESTORE) ===');
+                if (orphanedFiles.length > 0) {
+                    orphanedFiles.forEach((item, index) => {
+                        console.log(`${index + 1}. ${item.filename}`);
+                        console.log(`   Time: ${item.date.toLocaleString('id-ID')}`);
+                        console.log(`   Status: ❌ NOT FOUND IN FIRESTORE`);
+                        console.log('');
+                    });
+                } else {
+                    console.log('✅ No orphaned files found!');
+                }
+                
+                // Analyze time gaps
+                console.log('=== TIME GAP ANALYSIS ===');
+                for (let i = 0; i < timestampData.length - 1; i++) {
+                    const current = timestampData[i];
+                    const next = timestampData[i + 1];
+                    const timeDiff = next.timestamp - current.timestamp;
+                    const minutesDiff = Math.round(timeDiff / 60000);
+                    
+                    console.log(`Gap ${i + 1}: ${current.filename} → ${next.filename}`);
+                    console.log(`   Time difference: ${minutesDiff} minutes`);
+                    console.log(`   From: ${current.date.toLocaleString('id-ID')}`);
+                    console.log(`   To: ${next.date.toLocaleString('id-ID')}`);
+                    
+                    if (minutesDiff > 60) {
+                        console.log(`   ⚠️  LARGE GAP DETECTED!`);
+                        console.log(`   Potential orphaned files in this period:`);
+                        
+                        // Check if there are any user activities in this gap
+                        const gapStart = current.timestamp;
+                        const gapEnd = next.timestamp;
+                        
+                        const activitiesInGap = selectedUserQuestions.filter(question => {
+                            const questionTime = question.date.getTime();
+                            return questionTime > gapStart && questionTime < gapEnd;
+                        });
+                        
+                        if (activitiesInGap.length > 0) {
+                            console.log(`   Users active during gap:`);
+                            activitiesInGap.forEach(activity => {
+                                console.log(`     - ${activity.data.customerName} (${activity.data.idCustomer}) at ${activity.date.toLocaleString('id-ID')}`);
+                            });
+                        } else {
+                            console.log(`   No user activities found in this gap`);
+                        }
+                    }
+                    console.log('');
+                }
+                
+                // Find potential owners for orphaned files
+                if (orphanedFiles.length > 0) {
+                    console.log('=== POTENTIAL OWNERS FOR ORPHANED FILES ===');
+                    orphanedFiles.forEach(orphanedFile => {
+                        console.log(`\nAnalyzing: ${orphanedFile.filename}`);
+                        console.log(`Timestamp: ${orphanedFile.date.toLocaleString('id-ID')}`);
+                        
+                        // Find users active within 10 minutes
+                        const nearbyUsers = selectedUserQuestions.filter(question => {
+                            const questionTime = question.date.getTime();
+                            const orphanedTime = orphanedFile.timestamp;
+                            const timeDiff = Math.abs(questionTime - orphanedTime);
+                            return timeDiff < 600000; // 10 minutes
+                        });
+                        
+                        if (nearbyUsers.length > 0) {
+                            console.log(`Potential owners (within 10 minutes):`);
+                            nearbyUsers.forEach(user => {
+                                const timeDiff = Math.abs(user.date.getTime() - orphanedFile.timestamp);
+                                const minutesDiff = Math.round(timeDiff / 60000);
+                                console.log(`  - ${user.data.customerName} (${user.data.idCustomer})`);
+                                console.log(`    Activity: ${user.date.toLocaleString('id-ID')}`);
+                                console.log(`    Time difference: ${minutesDiff} minutes`);
+                                console.log(`    Question: ${user.data.question ? user.data.question.substring(0, 50) + '...' : 'No question'}`);
+                            });
+                        } else {
+                            console.log(`No users active within 10 minutes`);
+                            
+                            // Check for users active within 1 hour
+                            const usersWithinHour = selectedUserQuestions.filter(question => {
+                                const questionTime = question.date.getTime();
+                                const orphanedTime = orphanedFile.timestamp;
+                                const timeDiff = Math.abs(questionTime - orphanedTime);
+                                return timeDiff < 3600000; // 1 hour
+                            });
+                            
+                            if (usersWithinHour.length > 0) {
+                                console.log(`Users active within 1 hour:`);
+                                usersWithinHour.forEach(user => {
+                                    const timeDiff = Math.abs(user.date.getTime() - orphanedFile.timestamp);
+                                    const minutesDiff = Math.round(timeDiff / 60000);
+                                    console.log(`  - ${user.data.customerName} (${user.data.idCustomer}) - ${minutesDiff} minutes`);
+                                });
+                            } else {
+                                console.log(`No users active within 1 hour`);
+                            }
+                        }
+                    });
+                }
+                
+                return {
+                    totalFiles: timestampData.length,
+                    orphanedFiles: orphanedFiles.length,
+                    timestampData: timestampData
+                };
+                
+            } catch (error) {
+                console.error('Error analyzing timestamps:', error);
+                return null;
+            }
+        }
+
+        // Function to display timestamp analysis in UI
+        function displayTimestampAnalysis() {
+            const result = analyzeTimestamps();
+            if (!result) return;
+            
+            // Create modal for timestamp analysis
+            const modalHtml = `
+                <div class="modal fade" id="timestampAnalysisModal" tabindex="-1">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">📊 Timestamp Analysis Results</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="card bg-primary text-white">
+                                            <div class="card-body text-center">
+                                                <h4>${result.totalFiles}</h4>
+                                                <small>Total Canvas Files</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-warning text-white">
+                                            <div class="card-body text-center">
+                                                <h4>${result.orphanedFiles}</h4>
+                                                <small>Orphaned Files</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-success text-white">
+                                            <div class="card-body text-center">
+                                                <h4>${result.totalFiles - result.orphanedFiles}</h4>
+                                                <small>Registered Files</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="accordion" id="timestampAccordion">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#allFilesCollapse">
+                                                📋 All Canvas Answer Files (${result.totalFiles})
+                                            </button>
+                                        </h2>
+                                        <div id="allFilesCollapse" class="accordion-collapse collapse show" data-bs-parent="#timestampAccordion">
+                                            <div class="accordion-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>#</th>
+                                                                <th>Filename</th>
+                                                                <th>Time</th>
+                                                                <th>User</th>
+                                                                <th>Status</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            ${result.timestampData.map((item, index) => {
+                                                                const timeStr = item.date.toLocaleString('id-ID');
+                                                                const userStr = item.userInfo ? 
+                                                                    `${item.userInfo.userName} (${item.userInfo.userId})` : 
+                                                                    '<span class="text-danger">❌ NOT FOUND</span>';
+                                                                const statusBadge = item.userInfo ? 
+                                                                    '<span class="badge bg-success">✅ Registered</span>' : 
+                                                                    '<span class="badge bg-danger">❌ Orphaned</span>';
+                                                                
+                                                                return `
+                                                                    <tr>
+                                                                        <td>${index + 1}</td>
+                                                                        <td><code>${item.filename}</code></td>
+                                                                        <td>${timeStr}</td>
+                                                                        <td>${userStr}</td>
+                                                                        <td>${statusBadge}</td>
+                                                                    </tr>
+                                                                `;
+                                                            }).join('')}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    ${result.orphanedFiles > 0 ? `
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#orphanedCollapse">
+                                                    ⚠️ Orphaned Files (${result.orphanedFiles})
+                                                </button>
+                                            </h2>
+                                            <div id="orphanedCollapse" class="accordion-collapse collapse" data-bs-parent="#timestampAccordion">
+                                                <div class="accordion-body">
+                                                    <div class="alert alert-warning">
+                                                        <strong>Note:</strong> These files exist in Firebase Storage but are not registered in Firestore.
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Filename</th>
+                                                                    <th>Time</th>
+                                                                    <th>Potential Owners</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                ${result.timestampData.filter(item => !item.userInfo).map(item => {
+                                                                    const timeStr = item.date.toLocaleString('id-ID');
+                                                                    const potentialOwners = findPotentialOwners(item.timestamp);
+                                                                    const ownersHtml = potentialOwners.length > 0 ? 
+                                                                        potentialOwners.map(owner => 
+                                                                            `<div class="mb-1"><strong>${owner.userName}</strong> (${owner.userId}) - ${owner.timeDiff} min</div>`
+                                                                        ).join('') : 
+                                                                        '<span class="text-muted">No users found within 1 hour</span>';
+                                                                    
+                                                                    return `
+                                                                        <tr>
+                                                                            <td><code>${item.filename}</code></td>
+                                                                            <td>${timeStr}</td>
+                                                                            <td>${ownersHtml}</td>
+                                                                        </tr>
+                                                                    `;
+                                                                }).join('')}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" onclick="console.log('Check console for detailed analysis')">View Console Logs</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body if it doesn't exist
+            if (!document.getElementById('timestampAnalysisModal')) {
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            }
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('timestampAnalysisModal'));
+            modal.show();
+        }
+
+        // Function to find potential owners for orphaned files
+        function findPotentialOwners(orphanedTimestamp) {
+            const orphanedDate = new Date(orphanedTimestamp);
+            const potentialOwners = [];
+            
+            selectedUserQuestions.forEach(question => {
+                const questionTime = question.date.getTime();
+                const timeDiff = Math.abs(questionTime - orphanedTimestamp);
+                const minutesDiff = Math.round(timeDiff / 60000);
+                
+                if (minutesDiff <= 60) { // Within 1 hour
+                    potentialOwners.push({
+                        userName: question.data.customerName,
+                        userId: question.data.idCustomer,
+                        timeDiff: minutesDiff,
+                        activityTime: question.date.toLocaleString('id-ID')
+                    });
+                }
+            });
+            
+            // Sort by closest time
+            potentialOwners.sort((a, b) => a.timeDiff - b.timeDiff);
+            return potentialOwners.slice(0, 5); // Return top 5 closest
+        }
+
+        // Function to extract canvas_answer filename from URL
+        function extractCanvasAnswerFilename(url) {
+            try {
+                const urlParts = url.split('/');
+                const filename = urlParts[urlParts.length - 1].split('?')[0]; // Remove query parameters
+                if (filename.startsWith('canvas_answer_')) {
+                    return filename;
+                }
+                return null;
+            } catch (error) {
+                console.error('Error extracting filename:', error);
+                return null;
+            }
+        }
+
+        // Function to extract timestamp from filename
+        function extractTimestampFromFilename(filename) {
+            try {
+                const parts = filename.split('_');
+                if (parts.length >= 3) {
+                    return parseInt(parts[2]);
+                }
+                return null;
+            } catch (error) {
+                console.error('Error extracting timestamp:', error);
+                return null;
+            }
+        }
+
+        // Function to find user by timestamp proximity
+        function findUserByTimestamp(orphanedTimestamp) {
+            const orphanedDate = new Date(orphanedTimestamp);
+            
+            // Find users who were active around that time
+            const nearbyUsers = selectedUserQuestions.filter(question => {
+                const questionDate = question.date;
+                const timeDiff = Math.abs(questionDate.getTime() - orphanedDate.getTime());
+                return timeDiff < 300000; // Within 5 minutes
+            });
+            
+            if (nearbyUsers.length > 0) {
+                // Sort by closest time
+                nearbyUsers.sort((a, b) => {
+                    const diffA = Math.abs(a.date.getTime() - orphanedDate.getTime());
+                    const diffB = Math.abs(b.date.getTime() - orphanedDate.getTime());
+                    return diffA - diffB;
+                });
+                
+                return nearbyUsers[0];
+            }
+            
+            return null;
+        }
+
+        // Function to extract and analyze access tokens
+        function analyzeAccessTokens() {
+            try {
+                console.log('=== ACCESS TOKEN ANALYSIS ===');
+                
+                // Get all Firebase Storage URLs
+                const storageUrls = new Set();
+                const tokenToUserMap = new Map();
+                
+                selectedUserQuestions.forEach(question => {
+                    if (question.photoDraw && question.photoDraw.length > 0) {
+                        question.photoDraw.forEach(imageUrl => {
+                            if (imageUrl.includes('firebasestorage')) {
+                                storageUrls.add(imageUrl);
+                                const tokenInfo = extractTokenInfo(imageUrl);
+                                if (tokenInfo) {
+                                    tokenToUserMap.set(tokenInfo.token, {
+                                        userId: question.data.idCustomer,
+                                        userName: question.data.customerName,
+                                        questionId: question.id,
+                                        collection: question.collection,
+                                        date: question.date,
+                                        filename: tokenInfo.filename,
+                                        fullUrl: imageUrl
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                console.log('Total Firebase Storage URLs:', storageUrls.size);
+                console.log('Token to User mapping:', tokenToUserMap);
+                
+                // Analyze tokens
+                const tokenAnalysis = [];
+                tokenToUserMap.forEach((userInfo, token) => {
+                    tokenAnalysis.push({
+                        token: token,
+                        filename: userInfo.filename,
+                        userId: userInfo.userId,
+                        userName: userInfo.userName,
+                        date: userInfo.date,
+                        collection: userInfo.collection,
+                        fullUrl: userInfo.fullUrl
+                    });
+                });
+                
+                // Sort by date
+                tokenAnalysis.sort((a, b) => a.date.getTime() - b.date.getTime());
+                
+                console.log('=== TOKEN ANALYSIS RESULTS ===');
+                tokenAnalysis.forEach((item, index) => {
+                    console.log(`${index + 1}. Token: ${item.token}`);
+                    console.log(`   File: ${item.filename}`);
+                    console.log(`   User: ${item.userName} (${item.userId})`);
+                    console.log(`   Date: ${item.date.toLocaleString('id-ID')}`);
+                    console.log(`   Collection: ${item.collection}`);
+                    console.log('');
+                });
+                
+                return {
+                    totalTokens: tokenAnalysis.length,
+                    tokenAnalysis: tokenAnalysis,
+                    tokenToUserMap: tokenToUserMap
+                };
+                
+            } catch (error) {
+                console.error('Error analyzing access tokens:', error);
+                return null;
+            }
+        }
+
+        // Function to extract token information from URL
+        function extractTokenInfo(url) {
+            try {
+                // Parse URL
+                const urlObj = new URL(url);
+                const pathParts = urlObj.pathname.split('/');
+                const filename = decodeURIComponent(pathParts[pathParts.length - 1]);
+                const token = urlObj.searchParams.get('token');
+                
+                if (token && filename) {
+                    return {
+                        token: token,
+                        filename: filename,
+                        fullUrl: url
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error('Error extracting token info:', error);
+                return null;
+            }
+        }
+
+        // Function to find user by token
+        function findUserByToken(token) {
+            // This would require Firebase Admin SDK to decode tokens
+            // For now, we can only analyze tokens we have in our data
+            console.log(`Looking for token: ${token}`);
+            
+            // Search in our existing data
+            for (const [existingToken, userInfo] of tokenToUserMap) {
+                if (existingToken === token) {
+                    return userInfo;
+                }
+            }
+            
+            return null;
+        }
+
+        // Function to display token analysis in UI
+        function displayTokenAnalysis() {
+            const result = analyzeAccessTokens();
+            if (!result) return;
+            
+            // Create modal for token analysis
+            const modalHtml = `
+                <div class="modal fade" id="tokenAnalysisModal" tabindex="-1">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">🔑 Access Token Analysis</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-info">
+                                    <strong>Info:</strong> Access tokens are generated when files are uploaded to Firebase Storage. 
+                                    Each token is unique and can help identify file ownership.
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="card bg-primary text-white">
+                                            <div class="card-body text-center">
+                                                <h4>${result.totalTokens}</h4>
+                                                <small>Total Access Tokens</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card bg-success text-white">
+                                            <div class="card-body text-center">
+                                                <h4>${result.totalTokens}</h4>
+                                                <small>Identified Users</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Token</th>
+                                                <th>Filename</th>
+                                                <th>User</th>
+                                                <th>Date</th>
+                                                <th>Collection</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${result.tokenAnalysis.map((item, index) => {
+                                                const timeStr = item.date.toLocaleString('id-ID');
+                                                return `
+                                                    <tr>
+                                                        <td>${index + 1}</td>
+                                                        <td><code>${item.token.substring(0, 8)}...</code></td>
+                                                        <td><code>${item.filename}</code></td>
+                                                        <td>${item.userName} (${item.userId})</td>
+                                                        <td>${timeStr}</td>
+                                                        <td><span class="badge bg-secondary">${item.collection}</span></td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <h6>🔍 How to Use Access Tokens:</h6>
+                                    <ol>
+                                        <li><strong>Find Token:</strong> Extract token from Firebase Storage URL</li>
+                                        <li><strong>Search Firestore:</strong> Look for documents containing this token</li>
+                                        <li><strong>Identify User:</strong> Token creation time matches user activity time</li>
+                                        <li><strong>Cross-Reference:</strong> Verify with timestamp analysis</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" onclick="console.log('Check console for detailed token analysis')">View Console Logs</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body if it doesn't exist
+            if (!document.getElementById('tokenAnalysisModal')) {
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            }
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('tokenAnalysisModal'));
+            modal.show();
+        }
+
+        // Function to analyze token consistency between Firestore and Firebase Storage
+        function analyzeTokenConsistency() {
+            try {
+                console.log('=== TOKEN CONSISTENCY ANALYSIS ===');
+                
+                // Get all tokens from Firestore data
+                const firestoreTokens = new Map();
+                const storageTokens = new Map();
+                const consistencyReport = [];
+                
+                selectedUserQuestions.forEach(question => {
+                    if (question.photoDraw && question.photoDraw.length > 0) {
+                        question.photoDraw.forEach(imageUrl => {
+                            if (imageUrl.includes('firebasestorage')) {
+                                const tokenInfo = extractTokenInfo(imageUrl);
+                                if (tokenInfo) {
+                                    // Store in Firestore tokens map
+                                    firestoreTokens.set(tokenInfo.token, {
+                                        userId: question.data.idCustomer,
+                                        userName: question.data.customerName,
+                                        questionId: question.id,
+                                        collection: question.collection,
+                                        date: question.date,
+                                        filename: tokenInfo.filename,
+                                        fullUrl: imageUrl
+                                    });
+                                    
+                                    // Store in storage tokens map (same data for now)
+                                    storageTokens.set(tokenInfo.token, {
+                                        userId: question.data.idCustomer,
+                                        userName: question.data.customerName,
+                                        questionId: question.id,
+                                        collection: question.collection,
+                                        date: question.date,
+                                        filename: tokenInfo.filename,
+                                        fullUrl: imageUrl
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                console.log('Total tokens in Firestore:', firestoreTokens.size);
+                console.log('Total tokens in Storage:', storageTokens.size);
+                
+                // Analyze consistency
+                const allTokens = new Set([...firestoreTokens.keys(), ...storageTokens.keys()]);
+                
+                allTokens.forEach(token => {
+                    const firestoreData = firestoreTokens.get(token);
+                    const storageData = storageTokens.get(token);
+                    
+                    const consistency = {
+                        token: token,
+                        filename: firestoreData?.filename || storageData?.filename,
+                        firestoreExists: !!firestoreData,
+                        storageExists: !!storageData,
+                        consistent: firestoreData && storageData && 
+                                  firestoreData.userId === storageData.userId,
+                        firestoreUser: firestoreData ? `${firestoreData.userName} (${firestoreData.userId})` : 'Not found',
+                        storageUser: storageData ? `${storageData.userName} (${storageData.userId})` : 'Not found',
+                        collection: firestoreData?.collection || storageData?.collection,
+                        date: firestoreData?.date || storageData?.date
+                    };
+                    
+                    consistencyReport.push(consistency);
+                });
+                
+                // Sort by date
+                consistencyReport.sort((a, b) => a.date.getTime() - b.date.getTime());
+                
+                console.log('=== CONSISTENCY REPORT ===');
+                consistencyReport.forEach((item, index) => {
+                    const status = item.consistent ? '✅ CONSISTENT' : '❌ INCONSISTENT';
+                    const timeStr = item.date.toLocaleString('id-ID');
+                    
+                    console.log(`${index + 1}. Token: ${item.token.substring(0, 8)}...`);
+                    console.log(`   File: ${item.filename}`);
+                    console.log(`   Status: ${status}`);
+                    console.log(`   Firestore: ${item.firestoreUser}`);
+                    console.log(`   Storage: ${item.storageUser}`);
+                    console.log(`   Collection: ${item.collection}`);
+                    console.log(`   Date: ${timeStr}`);
+                    console.log('');
+                });
+                
+                // Summary statistics
+                const consistentTokens = consistencyReport.filter(item => item.consistent).length;
+                const inconsistentTokens = consistencyReport.filter(item => !item.consistent).length;
+                const firestoreOnly = consistencyReport.filter(item => item.firestoreExists && !item.storageExists).length;
+                const storageOnly = consistencyReport.filter(item => !item.firestoreExists && item.storageExists).length;
+                
+                console.log('=== SUMMARY STATISTICS ===');
+                console.log(`Total Tokens: ${consistencyReport.length}`);
+                console.log(`✅ Consistent: ${consistentTokens}`);
+                console.log(`❌ Inconsistent: ${inconsistentTokens}`);
+                console.log(`📄 Firestore Only: ${firestoreOnly}`);
+                console.log(`💾 Storage Only: ${storageOnly}`);
+                
+                return {
+                    totalTokens: consistencyReport.length,
+                    consistentTokens: consistentTokens,
+                    inconsistentTokens: inconsistentTokens,
+                    firestoreOnly: firestoreOnly,
+                    storageOnly: storageOnly,
+                    consistencyReport: consistencyReport
+                };
+                
+            } catch (error) {
+                console.error('Error analyzing token consistency:', error);
+                return null;
+            }
+        }
+
+        // Function to display token consistency analysis in UI
+        function displayTokenConsistency() {
+            const result = analyzeTokenConsistency();
+            if (!result) return;
+            
+            // Create modal for token consistency analysis
+            const modalHtml = `
+                <div class="modal fade" id="tokenConsistencyModal" tabindex="-1">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">🔄 Token Consistency Analysis</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-info">
+                                    <strong>Info:</strong> This analysis compares access tokens between Firestore collections and Firebase Storage to identify consistency issues.
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-3">
+                                        <div class="card bg-primary text-white">
+                                            <div class="card-body text-center">
+                                                <h4>${result.totalTokens}</h4>
+                                                <small>Total Tokens</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-success text-white">
+                                            <div class="card-body text-center">
+                                                <h4>${result.consistentTokens}</h4>
+                                                <small>✅ Consistent</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-warning text-white">
+                                            <div class="card-body text-center">
+                                                <h4>${result.inconsistentTokens}</h4>
+                                                <small>❌ Inconsistent</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-danger text-white">
+                                            <div class="card-body text-center">
+                                                <h4>${result.storageOnly}</h4>
+                                                <small>💾 Storage Only</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="accordion" id="consistencyAccordion">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#allTokensCollapse">
+                                                📋 All Tokens Analysis (${result.totalTokens})
+                                            </button>
+                                        </h2>
+                                        <div id="allTokensCollapse" class="accordion-collapse collapse show" data-bs-parent="#consistencyAccordion">
+                                            <div class="accordion-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>#</th>
+                                                                <th>Token</th>
+                                                                <th>Filename</th>
+                                                                <th>Status</th>
+                                                                <th>Firestore User</th>
+                                                                <th>Storage User</th>
+                                                                <th>Collection</th>
+                                                                <th>Date</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            ${result.consistencyReport.map((item, index) => {
+                                                                const timeStr = item.date.toLocaleString('id-ID');
+                                                                const statusBadge = item.consistent ? 
+                                                                    '<span class="badge bg-success">✅ Consistent</span>' : 
+                                                                    '<span class="badge bg-danger">❌ Inconsistent</span>';
+                                                                const firestoreStatus = item.firestoreExists ? 
+                                                                    item.firestoreUser : 
+                                                                    '<span class="text-muted">Not found</span>';
+                                                                const storageStatus = item.storageExists ? 
+                                                                    item.storageUser : 
+                                                                    '<span class="text-muted">Not found</span>';
+                                                                
+                                                                return `
+                                                                    <tr>
+                                                                        <td>${index + 1}</td>
+                                                                        <td><code>${item.token.substring(0, 8)}...</code></td>
+                                                                        <td><code>${item.filename}</code></td>
+                                                                        <td>${statusBadge}</td>
+                                                                        <td>${firestoreStatus}</td>
+                                                                        <td>${storageStatus}</td>
+                                                                        <td><span class="badge bg-secondary">${item.collection}</span></td>
+                                                                        <td>${timeStr}</td>
+                                                                    </tr>
+                                                                `;
+                                                            }).join('')}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    ${result.inconsistentTokens > 0 ? `
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#inconsistentCollapse">
+                                                    ⚠️ Inconsistent Tokens (${result.inconsistentTokens})
+                                                </button>
+                                            </h2>
+                                            <div id="inconsistentCollapse" class="accordion-collapse collapse" data-bs-parent="#consistencyAccordion">
+                                                <div class="accordion-body">
+                                                    <div class="alert alert-warning">
+                                                        <strong>Warning:</strong> These tokens have inconsistencies between Firestore and Firebase Storage.
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Token</th>
+                                                                    <th>Filename</th>
+                                                                    <th>Firestore User</th>
+                                                                    <th>Storage User</th>
+                                                                    <th>Issue</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                ${result.consistencyReport.filter(item => !item.consistent).map(item => {
+                                                                    const issue = !item.firestoreExists ? 'Not in Firestore' :
+                                                                                 !item.storageExists ? 'Not in Storage' :
+                                                                                 'User mismatch';
+                                                                    
+                                                                    return `
+                                                                        <tr>
+                                                                            <td><code>${item.token.substring(0, 8)}...</code></td>
+                                                                            <td><code>${item.filename}</code></td>
+                                                                            <td>${item.firestoreUser}</td>
+                                                                            <td>${item.storageUser}</td>
+                                                                            <td><span class="badge bg-warning">${issue}</span></td>
+                                                                        </tr>
+                                                                    `;
+                                                                }).join('')}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    ${result.storageOnly > 0 ? `
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#storageOnlyCollapse">
+                                                    💾 Storage Only Tokens (${result.storageOnly})
+                                                </button>
+                                            </h2>
+                                            <div id="storageOnlyCollapse" class="accordion-collapse collapse" data-bs-parent="#consistencyAccordion">
+                                                <div class="accordion-body">
+                                                    <div class="alert alert-danger">
+                                                        <strong>Orphaned Files:</strong> These files exist in Firebase Storage but are not registered in Firestore.
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Token</th>
+                                                                    <th>Filename</th>
+                                                                    <th>Storage User</th>
+                                                                    <th>Date</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                ${result.consistencyReport.filter(item => !item.firestoreExists && item.storageExists).map(item => {
+                                                                    const timeStr = item.date.toLocaleString('id-ID');
+                                                                    return `
+                                                                        <tr>
+                                                                            <td><code>${item.token.substring(0, 8)}...</code></td>
+                                                                            <td><code>${item.filename}</code></td>
+                                                                            <td>${item.storageUser}</td>
+                                                                            <td>${timeStr}</td>
+                                                                        </tr>
+                                                                    `;
+                                                                }).join('')}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" onclick="console.log('Check console for detailed consistency analysis')">View Console Logs</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body if it doesn't exist
+            if (!document.getElementById('tokenConsistencyModal')) {
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            }
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('tokenConsistencyModal'));
+            modal.show();
+        }
+
+        // Function to show user ranking
+        function showUserRanking() {
+            showLoading(true);
+            
+            // Fetch all users and their questions to calculate ranking
+            Promise.all([
+                db.collection('user').get(),
+                db.collection('questions').get(),
+                db.collection('record').get()
+            ]).then(([userSnapshot, questionsSnapshot, recordSnapshot]) => {
+                
+                const users = userSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                const questions = questionsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                const records = recordSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                console.log('Debug - Total users:', users.length);
+                console.log('Debug - Total questions:', questions.length);
+                console.log('Debug - Total records:', records.length);
+                
+                // Calculate ranking for each user
+                const rankingData = users.map(user => {
+                    // Filter questions for this user (excluding "Buat Pertanyaan Sendiri")
+                    const userQuestions = questions.filter(q => {
+                        const isUserQuestion = q.idCustomer === user.id || q.userId === user.id;
+                        const isNotCustomQuestion = !q.desc || !q.desc.includes('Buat Pertanyaan Sendiri');
+                        const isNotCustomQuestionType = !q.typeQuestion || !q.typeQuestion.includes('Buat Pertanyaan Sendiri');
+                        
+                        return isUserQuestion && isNotCustomQuestion && isNotCustomQuestionType;
+                    });
+                    
+                    // Filter records for this user (excluding "Buat Pertanyaan Sendiri")
+                    const userRecords = records.filter(r => {
+                        const isUserRecord = r.idCustomer === user.id || r.userId === user.id;
+                        const isNotCustomQuestion = !r.desc || !r.desc.includes('Buat Pertanyaan Sendiri');
+                        const isNotCustomQuestionType = !r.typeQuestion || !r.typeQuestion.includes('Buat Pertanyaan Sendiri');
+                        const isNotCustomQuestionData = !r.typeData || !r.typeData.includes('Buat Pertanyaan Sendiri');
+                        
+                        return isUserRecord && isNotCustomQuestion && isNotCustomQuestionType && isNotCustomQuestionData;
+                    });
+                    
+                    console.log(`Debug - User ${user.name || user.customerName}:`, {
+                        questions: userQuestions.length,
+                        records: userRecords.length,
+                        questionIds: userQuestions.map(q => q.id),
+                        recordIds: userRecords.map(r => r.id)
+                    });
+                    
+                    // Count completed questions - check multiple completion indicators
+                    const completedQuestions = userQuestions.filter(q => {
+                        const isCompleted = q.status === 'Completed' || 
+                                          q.isFinished === true || 
+                                          q.finished === true ||
+                                          q.completed === true;
+                        
+                        console.log(`Debug - Question ${q.id}:`, {
+                            status: q.status,
+                            isFinished: q.isFinished,
+                            finished: q.finished,
+                            completed: q.completed,
+                            isCompleted: isCompleted
+                        });
+                        
+                        return isCompleted;
+                    }).length;
+                    
+                    const completedRecords = userRecords.filter(r => {
+                        const isCompleted = r.status === 'Completed' || 
+                                          r.isFinished === true || 
+                                          r.finished === true ||
+                                          r.completed === true;
+                        
+                        console.log(`Debug - Record ${r.id}:`, {
+                            status: r.status,
+                            isFinished: r.isFinished,
+                            finished: r.finished,
+                            completed: r.completed,
+                            isCompleted: isCompleted
+                        });
+                        
+                        return isCompleted;
+                    }).length;
+                    
+                    const totalCompleted = completedQuestions + completedRecords;
+                    const totalQuestions = userQuestions.length + userRecords.length;
+                    
+                    // Calculate completion rate
+                    const completionRate = totalQuestions > 0 ? Math.round((totalCompleted / totalQuestions) * 100) : 0;
+                    
+                    // Get last activity timestamp
+                    let lastActivity = 0;
+                    if (user.lastActivity) {
+                        lastActivity = user.lastActivity;
+                    } else {
+                        // Find latest activity from questions and records
+                        const allActivities = [
+                            ...userQuestions.map(q => q.id ? parseInt(q.id) : 0),
+                            ...userRecords.map(r => r.id ? parseInt(r.id) : 0)
+                        ];
+                        lastActivity = Math.max(...allActivities, 0);
+                    }
+                    
+                    return {
+                        id: user.id,
+                        name: user.name || user.customerName || 'Unknown User',
+                        email: user.email || user.userEmail || 'No Email',
+                        completedQuestions: totalCompleted,
+                        totalQuestions: totalQuestions,
+                        completionRate: completionRate,
+                        lastActivity: lastActivity,
+                        questionsCount: userQuestions.length,
+                        recordsCount: userRecords.length,
+                        debug: {
+                            questions: userQuestions.length,
+                            records: userRecords.length,
+                            completedQ: completedQuestions,
+                            completedR: completedRecords
+                        }
+                    };
+                });
+                
+                console.log('Debug - Final ranking data:', rankingData);
+                
+                // Sort by completed questions (descending), then by completion rate, then by last activity
+                rankingData.sort((a, b) => {
+                    if (b.completedQuestions !== a.completedQuestions) {
+                        return b.completedQuestions - a.completedQuestions;
+                    }
+                    if (b.completionRate !== a.completionRate) {
+                        return b.completionRate - a.completionRate;
+                    }
+                    return b.lastActivity - a.lastActivity;
+                });
+                
+                // Update ranking table
+                updateRankingTable(rankingData);
+                
+                showLoading(false);
+                
+                // Show ranking modal
+                const rankingModal = new bootstrap.Modal(document.getElementById('rankingModal'));
+                rankingModal.show();
+                
+            }).catch(error => {
+                console.error('Error fetching ranking data:', error);
+                showLoading(false);
+                alert('Failed to load ranking data: ' + error.message);
+            });
+        }
+
+        // Function to update ranking table
+        function updateRankingTable(rankingData) {
+            const rankingTableBody = document.getElementById('rankingTableBody');
+            rankingTableBody.innerHTML = '';
+
+            if (rankingData.length === 0) {
+                rankingTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center p-4">
+                            <i class="bi bi-inbox" style="font-size: 3rem; color: #6c757d;"></i>
+                            <p class="mt-2 text-muted">No ranking data available</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            rankingData.forEach((user, index) => {
+                const row = document.createElement('tr');
+                
+                // Add ranking badge
+                let rankBadge = '';
+                if (index === 0) {
+                    rankBadge = '<span class="badge bg-warning">🥇 1st</span>';
+                } else if (index === 1) {
+                    rankBadge = '<span class="badge bg-secondary">🥈 2nd</span>';
+                } else if (index === 2) {
+                    rankBadge = '<span class="badge bg-bronze">🥉 3rd</span>';
+                } else {
+                    rankBadge = `<span class="badge bg-light text-dark">#${index + 1}</span>`;
+                }
+                
+                // Add completion rate badge
+                let completionBadge = '';
+                if (user.completionRate >= 80) {
+                    completionBadge = '<span class="badge bg-success">Excellent</span>';
+                } else if (user.completionRate >= 60) {
+                    completionBadge = '<span class="badge bg-info">Good</span>';
+                } else if (user.completionRate >= 40) {
+                    completionBadge = '<span class="badge bg-warning">Fair</span>';
+                } else {
+                    completionBadge = '<span class="badge bg-secondary">Needs Improvement</span>';
+                }
+                
+                row.innerHTML = `
+                    <td>${rankBadge}</td>
+                    <td><strong>${user.name}</strong></td>
+                    <td><small>${user.email}</small></td>
+                    <td>
+                        <span class="badge bg-success">${user.completedQuestions}</span>
+                        <br><small class="text-muted">Q: ${user.debug.completedQ} | R: ${user.debug.completedR}</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-info">${user.totalQuestions}</span>
+                        <br><small class="text-muted">Q: ${user.debug.questions} | R: ${user.debug.records}</small>
+                    </td>
+                    <td>
+                        <small>${user.lastActivity > 0 ? new Date(user.lastActivity).toLocaleString() : 'No Activity'}</small>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-info" onclick="showUserDetails('${user.id}', '${user.name}')">
+                            <i class="bi bi-eye"></i> Details
+                        </button>
+                    </td>
+                `;
+                
+                // Add hover effect for top 3
+                if (index < 3) {
+                    row.classList.add('table-warning');
+                }
+                
+                rankingTableBody.appendChild(row);
+            });
+        }
+
+        // Function to export ranking data to CSV
+        function exportRankingToCSV() {
+            const rankingTableBody = document.getElementById('rankingTableBody');
+            const rows = rankingTableBody.querySelectorAll('tr');
+            
+            if (rows.length === 0) {
+                alert('No ranking data to export');
+                return;
+            }
+            
+            // CSV headers
+            const headers = [
+                'Rank',
+                'User Name', 
+                'Email',
+                'Completed Questions',
+                'Total Questions',
+                'Last Activity',
+                'Questions Count',
+                'Records Count'
+            ];
+            
+            const csvData = [headers];
+            
+            // Add data rows
+            rows.forEach((row, index) => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 7) {
+                    const rowData = [
+                        index + 1,
+                        cells[1].textContent.trim(),
+                        cells[2].textContent.trim(),
+                        cells[3].querySelector('.badge').textContent.trim(),
+                        cells[4].querySelector('.badge').textContent.trim(),
+                        cells[5].textContent.trim(),
+                        cells[3].querySelector('small').textContent.trim().split('|')[0].replace('Q:', '').trim(),
+                        cells[4].querySelector('small').textContent.trim().split('|')[0].replace('Q:', '').trim()
+                    ];
+                    csvData.push(rowData);
+                }
+            });
+            
+            // Convert to CSV format
+            const csvContent = csvData.map(row => 
+                row.map(cell => `"${cell}"`).join(',')
+            ).join('\n');
+            
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `user_ranking_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Function to show user details for debugging
+        function showUserDetails(userId, userName) {
+            // Fetch detailed data for this user
+            Promise.all([
+                db.collection('questions').where('idCustomer', '==', userId).get(),
+                db.collection('record').where('idCustomer', '==', userId).get()
+            ]).then(([questionsSnapshot, recordsSnapshot]) => {
+                
+                const questions = questionsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                const records = recordsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Create detailed report
+                let report = `=== DETAIL REPORT FOR ${userName} ===\n\n`;
+                report += `User ID: ${userId}\n`;
+                report += `Total Questions: ${questions.length}\n`;
+                report += `Total Records: ${records.length}\n\n`;
+                
+                // Questions breakdown
+                report += `--- QUESTIONS BREAKDOWN ---\n`;
+                questions.forEach((q, index) => {
+                    report += `${index + 1}. ID: ${q.id}\n`;
+                    report += `   Desc: ${q.desc || 'N/A'}\n`;
+                    report += `   Type: ${q.typeQuestion || 'N/A'}\n`;
+                    report += `   Status: ${q.status || 'N/A'}\n`;
+                    report += `   isFinished: ${q.isFinished}\n`;
+                    report += `   finished: ${q.finished}\n`;
+                    report += `   completed: ${q.completed}\n`;
+                    report += `   Customer ID: ${q.idCustomer || 'N/A'}\n`;
+                    report += `   User ID: ${q.userId || 'N/A'}\n\n`;
+                });
+                
+                // Records breakdown
+                report += `--- RECORDS BREAKDOWN ---\n`;
+                records.forEach((r, index) => {
+                    report += `${index + 1}. ID: ${r.id}\n`;
+                    report += `   Desc: ${r.desc || 'N/A'}\n`;
+                    report += `   Type: ${r.typeQuestion || 'N/A'}\n`;
+                    report += `   TypeData: ${r.typeData || 'N/A'}\n`;
+                    report += `   Status: ${r.status || 'N/A'}\n`;
+                    report += `   isFinished: ${r.isFinished}\n`;
+                    report += `   finished: ${r.finished}\n`;
+                    report += `   completed: ${r.completed}\n`;
+                    report += `   Customer ID: ${r.idCustomer || 'N/A'}\n`;
+                    report += `   User ID: ${r.userId || 'N/A'}\n\n`;
+                });
+                
+                // Show in console and alert
+                console.log(report);
+                alert('User details logged to console. Press F12 to view.');
+                
+            }).catch(error => {
+                console.error('Error fetching user details:', error);
+                alert('Failed to fetch user details: ' + error.message);
+            });
+        }
+
+        // Helper function to safely convert base64 to blob
+        function safeBase64ToBlob(base64String, filename) {
+            try {
+                // Validate base64 string
+                if (!base64String || typeof base64String !== 'string') {
+                    console.warn(`Invalid base64 for ${filename}:`, base64String);
+                    return null;
+                }
+                
+                // Remove data URL prefix if present
+                let cleanBase64 = base64String;
+                if (base64String.includes(',')) {
+                    cleanBase64 = base64String.split(',')[1];
+                }
+                
+                // Validate base64 length (must be multiple of 4)
+                if (cleanBase64.length % 4 !== 0) {
+                    console.warn(`Invalid base64 length for ${filename}: ${cleanBase64.length}`);
+                    return null;
+                }
+                
+                // Validate base64 characters
+                if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleanBase64)) {
+                    console.warn(`Invalid base64 characters for ${filename}`);
+                    return null;
+                }
+                
+                // Try to decode
+                try {
+                    const binaryString = atob(cleanBase64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    return new Blob([bytes], { type: 'image/png' });
+                } catch (decodeError) {
+                    console.warn(`Failed to decode base64 for ${filename}:`, decodeError);
+                    return null;
+                }
+            } catch (error) {
+                console.warn(`Error processing base64 for ${filename}:`, error);
+                return null;
+            }
+        }
+
+        // Download all data as ZIP file
+        async function downloadAllDataAsZip() {
+            try {
+                showLoading(true);
+                
+                // Show progress modal
+                const progressModal = new bootstrap.Modal(document.getElementById('downloadProgressModal'));
+                progressModal.show();
+                
+                const progressBar = document.getElementById('downloadProgressBar');
+                const progressText = document.getElementById('downloadProgressText');
+                const statusText = document.getElementById('downloadStatusText');
+                
+                // Initialize progress
+                progressBar.value = 0;
+                progressText.textContent = '0%';
+                statusText.textContent = 'Preparing download...';
+                
+                // Create new ZIP file
+                const zip = new JSZip();
+                
+                // Create folder structure
+                const usersFolder = zip.folder('users');
+                const questionsFolder = zip.folder('questions');
+                const recordsFolder = zip.folder('records');
+                const imagesFolder = zip.folder('images');
+                
+                // Track statistics
+                let totalImages = 0;
+                let validImages = 0;
+                let invalidImages = 0;
+                let skippedImages = 0;
+                
+                console.log('🚀 Starting ZIP creation process...');
+                
+                // Step 1: Load all users
+                statusText.textContent = 'Loading users...';
+                progressBar.value = 10;
+                progressText.textContent = '10%';
+                
+                const usersSnapshot = await db.collection('user').get();
+                const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log(`📊 Loaded ${users.length} users`);
+                
+                // Step 2: Load all questions
+                statusText.textContent = 'Loading questions...';
+                progressBar.value = 20;
+                progressText.textContent = '20%';
+                
+                const questionsSnapshot = await db.collection('questions').get();
+                const questions = questionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log(`📊 Loaded ${questions.length} questions`);
+                
+                // Step 3: Load all records
+                statusText.textContent = 'Loading records...';
+                progressBar.value = 30;
+                progressText.textContent = '30%';
+                
+                const recordsSnapshot = await db.collection('record').get();
+                const records = recordsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log(`📊 Loaded ${records.length} records`);
+                
+                // Step 4: Process users data
+                statusText.textContent = 'Processing users data...';
+                progressBar.value = 40;
+                progressText.textContent = '40%';
+                
+                users.forEach((user, index) => {
+                    try {
+                        const userFolder = usersFolder.folder(user.id);
+                        
+                        // Create user info file
+                        const userInfo = {
+                            id: user.id,
+                            name: user.name || 'Unknown',
+                            email: user.email || 'No Email',
+                            customerName: user.customerName || 'No Customer Name',
+                            createdAt: user.createdAt || 'Unknown',
+                            lastLogin: user.lastLogin || 'Unknown'
+                        };
+                        
+                        userFolder.file('user_info.json', JSON.stringify(userInfo, null, 2));
+                        
+                        // Create user questions folder
+                        const userQuestionsFolder = userFolder.folder('questions');
+                        const userRecordsFolder = userFolder.folder('records');
+                        
+                        // Find questions for this user
+                        const userQuestions = questions.filter(q => 
+                            q.idCustomer === user.id || q.userId === user.id
+                        );
+                        
+                        // Find records for this user
+                        const userRecords = records.filter(r => 
+                            r.idCustomer === user.id || r.userId === user.id
+                        );
+                        
+                        console.log(`👤 Processing user ${user.id}: ${userQuestions.length} questions, ${userRecords.length} records`);
+                        
+                        // Process user questions
+                        userQuestions.forEach((question, qIndex) => {
+                            try {
+                                const questionFolder = userQuestionsFolder.folder(`question_${question.id}`);
+                                
+                                // Create question info file
+                                const questionInfo = {
+                                    id: question.id,
+                                    type: 'question',
+                                    collection: 'questions',
+                                    question: question.question || 'No Question',
+                                    typeQuestion: question.typeQuestion || 'Unknown',
+                                    desc: question.desc || 'No Description',
+                                    typeData: question.typeData || 'Unknown',
+                                    status: question.status || 'Unknown',
+                                    isFinished: question.isFinished || false,
+                                    dateTime: question.dateTime || 'Unknown',
+                                    totalEdit: question.totalEdit || 0,
+                                    views: question.views || 0,
+                                    creatorName: question.creatorName || 'Unknown',
+                                    dibuatOleh: question.dibuatOleh || 'Unknown',
+                                    workerId: question.workerId || null,
+                                    workerName: question.workerName || null
+                                };
+                                
+                                questionFolder.file('question_info.json', JSON.stringify(questionInfo, null, 2));
+                                
+                                // Process images with error handling
+                                processImagesForQuestion(question, questionFolder, 'question');
+                                
+                            } catch (questionError) {
+                                console.warn(`⚠️ Error processing question ${question.id}:`, questionError);
+                            }
+                        });
+                        
+                        // Process user records
+                        userRecords.forEach((record, rIndex) => {
+                            try {
+                                const recordFolder = userRecordsFolder.folder(`record_${record.id}`);
+                                
+                                // Create record info file
+                                const recordInfo = {
+                                    id: record.id,
+                                    type: 'record',
+                                    collection: 'record',
+                                    question: record.question || 'No Question',
+                                    typeQuestion: record.typeQuestion || 'Unknown',
+                                    desc: record.desc || 'No Description',
+                                    typeData: record.typeData || 'Unknown',
+                                    status: record.status || 'Unknown',
+                                    isFinished: record.isFinished || false,
+                                    dateTime: record.dateTime || 'Unknown',
+                                    totalEdit: record.totalEdit || 0,
+                                    views: record.views || 0,
+                                    creatorName: record.creatorName || 'Unknown',
+                                    dibuatOleh: record.dibuatOleh || 'Unknown',
+                                    workerId: record.workerId || null,
+                                    workerName: record.workerName || null,
+                                    latitude: record.latitude || null,
+                                    longitude: record.longitude || null,
+                                    locationName: record.locationName || null
+                                };
+                                
+                                recordFolder.file('record_info.json', JSON.stringify(recordInfo, null, 2));
+                                
+                                // Process images with error handling
+                                processImagesForRecord(record, recordFolder, 'record');
+                                
+                            } catch (recordError) {
+                                console.warn(`⚠️ Error processing record ${record.id}:`, recordError);
+                            }
+                        });
+                        
+                        // Update progress
+                        const progress = 40 + (index / users.length) * 30;
+                        progressBar.value = progress;
+                        progressText.textContent = Math.round(progress) + '%';
+                        
+                    } catch (userError) {
+                        console.warn(`⚠️ Error processing user ${user.id}:`, userError);
+                    }
+                });
+                
+                // Step 5: Create summary files
+                statusText.textContent = 'Creating summary files...';
+                progressBar.value = 80;
+                progressText.textContent = '80%';
+                
+                // Create summary file
+                const summary = {
+                    totalUsers: users.length,
+                    totalQuestions: questions.length,
+                    totalRecords: records.length,
+                    imageStatistics: {
+                        totalImages: totalImages,
+                        validImages: validImages,
+                        invalidImages: invalidImages,
+                        skippedImages: skippedImages
+                    },
+                    downloadDate: new Date().toISOString(),
+                    structure: {
+                        users: 'Each user has their own folder with questions and records',
+                        questions: 'Questions collection data with images',
+                        records: 'Records collection data with images',
+                        images: 'All images stored as PNG files'
+                    }
+                };
+                
+                zip.file('summary.json', JSON.stringify(summary, null, 2));
+                
+                // Create README file
+                const readme = `# User Questions Data Export
+
+## Structure
+- users/: Contains all user data organized by user ID
+  - user_id/: Each user's folder
+    - user_info.json: User information
+    - questions/: User's questions
+      - question_id/: Each question folder
+        - question_info.json: Question metadata
+        - image_*.png: Question images
+        - photo_answer.png: Answer photos
+        - photo_draw_*.png: Drawing photos
+    - records/: User's records
+      - record_id/: Each record folder
+        - record_info.json: Record metadata
+        - image_*.png: Record images
+        - photo_answer.png: Answer photos
+        - photo_draw_*.png: Drawing photos
+
+## Data Format
+- All JSON files contain metadata in human-readable format
+- All images are stored as PNG files
+- Base64 data is converted to actual image files
+
+## Export Date
+${new Date().toLocaleString()}
+
+## Total Counts
+- Users: ${users.length}
+- Questions: ${questions.length}
+- Records: ${records.length}
+
+## Image Statistics
+- Total Images Processed: ${totalImages}
+- Valid Images: ${validImages}
+- Invalid Images: ${invalidImages}
+- Skipped Images: ${skippedImages}
+`;
+                
+                zip.file('README.md', readme);
+                
+                console.log(`📊 Image processing complete: ${validImages} valid, ${invalidImages} invalid, ${skippedImages} skipped`);
+                
+                // Step 6: Generate ZIP file
+                statusText.textContent = 'Generating ZIP file...';
+                progressBar.value = 90;
+                progressText.textContent = '90%';
+                
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                
+                // Step 7: Download file
+                statusText.textContent = 'Downloading...';
+                progressBar.value = 100;
+                progressText.textContent = '100%';
+                
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const filename = `user_questions_data_${timestamp}.zip`;
+                
+                // Download the file
+                saveAs(zipBlob, filename);
+                
+                // Close modal and show success
+                setTimeout(() => {
+                    progressModal.hide();
+                    showLoading(false);
+                    alert(`✅ Successfully downloaded all data!\n\nFile: ${filename}\nTotal Users: ${users.length}\nTotal Questions: ${questions.length}\nTotal Records: ${records.length}\n\nImage Statistics:\n- Valid: ${validImages}\n- Invalid: ${invalidImages}\n- Skipped: ${skippedImages}`);
+                }, 1000);
+                
+            } catch (error) {
+                console.error('❌ Error downloading data:', error);
+                showLoading(false);
+                
+                // Show detailed error in modal
+                const progressModal = bootstrap.Modal.getInstance(document.getElementById('downloadProgressModal'));
+                if (progressModal) {
+                    progressModal.hide();
+                }
+                
+                alert(`❌ Error downloading data:\n\n${error.message}\n\nPlease check console for more details.`);
+            }
+        }
+        
+        // Helper function to process images for questions
+        function processImagesForQuestion(question, questionFolder, type) {
+            // Add base64 images if available
+            if (question.base64 && question.base64.trim()) {
+                const blob = safeBase64ToBlob(question.base64, `${type}_${question.id}_image_1`);
+                if (blob) {
+                    questionFolder.file('image_1.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            if (question.base64_2 && question.base64_2.trim()) {
+                const blob = safeBase64ToBlob(question.base64_2, `${type}_${question.id}_image_2`);
+                if (blob) {
+                    questionFolder.file('image_2.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            if (question.base64_3 && question.base64_3.trim()) {
+                const blob = safeBase64ToBlob(question.base64_3, `${type}_${question.id}_image_3`);
+                if (blob) {
+                    questionFolder.file('image_3.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            if (question.base64_4 && question.base64_4.trim()) {
+                const blob = safeBase64ToBlob(question.base64_4, `${type}_${question.id}_image_4`);
+                if (blob) {
+                    questionFolder.file('image_4.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            if (question.base64_5 && question.base64_5.trim()) {
+                const blob = safeBase64ToBlob(question.base64_5, `${type}_${question.id}_image_5`);
+                if (blob) {
+                    questionFolder.file('image_5.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            
+            // Add photo answer if available
+            if (question.photoAnswer && question.photoAnswer.trim()) {
+                const blob = safeBase64ToBlob(question.photoAnswer, `${type}_${question.id}_photo_answer`);
+                if (blob) {
+                    questionFolder.file('photo_answer.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            
+            // Add photo acceleration if available
+            if (question.photoAcceleration && question.photoAcceleration.trim()) {
+                const blob = safeBase64ToBlob(question.photoAcceleration, `${type}_${question.id}_photo_acceleration`);
+                if (blob) {
+                    questionFolder.file('photo_acceleration.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            
+            // Add photo draw array if available
+            if (question.photoDraw && Array.isArray(question.photoDraw)) {
+                question.photoDraw.forEach((photo, pIndex) => {
+                    if (photo && photo.trim()) {
+                        const blob = safeBase64ToBlob(photo, `${type}_${question.id}_photo_draw_${pIndex + 1}`);
+                        if (blob) {
+                            questionFolder.file(`photo_draw_${pIndex + 1}.png`, blob);
+                            validImages++;
+                        } else {
+                            invalidImages++;
+                        }
+                        totalImages++;
+                    }
+                });
+            }
+        }
+        
+        // Helper function to process images for records
+        function processImagesForRecord(record, recordFolder, type) {
+            // Add base64 images if available
+            if (record.base64 && record.base64.trim()) {
+                const blob = safeBase64ToBlob(record.base64, `${type}_${record.id}_image_1`);
+                if (blob) {
+                    recordFolder.file('image_1.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            if (record.base64_2 && record.base64_2.trim()) {
+                const blob = safeBase64ToBlob(record.base64_2, `${type}_${record.id}_image_2`);
+                if (blob) {
+                    recordFolder.file('image_2.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            if (record.base64_3 && record.base64_3.trim()) {
+                const blob = safeBase64ToBlob(record.base64_3, `${type}_${record.id}_image_3`);
+                if (blob) {
+                    recordFolder.file('image_3.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            if (record.base64_4 && record.base64_4.trim()) {
+                const blob = safeBase64ToBlob(record.base64_4, `${type}_${record.id}_image_4`);
+                if (blob) {
+                    recordFolder.file('image_4.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            if (record.base64_5 && record.base64_5.trim()) {
+                const blob = safeBase64ToBlob(record.base64_5, `${type}_${record.id}_image_5`);
+                if (blob) {
+                    recordFolder.file('image_5.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            
+            // Add photo answer if available
+            if (record.photoAnswer && record.photoAnswer.trim()) {
+                const blob = safeBase64ToBlob(record.photoAnswer, `${type}_${record.id}_photo_answer`);
+                if (blob) {
+                    recordFolder.file('photo_answer.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            
+            // Add photo acceleration if available
+            if (record.photoAcceleration && record.photoAcceleration.trim()) {
+                const blob = safeBase64ToBlob(record.photoAcceleration, `${type}_${record.id}_photo_acceleration`);
+                if (blob) {
+                    recordFolder.file('photo_acceleration.png', blob);
+                    validImages++;
+                } else {
+                    invalidImages++;
+                }
+                totalImages++;
+            }
+            
+            // Add photo draw array if available
+            if (record.photoDraw && Array.isArray(record.photoDraw)) {
+                record.photoDraw.forEach((photo, pIndex) => {
+                    if (photo && photo.trim()) {
+                        const blob = safeBase64ToBlob(photo, `${type}_${record.id}_photo_draw_${pIndex + 1}`);
+                        if (blob) {
+                            recordFolder.file(`photo_draw_${pIndex + 1}.png`, blob);
+                            validImages++;
+                        } else {
+                            invalidImages++;
+                        }
+                        totalImages++;
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html> 

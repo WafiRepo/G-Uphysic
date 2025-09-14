@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -18,6 +19,7 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -61,6 +63,8 @@ import de.rwth_aachen.phyphox.databinding.ActivityUserGeneratesNewBinding;
 import de.rwth_aachen.phyphox.databinding.DialogIntroductionBinding;
 import de.rwth_aachen.phyphox.model.DataModel;
 import de.rwth_aachen.phyphox.model.QuestionModel;
+import de.rwth_aachen.phyphox.R;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -130,17 +134,42 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                 dispatchTakePictureIntent();
             }
         });
-        // Tombol Submit (fungsionalitas belum diimplementasikan)
+        // Tombol Upload - Combines canvas and photo into final answer
         binding.btnUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 binding.btnNext.setEnabled(false);
-                if (imageBytes.length == 0) {
-                    uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.llDraw)), "answer_image_" + System.currentTimeMillis());
-                } else {
-                    uploadImageCameraToFirestore(imageBytes, "answer_image_" + System.currentTimeMillis());
+                
+                try {
+                    // Get canvas drawing
+                    Bitmap canvasBitmap = getViewAsBitmap(binding.llDraw);
+                    
+                    // Check if we have both canvas and photo
+                    if (imageBytes.length > 0 && canvasBitmap != null) {
+                        // Combine canvas and photo
+                        Bitmap combinedBitmap = combineCanvasAndPhoto(canvasBitmap);
+                        if (combinedBitmap != null) {
+                            byte[] combinedImageBytes = convertBitmapToBytes(combinedBitmap);
+                            uploadImageToFirestore(combinedImageBytes, "combined_answer_" + System.currentTimeMillis());
+                        } else {
+                            // Fallback to photo only if combine fails
+                            uploadImageCameraToFirestore(imageBytes, "photo_answer_" + System.currentTimeMillis());
+                        }
+                    } else if (imageBytes.length > 0) {
+                        // Photo only
+                        uploadImageCameraToFirestore(imageBytes, "photo_answer_" + System.currentTimeMillis());
+                    } else if (canvasBitmap != null) {
+                        // Canvas only
+                        uploadImageToFirestore(convertBitmapToBytes(canvasBitmap), "canvas_answer_" + System.currentTimeMillis());
+                    } else {
+                        Toast.makeText(UserGeneratesQuestionActivity.this, "Tidak ada gambar untuk diupload", Toast.LENGTH_SHORT).show();
+                        binding.btnNext.setEnabled(true);
+                    }
+                } catch (Exception e) {
+                    Log.e("UPLOAD_ERROR", "Error during upload: " + e.getMessage());
+                    Toast.makeText(UserGeneratesQuestionActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    binding.btnNext.setEnabled(true);
                 }
-                // Implementasi fungsi Submit bisa ditambahkan di sini
             }
         });
 
@@ -170,7 +199,52 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
+                try {
+                    // Save progress when back button is pressed
+                    App app = (App) getApplication();
+                    DataModel dataModel = app.getDataModel();
+                    
+                    if (getIntent().getBooleanExtra("isFromMainMenu", true)) {
+                        // Simpan progress ke Firestore tanpa ProgressDialog untuk performa lebih baik
+                        dataModel.setQuestion(binding.tvQuestion.getText().toString());
+                        dataModel.setCustomerName(SessionManager.getName(UserGeneratesQuestionActivity.this));
+                        dataModel.setTypeData(binding.tvType.getText().toString());
+                        
+                        FirestoreUtil.addOrUpdateDocument("questions", dataModel.getId(), dataModel,
+                                () -> {
+                                    // Setelah simpan, langsung ke homepage
+                                    try {
+                                        Intent homeIntent = new Intent(UserGeneratesQuestionActivity.this, MainActivity.class);
+                                        homeIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        startActivity(homeIntent);
+                                        finish();
+                                    } catch (Exception ex) {
+                                        Log.e("BACK_BUTTON", "Error navigating to home: " + ex.getMessage());
+                                        finish();
+                                    }
+                                },
+                                e -> {
+                                    // Jika gagal simpan, tetap kembali ke homepage
+                                    Log.e("BACK_BUTTON", "Failed to save progress: " + e.getMessage());
+                                    try {
+                                        Intent homeIntent = new Intent(UserGeneratesQuestionActivity.this, MainActivity.class);
+                                        homeIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        startActivity(homeIntent);
+                                        finish();
+                                    } catch (Exception ex) {
+                                        Log.e("BACK_BUTTON", "Error navigating to home after save failure: " + ex.getMessage());
+                                        finish();
+                                    }
+                                }
+                        );
+                    } else {
+                        finish();
+                    }
+                } catch (Exception e) {
+                    Log.e("BACK_BUTTON", "Unexpected error in handleOnBackPressed: " + e.getMessage());
+                    // Fallback: just finish the activity
                     finish();
+                }
             }
         });
     }
@@ -222,20 +296,58 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode== RESULT_OK) {
-            binding.ivPhoto.setVisibility(View.VISIBLE);
-            // Optional: Konversi foto ke base64 dan simpan ke dataModel
-            Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
-            imageBytes = baos.toByteArray();
-            String base64Image = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
-            loadImageWithGlide(base64ToDrawable(base64Image, UserGeneratesQuestionActivity.this), binding.ivPhoto);
-
-            App app = (App) getApplication();
-            DataModel dataModel = app.getDataModel();
-//            dataModel.setPhotoAnswer(base64Image);
-            app.setDataModel(dataModel);
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            try {
+                // Show photo preview container
+                binding.llPhotoPreview.setVisibility(View.VISIBLE);
+                
+                // Load and process the captured photo
+                Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath);
+                if (bitmap != null) {
+                    // Optimize bitmap for better performance and storage
+                    bitmap = optimizeBitmapForStorage(bitmap);
+                    
+                    // Convert to byte array with compression
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos);
+                    imageBytes = baos.toByteArray();
+                    
+                    // Convert to base64 for storage
+                    String base64Image = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
+                    
+                    // Display in preview with PhotoView for zoom capability
+                    BitmapDrawable drawable = base64ToDrawable(base64Image, UserGeneratesQuestionActivity.this);
+                    if (drawable != null) {
+                        loadImageWithGlide(drawable, binding.ivPhoto);
+                        
+                        // Configure PhotoView for photo preview
+                        if (binding.ivPhoto instanceof com.github.chrisbanes.photoview.PhotoView) {
+                            com.github.chrisbanes.photoview.PhotoView photoView = (com.github.chrisbanes.photoview.PhotoView) binding.ivPhoto;
+                            photoView.setMaximumScale(4.0f);
+                            photoView.setMediumScale(2.0f);
+                            photoView.setMinimumScale(0.8f);
+                            photoView.setZoomable(true);
+                        }
+                    }
+                    
+                    // Save to DataModel for later use
+                    App app = (App) getApplication();
+                    DataModel dataModel = app.getDataModel();
+                    dataModel.setPhotoAnswer(base64Image);
+                    app.setDataModel(dataModel);
+                    
+                    // Show success message
+                    Toast.makeText(this, "Foto berhasil diambil dan ditampilkan di preview", Toast.LENGTH_SHORT).show();
+                    
+                    Log.d("PHOTO_CAPTURE", "Photo successfully captured and processed");
+                } else {
+                    Toast.makeText(this, "Gagal memproses foto", Toast.LENGTH_SHORT).show();
+                    Log.e("PHOTO_CAPTURE", "Failed to decode bitmap from photo path");
+                }
+            } catch (Exception e) {
+                Log.e("PHOTO_CAPTURE", "Error processing captured photo: " + e.getMessage());
+                Toast.makeText(this, "Error memproses foto: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
@@ -300,6 +412,83 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
         // Disable drawing cache
         view.setDrawingCacheEnabled(false);
         return bitmap;
+    }
+
+    /**
+     * Optimize bitmap for storage by resizing if necessary
+     * @param originalBitmap Original bitmap to optimize
+     * @return Optimized bitmap with reasonable dimensions
+     */
+    private Bitmap optimizeBitmapForStorage(Bitmap originalBitmap) {
+        if (originalBitmap == null) return null;
+        
+        // Check if bitmap is already reasonably sized
+        int maxDimension = 1200; // Maximum dimension for storage
+        if (originalBitmap.getWidth() <= maxDimension && originalBitmap.getHeight() <= maxDimension) {
+            return originalBitmap; // No optimization needed
+        }
+        
+        // Calculate new dimensions while maintaining aspect ratio
+        float scale = Math.min((float) maxDimension / originalBitmap.getWidth(), 
+                              (float) maxDimension / originalBitmap.getHeight());
+        
+        int newWidth = Math.round(originalBitmap.getWidth() * scale);
+        int newHeight = Math.round(originalBitmap.getHeight() * scale);
+        
+        Log.d("BITMAP_OPTIMIZE", "Resizing bitmap from " + originalBitmap.getWidth() + "x" + originalBitmap.getHeight() + 
+              " to " + newWidth + "x" + newHeight);
+        
+        return Bitmap.createScaledBitmap(originalBitmap, newWidth, newHeight, true);
+    }
+
+    /**
+     * Combine canvas drawing and captured photo into a single image
+     * @param canvasBitmap The canvas drawing bitmap
+     * @return Combined bitmap with photo on top and canvas below
+     */
+    private Bitmap combineCanvasAndPhoto(Bitmap canvasBitmap) {
+        try {
+            if (imageBytes.length == 0 || canvasBitmap == null) {
+                return canvasBitmap; // Return canvas only if no photo
+            }
+            
+            // Convert photo bytes back to bitmap
+            Bitmap photoBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+            if (photoBitmap == null) {
+                Log.e("COMBINE_IMAGE", "Failed to decode photo bitmap");
+                return canvasBitmap;
+            }
+            
+            // Calculate dimensions for combined image
+            int maxWidth = Math.max(canvasBitmap.getWidth(), photoBitmap.getWidth());
+            int totalHeight = canvasBitmap.getHeight() + photoBitmap.getHeight() + 20; // 20px spacing
+            
+            // Create combined bitmap
+            Bitmap combinedBitmap = Bitmap.createBitmap(maxWidth, totalHeight, Bitmap.Config.ARGB_8888);
+            Canvas combinedCanvas = new Canvas(combinedBitmap);
+            
+            // Fill with white background
+            combinedCanvas.drawColor(android.graphics.Color.WHITE);
+            
+            // Draw photo at the top (centered horizontally)
+            float photoX = (maxWidth - photoBitmap.getWidth()) / 2f;
+            combinedCanvas.drawBitmap(photoBitmap, photoX, 0, null);
+            
+            // Draw canvas below photo with spacing
+            float canvasY = photoBitmap.getHeight() + 20;
+            float canvasX = (maxWidth - canvasBitmap.getWidth()) / 2f;
+            combinedCanvas.drawBitmap(canvasBitmap, canvasX, canvasY, null);
+            
+            Log.d("COMBINE_IMAGE", "Successfully combined photo (" + photoBitmap.getWidth() + "x" + photoBitmap.getHeight() + 
+                  ") and canvas (" + canvasBitmap.getWidth() + "x" + canvasBitmap.getHeight() + 
+                  ") into " + maxWidth + "x" + totalHeight);
+            
+            return combinedBitmap;
+            
+        } catch (Exception e) {
+            Log.e("COMBINE_IMAGE", "Error combining images: " + e.getMessage());
+            return canvasBitmap; // Return canvas only as fallback
+        }
     }
 
     public byte[] convertBitmapToBytes(Bitmap bitmap) {
@@ -447,12 +636,24 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
 
                     // Handle Graph Images (graphImages -> iv)
                     if (apiResponse.getGraphImages() != null && !apiResponse.getGraphImages().isEmpty()) {
-                        String originalBase64 = apiResponse.getGraphImages().get(0);
-                        String compressedBase64 = compressBase64ForFirestore(originalBase64);
-                        dataModel.setBase64(compressedBase64);
-                        Log.d("getGraphImages --&> ", "" + originalBase64.substring(0, Math.min(50, originalBase64.length())));
-                        loadImageWithGlide(base64ToDrawable(originalBase64, UserGeneratesQuestionActivity.this), binding.iv);
-                        binding.iv.setVisibility(View.VISIBLE);
+                        try {
+                            String originalBase64 = apiResponse.getGraphImages().get(0);
+                            if (originalBase64 != null && !originalBase64.trim().isEmpty()) {
+                                String compressedBase64 = compressBase64ForFirestore(originalBase64);
+                                dataModel.setBase64(compressedBase64);
+                                Log.d("getGraphImages --&> ", "" + originalBase64.substring(0, Math.min(50, originalBase64.length())));
+                                
+                                BitmapDrawable drawable = base64ToDrawable(originalBase64, UserGeneratesQuestionActivity.this);
+                                if (drawable != null) {
+                                    loadImageWithGlide(drawable, binding.iv);
+                                    binding.iv.setVisibility(View.VISIBLE);
+                                } else {
+                                    Log.e("IMAGE_LOAD", "Failed to convert graph image to drawable");
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("IMAGE_LOAD", "Error loading graph image: " + e.getMessage());
+                        }
                     }
                     // Handle Image (image1_base64 -> iv2)
                     if (apiResponse.getImage1_base64() != null && !apiResponse.getImage1_base64().isEmpty()) {
@@ -463,23 +664,58 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                         loadImageWithGlide(base64ToDrawable(originalBase64_2, UserGeneratesQuestionActivity.this), binding.iv2);
                         binding.iv2.setVisibility(View.VISIBLE);
                     }
+                    // Handle Table Images
+                    boolean hasTableImages = false;
+                    
                     // Handle Table 1 (table_img_base64_1 -> iv3)
                     if (apiResponse.getTable_img_base64_1() != null && !apiResponse.getTable_img_base64_1().isEmpty()) {
-                        String originalBase64_3 = apiResponse.getTable_img_base64_1();
-                        String compressedBase64_3 = compressBase64ForFirestore(originalBase64_3);
-                        dataModel.setBase64_3(compressedBase64_3);
-                        Log.d("getTable_img_base64_1 --&> ", "" + originalBase64_3.substring(0, Math.min(50, originalBase64_3.length())));
-                        loadImageWithGlide(base64ToDrawable(originalBase64_3, UserGeneratesQuestionActivity.this), binding.iv3);
-                        binding.iv3.setVisibility(View.VISIBLE);
+                        try {
+                            String originalBase64_3 = apiResponse.getTable_img_base64_1();
+                            if (originalBase64_3 != null && !originalBase64_3.trim().isEmpty()) {
+                                String compressedBase64_3 = compressBase64ForFirestore(originalBase64_3);
+                                dataModel.setBase64_3(compressedBase64_3);
+                                Log.d("getTable_img_base64_1 --&> ", "" + originalBase64_3.substring(0, Math.min(50, originalBase64_3.length())));
+                                
+                                BitmapDrawable drawable = base64ToDrawable(originalBase64_3, UserGeneratesQuestionActivity.this);
+                                if (drawable != null) {
+                                    loadImageWithGlide(drawable, binding.iv3);
+                                    binding.iv3.setVisibility(View.VISIBLE);
+                                    hasTableImages = true;
+                                } else {
+                                    Log.e("IMAGE_LOAD", "Failed to convert table image 1 to drawable");
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("IMAGE_LOAD", "Error loading table image 1: " + e.getMessage());
+                        }
                     }
+                    
                     // Handle Table 2 (table_img_base64_2 -> iv4)
                     if (apiResponse.getTable_img_base64_2() != null && !apiResponse.getTable_img_base64_2().isEmpty()) {
-                        String originalBase64_4 = apiResponse.getTable_img_base64_2();
-                        String compressedBase64_4 = compressBase64ForFirestore(originalBase64_4);
-                        dataModel.setBase64_4(compressedBase64_4);
-                        Log.d("getTable_img_base64_2 --&> ", "" + originalBase64_4.substring(0, Math.min(50, originalBase64_4.length())));
-                        loadImageWithGlide(base64ToDrawable(originalBase64_4, UserGeneratesQuestionActivity.this), binding.iv4);
-                        binding.iv4.setVisibility(View.VISIBLE);
+                        try {
+                            String originalBase64_4 = apiResponse.getTable_img_base64_2();
+                            if (originalBase64_4 != null && !originalBase64_4.trim().isEmpty()) {
+                                String compressedBase64_4 = compressBase64ForFirestore(originalBase64_4);
+                                dataModel.setBase64_4(compressedBase64_4);
+                                Log.d("getTable_img_base64_2 --&> ", "" + originalBase64_4.substring(0, Math.min(50, originalBase64_4.length())));
+                                
+                                BitmapDrawable drawable = base64ToDrawable(originalBase64_4, UserGeneratesQuestionActivity.this);
+                                if (drawable != null) {
+                                    loadImageWithGlide(drawable, binding.iv4);
+                                    binding.iv4.setVisibility(View.VISIBLE);
+                                    hasTableImages = true;
+                                } else {
+                                    Log.e("IMAGE_LOAD", "Failed to convert table image 2 to drawable");
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("IMAGE_LOAD", "Error loading table image 2: " + e.getMessage());
+                        }
+                    }
+                    
+                    // Show table images container if there are table images
+                    if (hasTableImages) {
+                        binding.tableImagesContainer.setVisibility(View.VISIBLE);
                     }
 
                     // (Optional) Handle table_img_base64 (lama) jika masih dipakai untuk iv3
@@ -555,7 +791,42 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                 .into(new CustomTarget<Drawable>() {
                     @Override
                     public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
-                        imageView.setBackground(resource); // Set as background
+                        imageView.setImageDrawable(resource); // Set as image for PhotoView zoom functionality
+                        
+                        // Optimize image view size for table images
+                        if (imageView.getId() == R.id.iv3 || imageView.getId() == R.id.iv4) {
+                            optimizeImageViewForTable(imageView, resource);
+                        }
+                        
+                        // Enhanced zoom for other PhotoView images (excluding table images iv3, iv4)
+                        if (imageView instanceof com.github.chrisbanes.photoview.PhotoView) {
+                            com.github.chrisbanes.photoview.PhotoView photoView = (com.github.chrisbanes.photoview.PhotoView) imageView;
+                            
+                            // Configure zoom based on image type - set in correct order
+                            if (imageView.getId() == R.id.iv5) {
+                                // Additional image - moderate zoom
+                                photoView.setMinimumScale(0.7f);
+                                photoView.setMediumScale(2.5f);
+                                photoView.setMaximumScale(4.0f);
+                            } else if (imageView.getId() == R.id.ivDraw) {
+                                // Drawing image - high zoom for detail
+                                photoView.setMinimumScale(0.5f);
+                                photoView.setMediumScale(3.0f);
+                                photoView.setMaximumScale(6.0f);
+                            } else if (imageView.getId() != R.id.iv3 && imageView.getId() != R.id.iv4) {
+                                // Default zoom for other images, excluding table images (iv3, iv4)
+                                photoView.setMinimumScale(0.8f);
+                                photoView.setMediumScale(2.0f);
+                                photoView.setMaximumScale(3.0f);
+                            }
+                            // Note: iv3 and iv4 (table images) are handled by optimizeImageViewForTable
+                            
+                            // Enable smooth zoom transitions
+                            photoView.setZoomTransitionDuration(300);
+                            
+                            // Enable double tap to zoom (PhotoView handles this automatically)
+                            photoView.setZoomable(true);
+                        }
                     }
 
                     @Override
@@ -563,6 +834,73 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                         // Handle case when the image is cleared
                     }
                 });
+    }
+    
+    /**
+     * Optimize ImageView size for table images to prevent overlapping
+     */
+    private void optimizeImageViewForTable(ImageView imageView, Drawable drawable) {
+        if (drawable instanceof BitmapDrawable) {
+            Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+            if (bitmap != null) {
+                int imageWidth = bitmap.getWidth();
+                int imageHeight = bitmap.getHeight();
+                
+                // Calculate optimal height based on image aspect ratio
+                int screenWidth = getResources().getDisplayMetrics().widthPixels - 64; // Account for margins
+                float aspectRatio = (float) imageHeight / imageWidth;
+                int optimalHeight = Math.round(screenWidth * aspectRatio);
+                
+                // Set constraints for table images
+                int minHeight = 200;
+                int maxHeight = 600;
+                optimalHeight = Math.max(minHeight, Math.min(maxHeight, optimalHeight));
+                
+                // Update layout parameters
+                ViewGroup.LayoutParams params = imageView.getLayoutParams();
+                params.height = optimalHeight;
+                imageView.setLayoutParams(params);
+                
+                // Enhanced zoom configuration for PhotoView - RESET first to avoid conflicts
+                if (imageView instanceof com.github.chrisbanes.photoview.PhotoView) {
+                    com.github.chrisbanes.photoview.PhotoView photoView = (com.github.chrisbanes.photoview.PhotoView) imageView;
+                    
+                    try {
+                        // CRITICAL: Reset to default PhotoView state first to clear any existing zoom conflicts
+                        photoView.setScale(1.0f, true);
+                        
+                        // Set maximum first to establish upper bound, then work downward
+                        photoView.setMaximumScale(5.0f);
+                        photoView.setMediumScale(2.5f);  // Safe value less than max
+                        photoView.setMinimumScale(0.5f);
+                        
+                        // Enable smooth zoom transitions
+                        photoView.setZoomTransitionDuration(300);
+                        
+                        // Enable double tap to zoom (PhotoView handles this automatically)
+                        photoView.setZoomable(true);
+                        
+                        Log.d("ZOOM_CONFIG", "Table image zoom configured successfully: " + 
+                              "min=" + photoView.getMinimumScale() + 
+                              ", medium=" + photoView.getMediumScale() + 
+                              ", max=" + photoView.getMaximumScale());
+                              
+                    } catch (Exception e) {
+                        Log.e("ZOOM_CONFIG", "Error setting zoom for table image: " + e.getMessage());
+                        // Fallback: just enable zoom without custom scales
+                        try {
+                            photoView.setZoomable(true);
+                            Log.d("ZOOM_CONFIG", "Fallback: Basic zoom enabled for table image");
+                        } catch (Exception fallbackError) {
+                            Log.e("ZOOM_CONFIG", "Even basic zoom failed: " + fallbackError.getMessage());
+                        }
+                    }
+                }
+                
+                Log.d("TABLE_OPTIMIZE", "Image: " + imageWidth + "x" + imageHeight + 
+                      ", Optimal height: " + optimalHeight + "dp");
+            }
+        }
     }
 
     public BitmapDrawable base64ToDrawable(String base64String, Context context) {
