@@ -53,8 +53,8 @@ public class DataRecoveryService extends Service {
         // Step 2: Validate data integrity
         validateDataIntegrity();
         
-        // Step 3: Create comprehensive backup
-        createComprehensiveBackup();
+        // Step 3: Create comprehensive backup - DISABLED (backup collections removed)
+        // createComprehensiveBackup();
         
         Log.d(TAG, "Data recovery process completed");
     }

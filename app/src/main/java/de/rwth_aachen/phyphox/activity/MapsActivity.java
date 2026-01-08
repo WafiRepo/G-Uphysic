@@ -47,6 +47,7 @@ import java.util.Locale;
 
 import de.rwth_aachen.phyphox.App;
 import de.rwth_aachen.phyphox.Helper.FirestoreUtil;
+import de.rwth_aachen.phyphox.Helper.SessionManager;
 import de.rwth_aachen.phyphox.R;
 import de.rwth_aachen.phyphox.databinding.ActivityMapsBinding;
 import de.rwth_aachen.phyphox.model.DataModel;
@@ -102,7 +103,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 progressDialog.setMessage("Please wait...");
                 progressDialog.setCancelable(false);
                 progressDialog.show();
-                FirestoreUtil.addOrUpdateDocument("record", dataModel.getId(), dataModel,
+                
+                String userId = SessionManager.getId(MapsActivity.this);
+                String userName = SessionManager.getName(MapsActivity.this);
+                
+                FirestoreUtil.addOrUpdateDocumentWithVersioning("record", dataModel.getId(), dataModel,
+                        userId, userName,
                         () -> {
                             progressDialog.dismiss();
                             Toast.makeText(MapsActivity.this, "Record success Saved", Toast.LENGTH_LONG).show();

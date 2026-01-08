@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "602030706614",
-    "project_id": "phyphox-34aed",
-    "storage_bucket": "phyphox-34aed.firebasestorage.app"
+    "project_number": "794871328792",
+    "project_id": "gphysolve",
+    "storage_bucket": "gphysolve.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:602030706614:android:c2b0980615476acb9b3b17",
+        "mobilesdk_app_id": "1:794871328792:android:dae6255133a0525383536d",
         "android_client_info": {
           "package_name": "de.rwth_aachen.phyphox"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDxQCxx9gOWcKqDBBrR6UKWhnXmBAYYvRQ"
+          "current_key": "AIzaSyCAfJCmwF2QCJPpXSArhwTR2ZFtCYxUEDE"
         }
       ],
       "services": {

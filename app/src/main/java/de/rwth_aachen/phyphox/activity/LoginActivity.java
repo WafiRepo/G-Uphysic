@@ -17,6 +17,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
 
 import java.nio.file.FileVisitResult;
 
@@ -82,8 +83,46 @@ public class LoginActivity extends AppCompatActivity {
                     getUser(auth.getCurrentUser().getUid());
                 } else {
                     progressDialog.dismiss();
-                    Log.d("signInWith ", "--> " + task.getException().getMessage());
-                    Toast.makeText(LoginActivity.this, "Login Failed! Please try again", Toast.LENGTH_SHORT).show();
+                    String errorMessage = "Login Failed!";
+                    if (task.getException() != null) {
+                        Exception exception = task.getException();
+                        Log.e("LoginError", "Login failed: " + exception.getMessage());
+                        
+                        if (exception instanceof FirebaseAuthException) {
+                            FirebaseAuthException authException = (FirebaseAuthException) exception;
+                            String errorCode = authException.getErrorCode();
+                            
+                            switch (errorCode) {
+                                case "ERROR_INVALID_EMAIL":
+                                    errorMessage = "Email tidak valid. Silakan periksa format email Anda.";
+                                    break;
+                                case "ERROR_USER_NOT_FOUND":
+                                    errorMessage = "Email tidak terdaftar. Silakan daftar terlebih dahulu.";
+                                    break;
+                                case "ERROR_WRONG_PASSWORD":
+                                    errorMessage = "Password salah. Silakan coba lagi.";
+                                    break;
+                                case "ERROR_INVALID_CREDENTIAL":
+                                    errorMessage = "Email atau password salah. Silakan periksa kembali.";
+                                    break;
+                                case "ERROR_USER_DISABLED":
+                                    errorMessage = "Akun ini telah dinonaktifkan. Hubungi administrator.";
+                                    break;
+                                case "ERROR_TOO_MANY_REQUESTS":
+                                    errorMessage = "Terlalu banyak percobaan login. Silakan coba lagi nanti.";
+                                    break;
+                                case "ERROR_NETWORK_REQUEST_FAILED":
+                                    errorMessage = "Gagal terhubung ke server. Periksa koneksi internet Anda.";
+                                    break;
+                                default:
+                                    errorMessage = "Login gagal: " + exception.getMessage();
+                                    break;
+                            }
+                        } else {
+                            errorMessage = exception.getMessage();
+                        }
+                    }
+                    Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                 }
             }
         });

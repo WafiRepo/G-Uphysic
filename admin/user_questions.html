@@ -127,42 +127,39 @@
         </div>
     </div>
 
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <i class="bi bi-question-circle-fill text-warning"></i>
-                <strong class="ms-2">P-MAGIC Physics Admin</strong>
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <div class="navbar-nav ms-auto">
-                    <a class="nav-link" href="dashboard.html">
-                        <i class="bi bi-house"></i> Dashboard
-                    </a>
-                    <a class="nav-link" href="users.html">
-                        <i class="bi bi-people"></i> Users
-                    </a>
-                    <a class="nav-link active" href="user_questions.html">
-                        <i class="bi bi-question-circle"></i> User Questions
-                    </a>
-                    <a class="nav-link" href="canvas_answers.html">
-                        <i class="bi bi-palette"></i> Canvas Files Analysis
-                    </a>
-                    <a class="nav-link" href="storage_matching.html">
-                        <i class="bi bi-link-45deg"></i> Storage Matching
-                    </a>
-                    <a class="nav-link" href="#" onclick="logout()">
-                        <i class="bi bi-box-arrow-right"></i> Logout
-                    </a>
-                </div>
+            <a class="navbar-brand" href="users.html">P-MAGIC Physics Admin</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="users.html"><i class="bi bi-people"></i> Users</a>
+                <a class="nav-link active" href="user_questions.html"><i class="bi bi-question-circle"></i> User Questions</a>
+                <a class="nav-link" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Logout</a>
             </div>
         </div>
     </nav>
 
-    <main class="container-fluid mt-4">
+    <!-- Sidebar -->
+    <nav class="col-md-3 col-lg-2 d-md-block sidebar">
+        <div class="sidebar-sticky">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="users.html">
+                        <i class="bi bi-people"></i> Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="user_questions.html">
+                        <i class="bi bi-question-circle"></i> User Questions
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main role="main">
+        <div class="container-fluid">
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card">
@@ -291,18 +288,6 @@
                             <small class="text-muted">Custom Questions</small>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="text-center">
-                            <h5 id="firebaseStorageCount">0</h5>
-                            <small class="text-muted">Firebase Storage</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="text-center">
-                            <h5 id="canvasAnswerCount">0</h5>
-                            <small class="text-muted">Canvas Answer</small>
-                        </div>
-                    </div>
                 </div>
                 <div class="row mt-3">
                     <div class="col-md-3">
@@ -352,7 +337,6 @@
             <h4 class="mt-3 text-muted">No Data Found</h4>
             <p class="text-muted">This user hasn't completed any questions or experiments yet.</p>
         </div>
-    </main>
 
     <!-- Image Preview Modal -->
     <div class="modal fade" id="imageModal" tabindex="-1">
@@ -452,13 +436,13 @@
 
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyAZL5oSEVbDLrN2hbZeDXSchr8wDWAW4ok",
-            authDomain: "phyphox-34aed.firebaseapp.com",
-            projectId: "phyphox-34aed",
-            storageBucket: "phyphox-34aed.firebasestorage.app",
-            messagingSenderId: "602030706614",
-            appId: "1:602030706614:web:f0d8a44a4c4012749b3b17",
-            measurementId: "G-M7SKB5YS91"
+            apiKey: "AIzaSyBF1Oy7vcWztqtcMAQoG_zx2eqQwevXvRg",
+            authDomain: "gphysolve.firebaseapp.com",
+            projectId: "gphysolve",
+            storageBucket: "gphysolve.firebasestorage.app",
+            messagingSenderId: "794871328792",
+            appId: "1:794871328792:web:2a37ca02c792fc6b83536d",
+            measurementId: "G-MNGEX8W1X4"
         };
 
         firebase.initializeApp(firebaseConfig);
@@ -583,7 +567,7 @@
                 updateUserInfo(selectedUser, questions);
                 updateStats(questions);
                 displayQuestions(questions);
-                addStorageUsersButton();
+                // Removed addStorageUsersButton call
                 
                 showLoading(false);
 
@@ -764,7 +748,7 @@
                 if (!creatorName) {
                     creatorName = (data.customerName && data.customerName.trim()) ? data.customerName : 'Unknown';
                 }
-                computedDescription = `${workerName} Mengerjakan pertanyaan dari ${creatorName})`;
+                computedDescription = `${workerName} Mengerjakan pertanyaan dari ${creatorName}`;
             }
 
             // Determine original creator name for display (independent from description)
@@ -821,6 +805,46 @@
                 });
             }
 
+            // Extract new fields from DataModel
+            const creatorName = data.creatorName || data.dibuatOleh || data.createdBy || '';
+            const photoAnswerUrl = data.photoAnswerUrl || '';
+            const photoAnswerPath = data.photoAnswerPath || '';
+            
+            // Debug logging for photoAnswerUrl from questions collection
+            if (collection === 'questions' && photoAnswerUrl) {
+                console.log('Found photoAnswerUrl in questions collection:', {
+                    id: id,
+                    photoAnswerUrl: photoAnswerUrl,
+                    photoAnswerPath: photoAnswerPath,
+                    hasPhotoAnswer: !!data.photoAnswer
+                });
+            }
+            const questionImageUrls = [
+                data.questionImageUrl1 || '',
+                data.questionImageUrl2 || '',
+                data.questionImageUrl3 || '',
+                data.questionImageUrl4 || '',
+                data.questionImageUrl5 || ''
+            ].filter(url => url && url.trim());
+            const questionImagePaths = [
+                data.questionImagePath1 || '',
+                data.questionImagePath2 || '',
+                data.questionImagePath3 || '',
+                data.questionImagePath4 || '',
+                data.questionImagePath5 || ''
+            ].filter(path => path && path.trim());
+            const photoDocumentation = Array.isArray(data.photoDocumentation) ? data.photoDocumentation : [];
+            const photoDocumentationPaths = Array.isArray(data.photoDocumentationPaths) ? data.photoDocumentationPaths : [];
+            const experimentPhotoUrl = data.experimentPhotoUrl || '';
+            const experimentPhotoPath = data.experimentPhotoPath || '';
+            const documentationNotes = data.documentationNotes || '';
+            const version = data.version || 1;
+            const createdAt = data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt)) : date;
+            const updatedAt = data.updatedAt ? (data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt)) : date;
+            const createdAtFormatted = data.createdAtFormatted || createdAt.toLocaleString();
+            const updatedAtFormatted = data.updatedAtFormatted || updatedAt.toLocaleString();
+            const sourceQuestionId = data.sourceQuestionId || '';
+
             return {
                 id: id,
                 collection: collection,
@@ -834,7 +858,23 @@
                 originalCreator: originalCreator,
                 description: computedDescription || 'No description',
                 photoDraw: photoDraw,
-                photoAnswer: data.photoAnswer || '',
+                photoAnswer: data.photoAnswer || '', // Legacy Base64 - deprecated
+                photoAnswerUrl: photoAnswerUrl, // New Firebase Storage URL
+                photoAnswerPath: photoAnswerPath, // New Firebase Storage path
+                questionImageUrls: questionImageUrls, // New question image URLs
+                questionImagePaths: questionImagePaths, // New question image paths
+                photoDocumentation: photoDocumentation, // Documentation photos
+                photoDocumentationPaths: photoDocumentationPaths, // Documentation photo paths
+                experimentPhotoUrl: experimentPhotoUrl, // Experiment photo URL
+                experimentPhotoPath: experimentPhotoPath, // Experiment photo path
+                documentationNotes: documentationNotes, // Documentation notes
+                creatorName: creatorName, // Creator name
+                sourceQuestionId: sourceQuestionId, // Source question ID
+                version: version, // Version number
+                createdAt: createdAt, // Created timestamp
+                updatedAt: updatedAt, // Updated timestamp
+                createdAtFormatted: createdAtFormatted, // Formatted created date
+                updatedAtFormatted: updatedAtFormatted, // Formatted updated date
                 base64Images: base64Images,
                 status: status,
                 editCount: data.totalEdit || data.editCount || 0,
@@ -927,8 +967,7 @@
             const fromRecord = safeQuestions.filter(q => q.collection === 'record').length;
             const questionListCount = safeQuestions.filter(q => q.isFromQuestionList).length;
             const customQuestionsCount = safeQuestions.filter(q => q.category !== 'Question from List').length;
-            const firebaseStorageCount = safeQuestions.filter(q => q.answerImage).length;
-            const canvasAnswerCount = safeQuestions.filter(q => Array.isArray(q.photoDraw) && q.photoDraw.some(img => img.includes('canvas_answer_'))).length;
+            // Removed Firebase Storage and Canvas Answer counts
 
             // Level question stats
             const easyQuestionsCount = safeQuestions.filter(q => q.levelQuestion === 'Easy').length;
@@ -972,8 +1011,7 @@
             // Do not override totalVisits and totalDuration here
             
             document.getElementById('customQuestionsCount').textContent = customQuestionsCount;
-            document.getElementById('firebaseStorageCount').textContent = firebaseStorageCount;
-            document.getElementById('canvasAnswerCount').textContent = canvasAnswerCount;
+            // Removed Firebase Storage and Canvas Answer count updates
 
             // Update level question stats
             document.getElementById('easyQuestionsCount').textContent = easyQuestionsCount;
@@ -981,11 +1019,7 @@
             document.getElementById('advancedQuestionsCount').textContent = advancedQuestionsCount;
             document.getElementById('unknownLevelCount').textContent = unknownLevelCount;
 
-            // Add Firebase Storage count if element exists
-            const firebaseStorageElement = document.getElementById('firebaseStorageCount');
-            if (firebaseStorageElement) {
-                firebaseStorageElement.textContent = firebaseStorageCount;
-            }
+            // Removed Firebase Storage count update
 
             // Log storage users for debugging
             console.log('Firebase Storage Users:', Array.from(storageUsers));
@@ -1134,6 +1168,28 @@
                                     </div>
                                 ` : ''}
                                 
+                                ${question.photoAnswerUrl ? `
+                                    <div class="mb-3">
+                                        <strong>Photo Answer:</strong>
+                                        ${question.isFromQuestionList ? '<span class="badge bg-warning ms-2">📚 Question List Answer</span>' : ''}
+                                        ${question.collection === 'questions' ? '<span class="badge bg-info ms-2">📋 From Questions Collection</span>' : ''}
+                                        <div class="canvas-gallery">
+                                            <img src="${question.photoAnswerUrl}" 
+                                                 alt="Photo Answer" 
+                                                 class="canvas-image"
+                                                 onclick="showImage('${question.photoAnswerUrl}', 'Photo Answer')"
+                                                 title="Click to view full size"
+                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                            <div style="display:none;">
+                                                <a href="${question.photoAnswerUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-image"></i> View Photo Answer (Link)
+                                                </a>
+                                                ${question.photoAnswerPath ? `<br><small class="text-muted">Path: ${question.photoAnswerPath}</small>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
                                 ${question.locationName ? `
                                     <div class="mb-3">
                                         <strong>Location:</strong>
@@ -1144,25 +1200,75 @@
                                         </div>
                                     </div>
                                 ` : ''}
+                                
+                                ${question.questionImageUrls && question.questionImageUrls.length > 0 ? `
+                                    <div class="mb-3">
+                                        <strong>Question Images (${question.questionImageUrls.length}):</strong>
+                                        <div class="question-images-gallery">
+                                            ${question.questionImageUrls.map((url, idx) => `
+                                                <div class="mb-2">
+                                                    <a href="${url}" target="_blank" class="btn btn-sm btn-outline-primary me-1">
+                                                        <i class="bi bi-image"></i> Image ${idx + 1}
+                                                    </a>
+                                                    ${question.questionImagePaths && question.questionImagePaths[idx] ? 
+                                                        `<small class="text-muted">${question.questionImagePaths[idx]}</small>` : ''}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <strong>Details:</strong><br>
                                     <small class="text-muted">
-                                        Edit Count: ${question.editCount}<br>
-                                        Views: ${question.views}<br>
-                                        Generation: ${question.generationType}<br>
-                                        Level: <span class="badge ${getLevelQuestionBadgeClass(question.levelQuestion)}">${question.levelQuestion}</span><br>
-                                        Source: ${question.source}<br>
-                                        ${question.hasGraphAcceleration ? 'Has Graph Data<br>' : ''}
+                                        <strong>Version:</strong> ${question.version || 1}<br>
+                                        <strong>Status:</strong> <span class="badge ${question.status === 'Completed' ? 'bg-success' : 'bg-warning'}">${question.status}</span><br>
+                                        <strong>Created:</strong> ${question.createdAtFormatted || question.date.toLocaleString()}<br>
+                                        <strong>Updated:</strong> ${question.updatedAtFormatted || question.date.toLocaleString()}<br>
+                                        <hr class="my-1">
+                                        <strong>Creator:</strong> ${question.creatorName || question.originalCreator || 'N/A'}<br>
+                                        ${question.sourceQuestionId ? `<strong>Source Question ID:</strong> ${question.sourceQuestionId}<br>` : ''}
+                                        <hr class="my-1">
+                                        <strong>Edit Count:</strong> ${question.editCount}<br>
+                                        <strong>Views:</strong> ${question.views}<br>
+                                        <strong>Generation:</strong> ${question.generationType}<br>
+                                        <strong>Level:</strong> <span class="badge ${getLevelQuestionBadgeClass(question.levelQuestion)}">${question.levelQuestion}</span><br>
+                                        <strong>Source:</strong> ${question.source}<br>
+                                        ${question.hasGraphAcceleration ? '<strong>Has Graph Data:</strong> Yes<br>' : ''}
                                         ${question.isFromQuestionList ? '<span class="badge bg-warning">📚 Question List</span><br>' : ''}
-                                        ${question.isFromQuestionList ? `Original Question ID: ${question.id}<br>` : ''}
-                                        ${question.answerImage ? '<span class="badge bg-danger">🔥 Firebase Storage</span><br>' : ''}
-                                        ${question.answerImage ? `Storage User: ${extractUserInfoFromStorageUrl(question.answerImage).userInfo}<br>` : ''}
-                                        ${(Array.isArray(question.photoDraw) && question.photoDraw.some(img => img.includes('canvas_answer_'))) ? '<span class="badge bg-success">🎨 Canvas Answer</span><br>' : ''}
-                                        ${(Array.isArray(question.photoDraw) && question.photoDraw.some(img => img.includes('firebasestorage'))) ? '<span class="badge bg-info">🔑 Access Token</span><br>' : ''}
                                     </small>
                                 </div>
+                                
+                                ${question.experimentPhotoUrl ? `
+                                <div class="mb-3">
+                                    <strong>Experiment Photo:</strong><br>
+                                    <a href="${question.experimentPhotoUrl}" target="_blank" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-camera"></i> View Experiment Photo
+                                    </a>
+                                    ${question.experimentPhotoPath ? `<br><small class="text-muted">Path: ${question.experimentPhotoPath}</small>` : ''}
+                                </div>
+                                ` : ''}
+                                
+                                ${question.photoDocumentation && question.photoDocumentation.length > 0 ? `
+                                <div class="mb-3">
+                                    <strong>Documentation Photos (${question.photoDocumentation.length}):</strong><br>
+                                    ${question.photoDocumentation.map((url, idx) => `
+                                        <a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary mb-1">
+                                            <i class="bi bi-images"></i> Doc ${idx + 1}
+                                        </a>
+                                    `).join('')}
+                                </div>
+                                ` : ''}
+                                
+                                ${question.documentationNotes ? `
+                                <div class="mb-3">
+                                    <strong>Documentation Notes:</strong><br>
+                                    <div class="alert alert-light">
+                                        ${question.documentationNotes}
+                                    </div>
+                                </div>
+                                ` : ''}
                                 
                                 <div class="mb-3">
                                     <strong>Visit Introduction:</strong><br>
@@ -1274,9 +1380,9 @@
                             </div>
                         ` : ''}
                         
-                        ${question.photoAnswer ? `
+                        ${question.photoAnswer && !question.photoAnswerUrl ? `
                             <div class="mb-3">
-                                <strong>Documentation Photo:</strong>
+                                <strong>Documentation Photo (Base64 - Legacy):</strong>
                                 ${question.isFromQuestionList ? '<span class="badge bg-warning ms-2">📚 Question List Answer</span>' : ''}
                                 <div class="canvas-gallery">
                                     <img src="${((question.photoAnswer||'').startsWith('http') ? question.photoAnswer : ((question.photoAnswer||'').startsWith('data:image') ? question.photoAnswer : ('data:image/jpeg;base64,' + question.photoAnswer)))}" 
@@ -1550,27 +1656,12 @@
             }
         }
 
-        // Function to show all Firebase Storage users
-        function showStorageUsers() {
-            const storageUsers = new Set();
-            selectedUserQuestions.forEach(q => {
-                if (q.answerImage) {
-                    const userInfo = extractUserInfoFromStorageUrl(q.answerImage);
-                    if (userInfo.userInfo && userInfo.userInfo !== 'Unknown' && userInfo.userInfo !== 'Error') {
-                        storageUsers.add(userInfo.userInfo);
-                    }
-                }
-            });
+        // Removed showStorageUsers and addStorageUsersButton functions
 
-            const userList = Array.from(storageUsers).join(', ');
-            alert(`Firebase Storage Users:\n${userList || 'No storage users found'}`);
-        }
-
-        // Add storage users button
-        function addStorageUsersButton() { /* removed per request */ }
-
-        // Function to find orphaned Firebase Storage images
+        // Removed findOrphanedImages function (Storage Matching feature)
         async function findOrphanedImages() {
+            console.log('Find Orphaned Images feature has been removed.');
+            return null;
             try {
                 console.log('=== FINDING ORPHANED FIREBASE STORAGE IMAGES ===');
                 
@@ -1820,9 +1911,10 @@
             }
         }
 
-        // Function to display timestamp analysis in UI
+        // Removed displayTimestampAnalysis function (Storage Matching feature)
         function displayTimestampAnalysis() {
-            const result = analyzeTimestamps();
+            console.log('Timestamp Analysis feature has been removed.');
+            return;
             if (!result) return;
             
             // Create modal for timestamp analysis
@@ -2167,8 +2259,10 @@
             return null;
         }
 
-        // Function to display token analysis in UI
+        // Removed displayTokenAnalysis function (Storage Matching feature)
         function displayTokenAnalysis() {
+            console.log('Token Analysis feature has been removed.');
+            return;
             const result = analyzeAccessTokens();
             if (!result) return;
             
@@ -2265,8 +2359,10 @@
             modal.show();
         }
 
-        // Function to analyze token consistency between Firestore and Firebase Storage
+        // Removed analyzeTokenConsistency function (Storage Matching feature)
         function analyzeTokenConsistency() {
+            console.log('Token Consistency Analysis feature has been removed.');
+            return null;
             try {
                 console.log('=== TOKEN CONSISTENCY ANALYSIS ===');
                 
@@ -3483,5 +3579,7 @@ ${new Date().toLocaleString()}
             }
         }
     </script>
+        </div>
+    </main>
 </body>
 </html> 

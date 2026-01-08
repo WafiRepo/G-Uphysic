@@ -9,7 +9,10 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitClient {
     private static Retrofit retrofit;
-    private static final String BASE_URL = "http://148.230.96.39:8000"; // Ganti dengan URL server FastAPI Anda
+    // Local development: Use 10.0.2.2 for Android emulator (maps to localhost)
+    // For physical device on same network, use your computer's IP (e.g., 192.168.1.4)
+    private static final String BASE_URL = "http://10.0.2.2:8000"; // Emulator: localhost
+    // private static final String BASE_URL = "http://192.168.1.4:8000"; // Physical device: uncomment and use this
 
     public static Retrofit getRetrofitInstance() {
         if (retrofit == null) {

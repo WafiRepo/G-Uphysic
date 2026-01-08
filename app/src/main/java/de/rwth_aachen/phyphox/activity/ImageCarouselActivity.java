@@ -39,6 +39,7 @@ import java.util.Locale;
 
 import de.rwth_aachen.phyphox.App;
 import de.rwth_aachen.phyphox.Helper.FirestoreUtil;
+import de.rwth_aachen.phyphox.Helper.SessionManager;
 import de.rwth_aachen.phyphox.R;
 import de.rwth_aachen.phyphox.databinding.ActivityImageCarouselBinding;
 import de.rwth_aachen.phyphox.model.DataModel;
@@ -50,6 +51,8 @@ public class ImageCarouselActivity extends AppCompatActivity implements Location
     private DataModel dataModel;
     private LocationManager locationManager;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+    private boolean isActivityActive = true; // Flag to check if activity is still active
+    private boolean locationSaved = false; // Flag to prevent duplicate location saves
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -230,11 +233,26 @@ public class ImageCarouselActivity extends AppCompatActivity implements Location
     }
 
     private void setupBackButton() {
-        binding.toolbar.setNavigationOnClickListener(v -> finish());
+        binding.toolbar.setNavigationOnClickListener(v -> {
+            // Mark activity as inactive to prevent any pending saves
+            isActivityActive = false;
+            finish();
+        });
+    }
+    
+    @Override
+    public void onBackPressed() {
+        // Mark activity as inactive to prevent any pending saves
+        isActivityActive = false;
+        super.onBackPressed();
     }
 
     private void setupBackToHomeButton() {
         binding.btnBackToHome.setOnClickListener(v -> {
+            // Mark activity as inactive to prevent any pending saves
+            isActivityActive = false;
+            
+            // Just navigate to home, don't save (data already saved by autoSaveLocation if needed)
             Intent intent = new Intent(this, MainActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
@@ -286,30 +304,73 @@ public class ImageCarouselActivity extends AppCompatActivity implements Location
     }
 
     private void updateLocationInDataModel(Location location) {
+        // Check if activity is still active and location not already saved
+        if (!isActivityActive) {
+            Log.d("LOCATION_SAVE", "Activity is not active, skipping location save");
+            return;
+        }
+        
+        if (locationSaved) {
+            Log.d("LOCATION_SAVE", "Location already saved, skipping duplicate save");
+            return;
+        }
+        
         if (location != null) {
+            // Check if location already exists and is the same (prevent unnecessary updates)
+            if (dataModel.getLatitude() != 0.0 && dataModel.getLongitude() != 0.0) {
+                // Calculate distance between existing and new location
+                float[] results = new float[1];
+                android.location.Location.distanceBetween(
+                    dataModel.getLatitude(), dataModel.getLongitude(),
+                    location.getLatitude(), location.getLongitude(),
+                    results
+                );
+                float distanceInMeters = results[0];
+                
+                // If location is very close (within 10 meters), don't update
+                if (distanceInMeters < 10) {
+                    Log.d("LOCATION_SAVE", "Location is very close to existing location (" + distanceInMeters + "m), skipping update");
+                    locationSaved = true;
+                    return;
+                }
+            }
+            
             Geocoder geocoder = new Geocoder(this, Locale.getDefault());
             try {
                 List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
                 String city = (addresses != null && addresses.size() > 0) ? addresses.get(0).getAddressLine(0) : "Unknown Location";
                 
-                // Update DataModel
+                // Only update location fields, don't touch other fields
                 dataModel.setLatitude(location.getLatitude());
                 dataModel.setLongitude(location.getLongitude());
                 dataModel.setLocationName(city);
-                dataModel.setFinished(true);
+                // Don't change status when just updating location
                 
                 // Save to app
                 App app = (App) getApplication();
                 app.setDataModel(dataModel);
                 
+                // Mark as saved to prevent duplicate saves
+                locationSaved = true;
+                
                 // Auto save to Firestore
                 if (dataModel.getId() != null && !dataModel.getId().isEmpty()) {
-                    FirestoreUtil.addOrUpdateDocument("record", dataModel.getId(), dataModel,
-                        () -> {
-                            Log.d("LOCATION", "Location auto-saved successfully: " + city);
-                            Toast.makeText(this, "📍 Lokasi tersimpan: " + city, Toast.LENGTH_SHORT).show();
-                        },
-                        e -> Log.e("LOCATION", "Failed to auto-save location: " + e.getMessage()));
+                    String userId = SessionManager.getId(this);
+                    String userName = SessionManager.getName(this);
+                    
+                    FirestoreUtil.addOrUpdateDocumentWithVersioning("record", dataModel.getId(), dataModel,
+                            userId, userName,
+                            () -> {
+                                if (isActivityActive) {
+                                    Log.d("LOCATION", "Location auto-saved successfully: " + city);
+                                    Toast.makeText(this, "📍 Lokasi tersimpan: " + city, Toast.LENGTH_SHORT).show();
+                                }
+                            },
+                            e -> {
+                                if (isActivityActive) {
+                                    Log.e("LOCATION", "Failed to auto-save location: " + e.getMessage());
+                                }
+                            });
                 }
                 
                 Log.d("LOCATION", "Location updated: " + city + " (" + location.getLatitude() + ", " + location.getLongitude() + ")");
@@ -351,8 +412,18 @@ public class ImageCarouselActivity extends AppCompatActivity implements Location
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        // Mark activity as inactive when paused to prevent saves
+        isActivityActive = false;
+    }
+    
+    @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Mark activity as inactive
+        isActivityActive = false;
+        
         if (locationManager != null) {
             locationManager.removeUpdates(this);
         }

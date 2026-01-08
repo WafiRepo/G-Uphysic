@@ -15,6 +15,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
 
 import java.util.Objects;
 
@@ -65,9 +66,37 @@ public class RegisterActivity extends AppCompatActivity {
                 if (task.isSuccessful()) {
                    insertData(authFirebase.getCurrentUser().getUid());
                 } else {
-                    Log.d("failed ",""+
-                                    task.getException().getMessage());
-                    Toast.makeText(RegisterActivity.this, "Registration failed!" + " Please try again later", Toast.LENGTH_LONG).show();
+                    String errorMessage = "Registration failed!";
+                    if (task.getException() != null) {
+                        Exception exception = task.getException();
+                        Log.e("RegisterError", "Registration failed: " + exception.getMessage());
+                        
+                        if (exception instanceof FirebaseAuthException) {
+                            FirebaseAuthException authException = (FirebaseAuthException) exception;
+                            String errorCode = authException.getErrorCode();
+                            
+                            switch (errorCode) {
+                                case "ERROR_INVALID_EMAIL":
+                                    errorMessage = "Email tidak valid. Silakan periksa format email Anda.";
+                                    break;
+                                case "ERROR_EMAIL_ALREADY_IN_USE":
+                                    errorMessage = "Email sudah terdaftar. Silakan gunakan email lain atau login.";
+                                    break;
+                                case "ERROR_WEAK_PASSWORD":
+                                    errorMessage = "Password terlalu lemah. Gunakan minimal 6 karakter.";
+                                    break;
+                                case "ERROR_NETWORK_REQUEST_FAILED":
+                                    errorMessage = "Gagal terhubung ke server. Periksa koneksi internet Anda.";
+                                    break;
+                                default:
+                                    errorMessage = "Registrasi gagal: " + exception.getMessage();
+                                    break;
+                            }
+                        } else {
+                            errorMessage = exception.getMessage();
+                        }
+                    }
+                    Toast.makeText(RegisterActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                 }
             }
         });

@@ -54,6 +54,8 @@ import de.rwth_aachen.phyphox.Helper.EasyQuestionHelper;
 import de.rwth_aachen.phyphox.Helper.FirestoreUtil;
 import de.rwth_aachen.phyphox.Helper.IntermediateQuestionHelper;
 import de.rwth_aachen.phyphox.Helper.SessionManager;
+import de.rwth_aachen.phyphox.Helper.StorageUtil;
+import de.rwth_aachen.phyphox.Helper.VersionHelper;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiRequest;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiResponse;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
@@ -81,6 +83,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import retrofit2.Response;
 
@@ -348,21 +352,40 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
                 return;
             }
             
-            // Validate all base64 data before proceeding
-            try {
-                validateBase64Data();
-                
-                // If validation passes, proceed to next activity
-                Intent intent = new Intent(GeneratesClassQuestionActivity.this, RecordPreviewActivity.class);
-                startActivity(intent);
-                finish();
-                
-            } catch (Exception e) {
-                Log.e("NEXT_ERROR", "Error validating data: " + e.getMessage());
-                Toast.makeText(GeneratesClassQuestionActivity.this, 
-                    "Terjadi kesalahan saat memvalidasi data. Silakan coba lagi.", 
-                    Toast.LENGTH_LONG).show();
-            }
+            // Disable button to prevent multiple clicks
+            binding.btnSave.setEnabled(false);
+
+            ProgressDialog preparingDialog = new ProgressDialog(GeneratesClassQuestionActivity.this);
+            preparingDialog.setTitle("Mempersiapkan Preview");
+            preparingDialog.setMessage("Mengunggah gambar soal...");
+            preparingDialog.setCancelable(false);
+            preparingDialog.show();
+
+            ensureQuestionImagesUploadedToStorage(
+                    () -> {
+                        try {
+                            validateBase64Data();
+                            preparingDialog.dismiss();
+                            Intent intent = new Intent(GeneratesClassQuestionActivity.this, RecordPreviewActivity.class);
+                            startActivity(intent);
+                            finish();
+                        } catch (Exception e) {
+                            preparingDialog.dismiss();
+                            Log.e("NEXT_ERROR", "Error validating data: " + e.getMessage());
+                            binding.btnSave.setEnabled(true);
+                            Toast.makeText(GeneratesClassQuestionActivity.this,
+                                    "Terjadi kesalahan saat memvalidasi data. Silakan coba lagi.",
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    },
+                    errMsg -> {
+                        preparingDialog.dismiss();
+                        binding.btnSave.setEnabled(true);
+                        Toast.makeText(GeneratesClassQuestionActivity.this,
+                                "Gagal mengunggah gambar soal: " + errMsg,
+                                Toast.LENGTH_LONG).show();
+                    }
+            );
         });
         binding.btnType.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -382,8 +405,12 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
                         // Simpan progress tanpa ProgressDialog untuk performa lebih baik
                     dataModel.setTypeData(binding.tvType.getText().toString());
                     app.setDataModel(dataModel);
+                    
+                    String userId = SessionManager.getId(GeneratesClassQuestionActivity.this);
+                    String userName = SessionManager.getName(GeneratesClassQuestionActivity.this);
                         
-                    FirestoreUtil.addOrUpdateDocument("record", dataModel.getId(), dataModel,
+                    FirestoreUtil.addOrUpdateDocumentWithVersioning("record", dataModel.getId(), dataModel,
+                            userId, userName,
                             () -> {
                                     // Setelah simpan, langsung ke homepage
                                     try {
@@ -503,10 +530,34 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
             String base64Image = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
             loadImageWithGlide(base64ToDrawable(base64Image, GeneratesClassQuestionActivity.this), binding.ivPhoto);
 
-                    // IMPORTANT: Documentation photo is saved as Base64 only (NOT uploaded to Firebase)
-            dataModel.setPhotoAnswer(base64Image);
+                    // Upload photoAnswer to Firebase Storage with metadata
+                    String userId = SessionManager.getId(this);
+                    String userName = SessionManager.getName(this);
+                    String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+                    String fileName = userId + "_photo_answer_" + System.currentTimeMillis() + "_" + timestamp + ".jpg";
                     
-                    Log.d("DOC_PHOTO_CLASS", "Documentation photo saved as Base64 (length: " + base64Image.length() + ") - NOT uploaded to Firebase");
+                    StorageUtil.uploadBytesWithUserIdAndMetadata(
+                            this,
+                            imageBytes,
+                            StorageUtil.STORAGE_PATH_DOCUMENTATION,
+                            fileName,
+                            "Buat Pertanyaan dengan AI", // Source metadata (GeneratesClassQuestionActivity is for AI questions)
+                            userName, // User name metadata
+                            (downloadUrl, fullPath) -> {
+                                Log.d("DOC_PHOTO_CLASS", "Photo answer uploaded to Storage: " + downloadUrl);
+                                Log.d("DOC_PHOTO_CLASS", "Storage path: " + fullPath + ", Source: Buat Pertanyaan dengan AI");
+                                dataModel.setPhotoAnswerUrl(downloadUrl);
+                                dataModel.setPhotoAnswerPath(fullPath);
+                                // DO NOT set photoAnswer (Base64) anymore
+                                App app = (App) getApplication();
+                                app.setDataModel(dataModel);
+                            },
+                            e -> {
+                                Log.e("DOC_PHOTO_CLASS", "Failed to upload photo answer: " + e.getMessage());
+                                Toast.makeText(this, "Gagal mengunggah foto dokumentasi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            },
+                            null
+                    );
                     
                     // Clean up if we created a new bitmap
                     if (optimizedBitmap != bitmap) {
@@ -675,9 +726,10 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
                 Log.e("FIRESTORE_COMPRESS", "Error compressing image: " + e.getMessage());
             }
             
-            // If compression fails, try to truncate intelligently
-            Log.w("FIRESTORE_COMPRESS", "Compression failed, truncating...");
-            return base64String.substring(0, FIRESTORE_LIMIT);
+            // If compression fails, DO NOT truncate base64 (it will become invalid and cannot be decoded).
+            // Instead, return empty so the app can handle it (or force upload to Storage in the future).
+            Log.e("FIRESTORE_COMPRESS", "Compression failed; returning empty to avoid invalid Base64");
+            return "";
         }
         
         return base64String;
@@ -686,6 +738,168 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
     /**
      * Validate all base64 data to ensure they fit within Firestore limits
      */
+    /**
+     * Convert ImageView to Base64 and save to DataModel
+     * This ensures graph and table images are saved before navigating to RecordPreviewActivity
+     * Always converts ImageView drawables to Base64 if ImageView is visible and has drawable
+     */
+    private void saveImageViewToDataModel() {
+        App app = (App) getApplication();
+        DataModel dataModel = app.getDataModel();
+        
+        try {
+            // Save graph images (iv and iv2) - always convert if ImageView has drawable and is visible
+            if (binding.iv.getVisibility() == View.VISIBLE && binding.iv.getDrawable() != null) {
+                // Always convert ImageView to Base64 to ensure latest image is saved
+                // Check if current base64 is just an index (numeric string) or empty/invalid
+                String currentBase64 = dataModel.getBase64();
+                boolean needsConversion = (currentBase64 == null || currentBase64.isEmpty() || 
+                    currentBase64.trim().matches("^\\d+$") || currentBase64.length() < 100);
+                
+                // Legacy: No longer save to base64* fields - images are uploaded to Storage via uploadQuestionImagesToStorage()
+                // This function is kept for backward compatibility but doesn't set legacy fields
+                Log.d("SAVE_IMAGE_CLASS", "Graph 1 (iv) - Image will be uploaded to Storage via uploadQuestionImagesToStorage()");
+            } else {
+                Log.d("SAVE_IMAGE_CLASS", "Graph 1 (iv) is not visible or has no drawable");
+            }
+            
+            if (binding.iv2.getVisibility() == View.VISIBLE && binding.iv2.getDrawable() != null) {
+                String currentBase64_2 = dataModel.getBase64_2();
+                boolean needsConversion = (currentBase64_2 == null || currentBase64_2.isEmpty() || 
+                    currentBase64_2.trim().matches("^\\d+$") || currentBase64_2.length() < 100);
+                
+                // Legacy: No longer save to base64* fields - images are uploaded to Storage via uploadQuestionImagesToStorage()
+                // This function is kept for backward compatibility but doesn't set legacy fields
+                Log.d("SAVE_IMAGE_CLASS", "Graph 2 (iv2) - Image will be uploaded to Storage via uploadQuestionImagesToStorage()");
+            } else {
+                Log.d("SAVE_IMAGE_CLASS", "Graph 2 (iv2) is not visible or has no drawable");
+            }
+            
+            // Save table images (iv3 and iv4) if they exist in layout
+            try {
+                if (binding.iv3 != null && binding.iv3.getVisibility() == View.VISIBLE && binding.iv3.getDrawable() != null) {
+                    String currentBase64_3 = dataModel.getBase64_3();
+                    boolean shouldSave = (currentBase64_3 == null || currentBase64_3.isEmpty() || currentBase64_3.length() < 100);
+                    
+                    // Legacy: No longer save to base64* fields - images are uploaded to Storage via uploadQuestionImagesToStorage()
+                    // This function is kept for backward compatibility but doesn't set legacy fields
+                    Log.d("SAVE_IMAGE_CLASS", "Table 1 (iv3) - Image will be uploaded to Storage via uploadQuestionImagesToStorage()");
+                }
+            } catch (Exception e) {
+                Log.w("SAVE_IMAGE_CLASS", "iv3 not available in layout: " + e.getMessage());
+            }
+            
+            try {
+                if (binding.iv4 != null && binding.iv4.getVisibility() == View.VISIBLE && binding.iv4.getDrawable() != null) {
+                    String currentBase64_4 = dataModel.getBase64_4();
+                    boolean shouldSave = (currentBase64_4 == null || currentBase64_4.isEmpty() || currentBase64_4.length() < 100);
+                    
+                    // Legacy: No longer save to base64* fields - images are uploaded to Storage via uploadQuestionImagesToStorage()
+                    // This function is kept for backward compatibility but doesn't set legacy fields
+                    Log.d("SAVE_IMAGE_CLASS", "Table 2 (iv4) - Image will be uploaded to Storage via uploadQuestionImagesToStorage()");
+                }
+            } catch (Exception e) {
+                Log.w("SAVE_IMAGE_CLASS", "iv4 not available in layout: " + e.getMessage());
+            }
+            
+            // Update DataModel in App singleton
+            app.setDataModel(dataModel);
+            Log.d("SAVE_IMAGE_CLASS", "All images saved to DataModel successfully");
+            
+        } catch (Exception e) {
+            Log.e("SAVE_IMAGE_CLASS", "Error saving images to DataModel: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Convert ImageView drawable to Base64 string
+     * Handles all drawable types including resource drawables
+     */
+    private String imageViewToBase64(ImageView imageView) {
+        try {
+            Drawable drawable = imageView.getDrawable();
+            if (drawable == null) {
+                Log.w("IMAGE_TO_BASE64", "ImageView drawable is null for " + getImageViewName(imageView));
+                return null;
+            }
+            
+            Bitmap bitmap = null;
+            
+            // Handle different drawable types
+            if (drawable instanceof BitmapDrawable) {
+                bitmap = ((BitmapDrawable) drawable).getBitmap();
+                if (bitmap != null) {
+                    Log.d("IMAGE_TO_BASE64", "Got bitmap from BitmapDrawable - Size: " + bitmap.getWidth() + "x" + bitmap.getHeight());
+                }
+            } else {
+                // Convert other drawable types to bitmap
+                int width = drawable.getIntrinsicWidth();
+                int height = drawable.getIntrinsicHeight();
+                
+                Log.d("IMAGE_TO_BASE64", "Drawable intrinsic size: " + width + "x" + height);
+                
+                if (width <= 0 || height <= 0) {
+                    // Use ImageView dimensions if drawable doesn't have intrinsic dimensions
+                    width = imageView.getWidth();
+                    height = imageView.getHeight();
+                    Log.d("IMAGE_TO_BASE64", "Using ImageView size: " + width + "x" + height);
+                    
+                    // If ImageView hasn't been measured yet, use a default size
+                    if (width <= 0 || height <= 0) {
+                        // Force measure the ImageView
+                        imageView.measure(
+                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                        );
+                        width = imageView.getMeasuredWidth();
+                        height = imageView.getMeasuredHeight();
+                        Log.d("IMAGE_TO_BASE64", "After measure: " + width + "x" + height);
+                        
+                        // If still invalid, use reasonable defaults
+                        if (width <= 0 || height <= 0) {
+                            width = 800; // Default width
+                            height = 600; // Default height
+                            Log.d("IMAGE_TO_BASE64", "Using default size: " + width + "x" + height);
+                        }
+                    }
+                }
+                
+                if (width > 0 && height > 0) {
+                    bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                    android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
+                    drawable.setBounds(0, 0, width, height);
+                    drawable.draw(canvas);
+                    Log.d("IMAGE_TO_BASE64", "Created bitmap from drawable - Size: " + width + "x" + height);
+                } else {
+                    Log.e("IMAGE_TO_BASE64", "Cannot determine bitmap dimensions for " + getImageViewName(imageView));
+                    return null;
+                }
+            }
+            
+            if (bitmap == null) {
+                Log.e("IMAGE_TO_BASE64", "Failed to get bitmap from drawable for " + getImageViewName(imageView));
+                return null;
+            }
+            
+            // Compress bitmap to JPEG
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos);
+            byte[] imageBytes = baos.toByteArray();
+            
+            // Convert to Base64
+            String base64 = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
+            
+            Log.d("IMAGE_TO_BASE64", "Image converted to Base64 for " + getImageViewName(imageView) + " - Size: " + base64.length() + " chars");
+            return base64;
+            
+        } catch (Exception e) {
+            Log.e("IMAGE_TO_BASE64", "Error converting ImageView to Base64 for " + getImageViewName(imageView) + ": " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     private void validateBase64Data() throws Exception {
         final int FIRESTORE_LIMIT = 900000; // Same limit as compression function
         
@@ -709,6 +923,203 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         Log.d("BASE64_VALIDATION", "All base64 data validated successfully");
     }
 
+    private interface SuccessCallback { void onSuccess(); }
+    private interface ErrorCallback { void onError(String msg); }
+    private interface UrlCallback { void onUrl(String url); }
+
+    /**
+     * Upload question images (iv, iv2, iv3, iv4) to Firebase Storage and store download URLs
+     * into DataModel fields: base64, base64_2, base64_3, base64_4.
+     *
+     * Ini menghindari Base64 besar di Firestore dan Preview cukup load via URL.
+     */
+    private void ensureQuestionImagesUploadedToStorage(@NonNull SuccessCallback onSuccess, @NonNull ErrorCallback onError) {
+        App app = (App) getApplication();
+        DataModel dm = app.getDataModel();
+
+        String documentId = dm.getId();
+        if (documentId == null || documentId.isEmpty()) {
+            documentId = String.valueOf(System.currentTimeMillis());
+            dm.setId(documentId);
+            app.setDataModel(dm);
+        }
+
+        // Track owner for storage organization
+        String userId = dm.getIdCustomer();
+        if (userId == null || userId.isEmpty()) {
+            userId = SessionManager.getId(this);
+        }
+        if (userId == null) userId = "";
+        dm.setStorageUserId(userId);
+        app.setDataModel(dm);
+
+        // Jika sudah URL, skip upload
+        boolean url1IsSet = dm.getQuestionImageUrl1() != null && dm.getQuestionImageUrl1().startsWith("http");
+        boolean url2IsSet = dm.getQuestionImageUrl2() != null && dm.getQuestionImageUrl2().startsWith("http");
+        boolean url3IsSet = dm.getQuestionImageUrl3() != null && dm.getQuestionImageUrl3().startsWith("http");
+        boolean url4IsSet = dm.getQuestionImageUrl4() != null && dm.getQuestionImageUrl4().startsWith("http");
+
+        AtomicInteger pending = new AtomicInteger(0);
+        AtomicBoolean failed = new AtomicBoolean(false);
+
+        Runnable maybeFinish = () -> {
+            if (failed.get()) return;
+            if (pending.get() == 0) onSuccess.onSuccess();
+        };
+
+        // iv
+        if (!url1IsSet && binding.iv != null && binding.iv.getVisibility() == View.VISIBLE && binding.iv.getDrawable() != null) {
+            pending.incrementAndGet();
+            uploadImageViewToStorage(binding.iv, "records/" + documentId + "/question_images", "q_img_1.jpg",
+                    (url, path) -> {
+                        App a = (App) getApplication();
+                        DataModel d = a.getDataModel();
+                        d.setQuestionImageUrl1(url);
+                        d.setQuestionImagePath1(path);
+                        // Legacy base64* fields no longer used - only new questionImageUrl* fields
+                        a.setDataModel(d);
+                        pending.decrementAndGet();
+                        maybeFinish.run();
+                    },
+                    err -> {
+                        failed.set(true);
+                        onError.onError(err);
+                    });
+        }
+
+        // iv2
+        if (!url2IsSet && binding.iv2 != null && binding.iv2.getVisibility() == View.VISIBLE && binding.iv2.getDrawable() != null) {
+            pending.incrementAndGet();
+            uploadImageViewToStorage(binding.iv2, "records/" + documentId + "/question_images", "q_img_2.jpg",
+                    (url, path) -> {
+                        App a = (App) getApplication();
+                        DataModel d = a.getDataModel();
+                        d.setQuestionImageUrl2(url);
+                        d.setQuestionImagePath2(path);
+                        // Legacy base64* fields no longer used - only new questionImageUrl* fields
+                        a.setDataModel(d);
+                        pending.decrementAndGet();
+                        maybeFinish.run();
+                    },
+                    err -> {
+                        failed.set(true);
+                        onError.onError(err);
+                    });
+        }
+
+        // iv3 (tabel 1)
+        if (!url3IsSet && binding.iv3 != null && binding.iv3.getVisibility() == View.VISIBLE && binding.iv3.getDrawable() != null) {
+            pending.incrementAndGet();
+            uploadImageViewToStorage(binding.iv3, "records/" + documentId + "/question_images", "q_img_3.jpg",
+                    (url, path) -> {
+                        App a = (App) getApplication();
+                        DataModel d = a.getDataModel();
+                        d.setQuestionImageUrl3(url);
+                        d.setQuestionImagePath3(path);
+                        // Legacy base64* fields no longer used - only new questionImageUrl* fields
+                        a.setDataModel(d);
+                        pending.decrementAndGet();
+                        maybeFinish.run();
+                    },
+                    err -> {
+                        failed.set(true);
+                        onError.onError(err);
+                    });
+        }
+
+        // iv4 (tabel 2)
+        if (!url4IsSet && binding.iv4 != null && binding.iv4.getVisibility() == View.VISIBLE && binding.iv4.getDrawable() != null) {
+            pending.incrementAndGet();
+            uploadImageViewToStorage(binding.iv4, "records/" + documentId + "/question_images", "q_img_4.jpg",
+                    (url, path) -> {
+                        App a = (App) getApplication();
+                        DataModel d = a.getDataModel();
+                        d.setQuestionImageUrl4(url);
+                        d.setQuestionImagePath4(path);
+                        // Legacy base64* fields no longer used - only new questionImageUrl* fields
+                        a.setDataModel(d);
+                        pending.decrementAndGet();
+                        maybeFinish.run();
+                    },
+                    err -> {
+                        failed.set(true);
+                        onError.onError(err);
+                    });
+        }
+
+        // Tidak ada yang perlu di-upload
+        maybeFinish.run();
+    }
+
+    private interface UrlWithPathCallback { void onUrl(String url, String storagePath); }
+
+    private void uploadImageViewToStorage(@NonNull ImageView imageView,
+                                          @NonNull String storagePath,
+                                          @NonNull String fileName,
+                                          @NonNull UrlWithPathCallback onUrl,
+                                          @NonNull ErrorCallback onError) {
+        try {
+            byte[] jpegBytes = imageViewToJpegBytes(imageView, 85);
+            if (jpegBytes == null || jpegBytes.length == 0) {
+                onError.onError("Gagal mengubah gambar menjadi bytes");
+                return;
+            }
+
+            StorageUtil.uploadBytesWithUserId(
+                    this,
+                    jpegBytes,
+                    storagePath,
+                    fileName,
+                    (downloadUrl, fullPath) -> {
+                        Log.d("QUESTION_IMG_UPLOAD", "Uploaded " + fullPath + " -> " + downloadUrl);
+                        onUrl.onUrl(downloadUrl, fullPath);
+                    },
+                    e -> onError.onError(e.getMessage() != null ? e.getMessage() : "Upload gagal"),
+                    null
+            );
+        } catch (Exception e) {
+            onError.onError(e.getMessage() != null ? e.getMessage() : "Error upload");
+        }
+    }
+
+    private byte[] imageViewToJpegBytes(@NonNull ImageView imageView, int quality) {
+        Drawable drawable = imageView.getDrawable();
+        if (drawable == null) return null;
+
+        Bitmap bitmap = null;
+        if (drawable instanceof BitmapDrawable) {
+            bitmap = ((BitmapDrawable) drawable).getBitmap();
+        } else {
+            int width = drawable.getIntrinsicWidth();
+            int height = drawable.getIntrinsicHeight();
+            if (width <= 0 || height <= 0) {
+                width = Math.max(1, imageView.getWidth());
+                height = Math.max(1, imageView.getHeight());
+                if (width <= 1 || height <= 1) {
+                    imageView.measure(
+                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                    );
+                    width = Math.max(1, imageView.getMeasuredWidth());
+                    height = Math.max(1, imageView.getMeasuredHeight());
+                }
+                if (width <= 1 || height <= 1) {
+                    width = 800;
+                    height = 600;
+                }
+            }
+            bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
+            drawable.setBounds(0, 0, width, height);
+            drawable.draw(canvas);
+        }
+
+        if (bitmap == null) return null;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, baos);
+        return baos.toByteArray();
+    }
+
     public void uploadImageToFirestore(byte[] imageData, String fileName) {
         // Validate image size before upload
         if (imageData.length > 800000) { // ~800KB limit
@@ -720,97 +1131,112 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         }
         
         // Create and configure ProgressDialog
-        ProgressDialog progressDialog = new ProgressDialog(this); // Replace 'this' with 'requireContext()' if inside a Fragment
+        ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setTitle("Uploading Image");
         progressDialog.setMessage("Please wait while the image is being uploaded...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 
-        // Get Firebase Storage instance
-        FirebaseStorage storage = FirebaseStorage.getInstance();
-        StorageReference storageRef = storage.getReference();
+        // Generate filename with userId and timestamp
+        String userId = SessionManager.getId(this);
+        String userName = SessionManager.getName(this);
+        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String finalFileName = userId + "_canvas_" + timestamp + "_" + System.currentTimeMillis() + ".jpg";
 
-        // Create a reference to the image
-        StorageReference imageRef = storageRef.child("images/" + fileName);
+        // Determine source - GeneratesClassQuestionActivity is for class questions (AI-generated)
+        String source = "Buat Pertanyaan dengan AI";
 
-        // Upload the image
-        UploadTask uploadTask = imageRef.putBytes(imageData);
-        uploadTask
-                .addOnProgressListener(snapshot -> {
-                    // Update the ProgressDialog with the upload progress
-                    double progress = (100.0 * snapshot.getBytesTransferred()) / snapshot.getTotalByteCount();
-                    progressDialog.setMessage("Uploaded: " + (int) progress + "%");
-                })
-                .addOnSuccessListener(taskSnapshot -> {
-                    // Get the download URL
-                    imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                        String downloadUrl = uri.toString();
+        // Upload using StorageUtil with userId organization and metadata
+        StorageUtil.uploadBytesWithUserIdAndMetadata(
+            this,
+            imageData,
+            StorageUtil.STORAGE_PATH_DRAWINGS,
+            finalFileName,
+            source, // Source metadata
+            userName, // User name metadata
+            (downloadUrl, storagePath) -> {
+                // Save the download URL to DataModel
+                App app = (App) getApplication();
+                DataModel dataModel = app.getDataModel();
+                ArrayList<String> photoDraws = dataModel.getPhotoDraw();
+                photoDraws.add(downloadUrl);
+                dataModel.setPhotoDraw(photoDraws);
+                app.setDataModel(dataModel);
 
-                        // Save the download URL to DataModel
-                        App app = (App) getApplication();
-                        DataModel dataModel = app.getDataModel();
-                        ArrayList<String> photoDraws= dataModel.getPhotoDraw();
-                        photoDraws.add(downloadUrl);
-                        dataModel.setPhotoDraw(photoDraws);
-                        app.setDataModel(dataModel);
+                // Enable the save button
+                binding.btnSave.setEnabled(true);
+                
+                // Log success
+                Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
+                Log.d("Firebase", "Storage path: " + storagePath + ", Source: " + source);
+                progressDialog.dismiss();
 
-                        // Enable the save button
-                        binding.btnSave.setEnabled(true);
-                        // Log success
-                        Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
+                // Save data to Firestore after successful upload
+                ProgressDialog saveProgressDialog = new ProgressDialog(GeneratesClassQuestionActivity.this);
+                saveProgressDialog.setTitle("Save data to Server");
+                saveProgressDialog.setMessage("Please wait...");
+                saveProgressDialog.setCancelable(false);
+                saveProgressDialog.show();
 
-                        // Save data to Firestore after successful upload
-                        ProgressDialog saveProgressDialog = new ProgressDialog(GeneratesClassQuestionActivity.this);
-                        saveProgressDialog.setTitle("Save data to Server");
-                        saveProgressDialog.setMessage("Please wait...");
-                        saveProgressDialog.setCancelable(false);
-                        saveProgressDialog.show();
+                // Get or create documentId - make it final for use in lambda
+                String tempDocumentId = dataModel.getId();
+                final String documentId = (tempDocumentId == null || tempDocumentId.isEmpty()) 
+                        ? String.valueOf(System.currentTimeMillis()) 
+                        : tempDocumentId;
+                
+                dataModel.setId(documentId);
+                dataModel.setTypeData(binding.tvType.getText().toString());
+                app.setDataModel(dataModel);
 
-                        String documentId = dataModel.getId();
-                        if (documentId == null || documentId.isEmpty()) {
-                            documentId = String.valueOf(System.currentTimeMillis());
+                // Upload question images to Storage and store URLs (base64 fields), then save to Firestore
+                ensureQuestionImagesUploadedToStorage(
+                        () -> {
+                            App app2 = (App) getApplication();
+                            DataModel dm2 = app2.getDataModel();
+                            
+                            // Clean empty base64* fields before saving to Firestore
+                            cleanEmptyBase64Fields(dm2);
+                            
+                            FirestoreUtil.addOrUpdateDocumentWithVersioning("record", documentId, dm2,
+                                    userId, userName,
+                                    () -> {
+                                        saveProgressDialog.dismiss();
+                                        progressDialog.dismiss();
+                                        Intent intent = new Intent(GeneratesClassQuestionActivity.this, RecordPreviewActivity.class);
+                                        startActivity(intent);
+                                        finish();
+                                    },
+                                    e -> {
+                                        saveProgressDialog.dismiss();
+                                        progressDialog.dismiss();
+                                        String errorMessage = e.getMessage();
+                                        Toast.makeText(GeneratesClassQuestionActivity.this,
+                                                errorMessage != null ? errorMessage : "Gagal menyimpan data",
+                                                Toast.LENGTH_LONG).show();
+                                        binding.btnSave.setEnabled(true);
+                                    });
+                        },
+                        errMsg -> {
+                            saveProgressDialog.dismiss();
+                            progressDialog.dismiss();
+                            Toast.makeText(GeneratesClassQuestionActivity.this,
+                                    "Gagal mengunggah gambar soal: " + errMsg,
+                                    Toast.LENGTH_LONG).show();
+                            binding.btnSave.setEnabled(true);
                         }
-                        dataModel.setId(documentId);
-                        dataModel.setTypeData(binding.tvType.getText().toString());
-                        app.setDataModel(dataModel);
-                        
-                        FirestoreUtil.addOrUpdateDocument("record", documentId, dataModel,
-                                () -> {
-                                    saveProgressDialog.dismiss();
-                                    progressDialog.dismiss();
-                                    // Navigate to RecordPreviewActivity after successful save
-                                    Intent intent = new Intent(GeneratesClassQuestionActivity.this, RecordPreviewActivity.class);
-                                    startActivity(intent);
-                                    finish();
-                                },
-                                e -> {
-                                    saveProgressDialog.dismiss();
-                                    progressDialog.dismiss();
-                                    
-                                    // Handle specific base64 size limit error
-                                    String errorMessage = e.getMessage();
-                                    if (errorMessage != null && errorMessage.contains("1MB")) {
-                                        Toast.makeText(GeneratesClassQuestionActivity.this, 
-                                            "Gambar terlalu besar. Silakan coba lagi dengan gambar yang lebih kecil atau gunakan fitur gambar yang lebih sederhana.", 
-                                            Toast.LENGTH_LONG).show();
-                                    } else {
-                                        Toast.makeText(GeneratesClassQuestionActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-                                    }
-                                    
-                                    binding.btnSave.setEnabled(true); // Re-enable button if failed
-                                });
-                    });
-                })
-                .addOnFailureListener(e -> {
-                    // Handle upload failure
-                    Log.e("Firebase", "Image upload failed", e);
-
-                    // Dismiss the progress dialog
-                    progressDialog.dismiss();
-
-                    // Notify the user of the error
-                    Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
+                );
+            },
+            e -> {
+                // Handle upload failure
+                Log.e("Firebase", "Image upload failed", e);
+                progressDialog.dismiss();
+                Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            },
+            progress -> {
+                // Update progress
+                progressDialog.setMessage("Uploaded: " + (int) progress + "%");
+            }
+        );
     }
 
     private void fetchAdvancedQuestion(String language, String type) {
@@ -828,22 +1254,30 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         dataModel.setTypeQuestion(result.second.getType());
         dataModel.setIdCustomer(SessionManager.getId(GeneratesClassQuestionActivity.this));
         binding.tvQuestion.setText(result.second.getQuestion());
-        // Compress base64 data if it exists
-        String base64Data = String.valueOf(result.first);
-        String compressedBase64 = compressBase64ForFirestore(base64Data);
-        dataModel.setBase64(compressedBase64);
         
-        // Handle Graph Images
+        // Legacy: No longer store question index in base64* fields
+        // Images will be uploaded to Storage when user clicks Save/Upload
+        
+        // Handle Graph Images - Load drawable resources first
         binding.iv.setImageDrawable(ContextCompat.getDrawable(GeneratesClassQuestionActivity.this, result.second.getImages().get(0)));
         binding.iv.setVisibility(View.VISIBLE);
         
         if (result.second.getImages().size() > 1) {
-            String compressedBase64_2 = compressBase64ForFirestore(base64Data);
-            dataModel.setBase64_2(compressedBase64_2);
             binding.iv2.setImageDrawable(ContextCompat.getDrawable(GeneratesClassQuestionActivity.this, result.second.getImages().get(1)));
             binding.iv2.setVisibility(View.VISIBLE);
         }
+        
         app.setDataModel(dataModel);
+    }
+    
+    /**
+     * Legacy function - no longer used
+     * Images are now uploaded to Storage via uploadQuestionImagesToStorage() when user clicks Save/Upload
+     * This function is kept for backward compatibility but doesn't do anything
+     */
+    private void convertImageViewToBase64AfterLoad() {
+        // Legacy: No longer convert to Base64 - images will be uploaded to Storage
+        Log.d("FETCH_QUESTION", "Images will be uploaded to Storage when user clicks Save/Upload");
     }
 
     //    @NonNull
@@ -1016,7 +1450,9 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
 
     public void updateTotalVisitingIntroduction(long visitStartTimeMillis) {
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
-        DocumentReference userDocRef = firestore.collection("user").document(SessionManager.getId(this));
+        // Collection "user" is shared, but use VersionHelper for consistency
+        String userCollection = VersionHelper.getCollectionName("user");
+        DocumentReference userDocRef = firestore.collection(userCollection).document(SessionManager.getId(this));
 
         long visitDuration = System.currentTimeMillis() - visitStartTimeMillis;
 
@@ -1085,6 +1521,54 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
             return "";
+        }
+    }
+
+    /**
+     * Clean empty base64* fields from DataModel before saving to Firestore.
+     * This prevents storing empty strings in Firestore.
+     */
+    private void cleanEmptyBase64Fields(DataModel dataModel) {
+        if (dataModel == null) return;
+        
+        // Only clean if corresponding questionImageUrl* is available
+        if (dataModel.getBase64() != null && (dataModel.getBase64().isEmpty() || dataModel.getBase64().trim().isEmpty())) {
+            if (dataModel.getQuestionImageUrl1() != null && !dataModel.getQuestionImageUrl1().isEmpty()) {
+                dataModel.setBase64(null); // Set to null instead of empty string
+                Log.d("CLEAN_BASE64", "Cleaned empty base64 (questionImageUrl1 available)");
+            }
+        }
+        if (dataModel.getBase64_2() != null && (dataModel.getBase64_2().isEmpty() || dataModel.getBase64_2().trim().isEmpty())) {
+            if (dataModel.getQuestionImageUrl2() != null && !dataModel.getQuestionImageUrl2().isEmpty()) {
+                dataModel.setBase64_2(null);
+                Log.d("CLEAN_BASE64", "Cleaned empty base64_2 (questionImageUrl2 available)");
+            }
+        }
+        if (dataModel.getBase64_3() != null && (dataModel.getBase64_3().isEmpty() || dataModel.getBase64_3().trim().isEmpty())) {
+            if (dataModel.getQuestionImageUrl3() != null && !dataModel.getQuestionImageUrl3().isEmpty()) {
+                dataModel.setBase64_3(null);
+                Log.d("CLEAN_BASE64", "Cleaned empty base64_3 (questionImageUrl3 available)");
+            }
+        }
+        if (dataModel.getBase64_4() != null && (dataModel.getBase64_4().isEmpty() || dataModel.getBase64_4().trim().isEmpty())) {
+            if (dataModel.getQuestionImageUrl4() != null && !dataModel.getQuestionImageUrl4().isEmpty()) {
+                dataModel.setBase64_4(null);
+                Log.d("CLEAN_BASE64", "Cleaned empty base64_4 (questionImageUrl4 available)");
+            }
+        }
+        if (dataModel.getBase64_5() != null && (dataModel.getBase64_5().isEmpty() || dataModel.getBase64_5().trim().isEmpty())) {
+            if (dataModel.getQuestionImageUrl5() != null && !dataModel.getQuestionImageUrl5().isEmpty()) {
+                dataModel.setBase64_5(null);
+                Log.d("CLEAN_BASE64", "Cleaned empty base64_5 (questionImageUrl5 available)");
+            }
+        }
+        
+        // Clean photoAnswer if photoAnswerUrl is available
+        if (dataModel.getPhotoAnswer() != null && (dataModel.getPhotoAnswer().isEmpty() || dataModel.getPhotoAnswer().trim().isEmpty())) {
+            if (dataModel.getPhotoAnswerUrl() != null && !dataModel.getPhotoAnswerUrl().isEmpty()) {
+                dataModel.setPhotoAnswer(null);
+                Log.d("CLEAN_BASE64", "Cleaned empty photoAnswer (photoAnswerUrl available)");
+            }
         }
     }
 

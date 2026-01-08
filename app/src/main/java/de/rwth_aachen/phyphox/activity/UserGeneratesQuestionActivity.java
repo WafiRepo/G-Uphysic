@@ -55,6 +55,8 @@ import de.rwth_aachen.phyphox.Helper.EasyQuestionHelper;
 import de.rwth_aachen.phyphox.Helper.FirestoreUtil;
 import de.rwth_aachen.phyphox.Helper.IntermediateQuestionHelper;
 import de.rwth_aachen.phyphox.Helper.SessionManager;
+import de.rwth_aachen.phyphox.Helper.StorageUtil;
+import de.rwth_aachen.phyphox.Helper.StorageUtil;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiRequest;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiResponse;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
@@ -177,24 +179,44 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
         binding.btnNext.setOnClickListener(v -> {
             dataModel.setQuestion(binding.tvQuestion.getText().toString());
             dataModel.setCustomerName(SessionManager.getName(this));
-                Log.d("btnsave","--> "+new Gson().toJson(dataModel));
-                ProgressDialog progressDialog = new ProgressDialog(this);
-                progressDialog.setTitle("Save data to Server");
-                progressDialog.setMessage("Please wait...");
-                progressDialog.setCancelable(false);
-                progressDialog.show();
-                FirestoreUtil.addOrUpdateDocument("questions", dataModel.getId(), dataModel,
-                        () -> {
-                            progressDialog.dismiss();
-                            Intent intent =new Intent(UserGeneratesQuestionActivity.this, MainActivity.class);
-                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            startActivity(intent);
-                            finish();
-                        },
-                        e -> {
-                            progressDialog.dismiss();
-                            Toast.makeText(UserGeneratesQuestionActivity.this, e.getMessage(), Toast.LENGTH_LONG).show();
-                        });
+            
+            // Set creator fields for custom questions
+            String userName = SessionManager.getName(this);
+            if (userName == null || userName.trim().isEmpty()) {
+                userName = dataModel.getCustomerName();
+            }
+            if (userName == null || userName.trim().isEmpty()) {
+                userName = "Unknown";
+            }
+            dataModel.setCreatorName(userName);
+            dataModel.setDibuatOleh(userName);
+            dataModel.setCreatedBy(userName);
+            
+            // Remove location fields for custom questions
+            dataModel.setLatitude(0.0);
+            dataModel.setLongitude(0.0);
+            dataModel.setLocationName(null);
+            
+            // Remove totalEdit and views for custom questions (not needed)
+            // Note: These fields won't be saved to Firestore for custom questions
+            // They are only relevant for experiments/records
+            
+            Log.d("btnsave","--> "+new Gson().toJson(dataModel));
+            ProgressDialog progressDialog = new ProgressDialog(this);
+            progressDialog.setTitle("Save data to Server");
+            progressDialog.setMessage("Please wait...");
+            progressDialog.setCancelable(false);
+            progressDialog.show();
+            
+            String userId = SessionManager.getId(UserGeneratesQuestionActivity.this);
+            
+            // Upload photoAnswer to Firebase Storage if exists
+            if (dataModel.getPhotoAnswer() != null && !dataModel.getPhotoAnswer().isEmpty()) {
+                uploadPhotoAnswerToStorage(dataModel, progressDialog, userId, userName);
+            } else {
+                // No photoAnswer, save directly
+                saveDataModelToFirestore(dataModel, progressDialog, userId, userName);
+            }
         });
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -210,33 +232,32 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                         dataModel.setCustomerName(SessionManager.getName(UserGeneratesQuestionActivity.this));
                         dataModel.setTypeData(binding.tvType.getText().toString());
                         
-                        FirestoreUtil.addOrUpdateDocument("questions", dataModel.getId(), dataModel,
-                                () -> {
-                                    // Setelah simpan, langsung ke homepage
-                                    try {
-                                        Intent homeIntent = new Intent(UserGeneratesQuestionActivity.this, MainActivity.class);
-                                        homeIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                        startActivity(homeIntent);
-                                        finish();
-                                    } catch (Exception ex) {
-                                        Log.e("BACK_BUTTON", "Error navigating to home: " + ex.getMessage());
-                                        finish();
-                                    }
-                                },
-                                e -> {
-                                    // Jika gagal simpan, tetap kembali ke homepage
-                                    Log.e("BACK_BUTTON", "Failed to save progress: " + e.getMessage());
-                                    try {
-                                        Intent homeIntent = new Intent(UserGeneratesQuestionActivity.this, MainActivity.class);
-                                        homeIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                        startActivity(homeIntent);
-                                        finish();
-                                    } catch (Exception ex) {
-                                        Log.e("BACK_BUTTON", "Error navigating to home after save failure: " + ex.getMessage());
-                                        finish();
-                                    }
-                                }
-                        );
+                        // Set creator fields for custom questions
+                        String userName = SessionManager.getName(UserGeneratesQuestionActivity.this);
+                        if (userName == null || userName.trim().isEmpty()) {
+                            userName = dataModel.getCustomerName();
+                        }
+                        if (userName == null || userName.trim().isEmpty()) {
+                            userName = "Unknown";
+                        }
+                        dataModel.setCreatorName(userName);
+                        dataModel.setDibuatOleh(userName);
+                        dataModel.setCreatedBy(userName);
+                        
+                        // Remove location fields for custom questions
+                        dataModel.setLatitude(0.0);
+                        dataModel.setLongitude(0.0);
+                        dataModel.setLocationName(null);
+                        
+                        String userId = SessionManager.getId(UserGeneratesQuestionActivity.this);
+                        
+                        // Upload photoAnswer to Firebase Storage if exists
+                        if (dataModel.getPhotoAnswer() != null && !dataModel.getPhotoAnswer().isEmpty()) {
+                            uploadPhotoAnswerToStorage(dataModel, null, userId, userName);
+                        } else {
+                            // No photoAnswer, save directly
+                            saveDataModelToFirestore(dataModel, null, userId, userName);
+                        }
                     } else {
                         finish();
                     }
@@ -353,53 +374,50 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
 
     public void uploadImageCameraToFirestore(byte[] imageData, String fileName) {
         // Create and configure ProgressDialog
-        ProgressDialog progressDialog = new ProgressDialog(this); // Replace 'this' with 'requireContext()' if inside a Fragment
+        ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setTitle("Uploading Image Camera");
         progressDialog.setMessage("Please wait while the image is being uploaded...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 
-        // Get Firebase Storage instance
-        FirebaseStorage storage = FirebaseStorage.getInstance();
-        StorageReference storageRef = storage.getReference();
+        // Generate filename with userId and timestamp
+        String userId = SessionManager.getId(this);
+        String userName = SessionManager.getName(this);
+        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String uniqueFileName = userId + "_photo_" + timestamp + "_" + System.currentTimeMillis() + ".jpg";
 
-        // Create a reference to the image
-        StorageReference imageRef = storageRef.child("images/" + fileName);
-
-        // Upload the image
-        UploadTask uploadTask = imageRef.putBytes(imageData);
-        uploadTask
-                .addOnProgressListener(snapshot -> {
-                    // Update the ProgressDialog with the upload progress
-                    double progress = (100.0 * snapshot.getBytesTransferred()) / snapshot.getTotalByteCount();
-                    progressDialog.setMessage("Uploaded: " + (int) progress + "%");
-                })
-                .addOnSuccessListener(taskSnapshot -> {
-                    // Get the download URL
-                    imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                        String downloadUrl = uri.toString();
-
-                        // Save the download URL to DataModel
-                        App app = (App) getApplication();
-                        DataModel dataModel = app.getDataModel();
-                        dataModel.setPhoto(downloadUrl);
-                        dataModel.setTypeData(binding.tvType.getText().toString());
-                        app.setDataModel(dataModel);
-                        progressDialog.dismiss();
-                        uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.llDraw)), "answer_image_" + System.currentTimeMillis());
-
-                    });
-                })
-                .addOnFailureListener(e -> {
-                    // Handle upload failure
-                    Log.e("Firebase", "Image upload failed", e);
-
-                    // Dismiss the progress dialog
-                    progressDialog.dismiss();
-
-                    // Notify the user of the error
-                    Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
+        // Upload using StorageUtil with userId organization and metadata
+        StorageUtil.uploadBytesWithUserIdAndMetadata(
+            this,
+            imageData,
+            StorageUtil.STORAGE_PATH_DOCUMENTATION,
+            uniqueFileName,
+            "Buat Pertanyaan Sendiri", // Source metadata
+            userName, // User name metadata
+            (downloadUrl, storagePath) -> {
+                // Save the download URL to DataModel
+                App app = (App) getApplication();
+                DataModel dataModel = app.getDataModel();
+                dataModel.setPhoto(downloadUrl);
+                dataModel.setTypeData(binding.tvType.getText().toString());
+                app.setDataModel(dataModel);
+                progressDialog.dismiss();
+                
+                // Upload canvas drawing next
+                String canvasFileName = userId + "_canvas_" + timestamp + "_" + System.currentTimeMillis() + ".jpg";
+                uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(binding.llDraw)), canvasFileName);
+            },
+            e -> {
+                // Handle upload failure
+                Log.e("Firebase", "Image upload failed", e);
+                progressDialog.dismiss();
+                Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            },
+            progress -> {
+                // Update progress
+                progressDialog.setMessage("Uploaded: " + (int) progress + "%");
+            }
+        );
     }
 
 
@@ -553,58 +571,58 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
 
     public void uploadImageToFirestore(byte[] imageData, String fileName) {
         // Create and configure ProgressDialog
-        ProgressDialog progressDialog = new ProgressDialog(this); // Replace 'this' with 'requireContext()' if inside a Fragment
+        ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setTitle("Uploading Image");
         progressDialog.setMessage("Please wait while the image is being uploaded...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 
-        // Get Firebase Storage instance
-        FirebaseStorage storage = FirebaseStorage.getInstance();
-        StorageReference storageRef = storage.getReference();
+        // Generate filename with userId and timestamp if not already provided
+        String userId = SessionManager.getId(this);
+        String userName = SessionManager.getName(this);
+        String finalFileName = fileName;
+        if (!fileName.contains(userId)) {
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            finalFileName = userId + "_" + fileName.replaceAll("[^a-zA-Z0-9._-]", "_") + "_" + timestamp + ".jpg";
+        }
 
-        // Create a reference to the image
-        StorageReference imageRef = storageRef.child("images/" + fileName);
+        // Upload using StorageUtil with userId organization and metadata
+        StorageUtil.uploadBytesWithUserIdAndMetadata(
+            this,
+            imageData,
+            StorageUtil.STORAGE_PATH_DOCUMENTATION,
+            finalFileName,
+            "Buat Pertanyaan Sendiri", // Source metadata
+            userName, // User name metadata
+            (downloadUrl, storagePath) -> {
+                // Save the download URL to DataModel
+                App app = (App) getApplication();
+                DataModel dataModel = app.getDataModel();
+                dataModel.setBase64(downloadUrl);
+                app.setDataModel(dataModel);
 
-        // Upload the image
-        UploadTask uploadTask = imageRef.putBytes(imageData);
-        uploadTask
-                .addOnProgressListener(snapshot -> {
-                    // Update the ProgressDialog with the upload progress
-                    double progress = (100.0 * snapshot.getBytesTransferred()) / snapshot.getTotalByteCount();
-                    progressDialog.setMessage("Uploaded: " + (int) progress + "%");
-                })
-                .addOnSuccessListener(taskSnapshot -> {
-                    // Get the download URL
-                    imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                        String downloadUrl = uri.toString();
+                // Enable the save button
+                binding.btnNext.setEnabled(true);
+                binding.btnNext.performClick();
+                
+                // Log success
+                Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
+                Log.d("Firebase", "Storage path: " + storagePath);
 
-                        // Save the download URL to DataModel
-                        App app = (App) getApplication();
-                        DataModel dataModel = app.getDataModel();
-                        dataModel.setBase64(downloadUrl);
-                        app.setDataModel(dataModel);
-
-                        // Enable the save button
-                        binding.btnNext.setEnabled(true);
-                        binding.btnNext.performClick();
-                        // Log success
-                        Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
-
-                        // Dismiss the progress dialog
-                        progressDialog.dismiss();
-                    });
-                })
-                .addOnFailureListener(e -> {
-                    // Handle upload failure
-                    Log.e("Firebase", "Image upload failed", e);
-
-                    // Dismiss the progress dialog
-                    progressDialog.dismiss();
-
-                    // Notify the user of the error
-                    Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
+                // Dismiss the progress dialog
+                progressDialog.dismiss();
+            },
+            e -> {
+                // Handle upload failure
+                Log.e("Firebase", "Image upload failed", e);
+                progressDialog.dismiss();
+                Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            },
+            progress -> {
+                // Update progress
+                progressDialog.setMessage("Uploaded: " + (int) progress + "%");
+            }
+        );
     }
 
     private void fetchAdvancedQuestion(String language, String type) {
@@ -998,6 +1016,102 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
         } else {
             return String.format(Locale.getDefault(), "%d detik", seconds);
         }
+    }
+
+    /**
+     * Upload photoAnswer to Firebase Storage for custom questions
+     */
+    private void uploadPhotoAnswerToStorage(DataModel dataModel, ProgressDialog progressDialog, String userId, String userName) {
+        try {
+            String photoAnswerBase64 = dataModel.getPhotoAnswer();
+            if (photoAnswerBase64 == null || photoAnswerBase64.isEmpty()) {
+                // No photoAnswer to upload, save directly
+                saveDataModelToFirestore(dataModel, progressDialog, userId, userName);
+                return;
+            }
+            
+            // Convert base64 to bytes
+            String base64Data = photoAnswerBase64;
+            if (photoAnswerBase64.contains(",")) {
+                base64Data = photoAnswerBase64.split(",")[1];
+            }
+            byte[] imageBytes = Base64.decode(base64Data, Base64.DEFAULT);
+            
+            // Generate filename
+            String fileName = "photo_answer_" + dataModel.getId() + "_" + System.currentTimeMillis() + ".jpg";
+            
+            // Upload to Firebase Storage with metadata (userId, source, userName)
+            StorageUtil.uploadBytesWithUserIdAndMetadata(
+                this,
+                imageBytes,
+                StorageUtil.STORAGE_PATH_DOCUMENTATION,
+                fileName,
+                "Buat Pertanyaan Sendiri", // Source metadata
+                userName, // User name metadata
+                (downloadUrl, storagePath) -> {
+                    Log.d("PHOTO_ANSWER_UPLOAD", "Photo answer uploaded successfully: " + downloadUrl);
+                    Log.d("PHOTO_ANSWER_UPLOAD", "Storage path: " + storagePath + ", Source: Buat Pertanyaan Sendiri");
+                    
+                    // Set photoAnswerUrl and photoAnswerPath
+                    dataModel.setPhotoAnswerUrl(downloadUrl);
+                    dataModel.setPhotoAnswerPath(storagePath);
+                    dataModel.setPhotoAnswer(null); // Clear base64
+                    
+                    // Save to Firestore
+                    saveDataModelToFirestore(dataModel, progressDialog, userId, userName);
+                },
+                e -> {
+                    Log.e("PHOTO_ANSWER_UPLOAD", "Failed to upload photo answer: " + e.getMessage());
+                    Toast.makeText(this, "Gagal mengunggah foto jawaban: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    
+                    // Save without photoAnswer if upload fails
+                    dataModel.setPhotoAnswer(null);
+                    saveDataModelToFirestore(dataModel, progressDialog, userId, userName);
+                },
+                null
+            );
+            
+        } catch (Exception e) {
+            Log.e("PHOTO_ANSWER_UPLOAD", "Error uploading photo answer: " + e.getMessage());
+            Toast.makeText(this, "Error mengunggah foto jawaban: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            
+            // Save without photoAnswer if error
+            dataModel.setPhotoAnswer(null);
+            saveDataModelToFirestore(dataModel, progressDialog, userId, userName);
+        }
+    }
+
+    /**
+     * Save DataModel to Firestore
+     */
+    private void saveDataModelToFirestore(DataModel dataModel, ProgressDialog progressDialog, String userId, String userName) {
+        FirestoreUtil.addOrUpdateDocumentWithVersioning("questions", dataModel.getId(), dataModel,
+                userId, userName,
+                () -> {
+                    if (progressDialog != null) {
+                        progressDialog.dismiss();
+                    }
+                    Intent intent = new Intent(UserGeneratesQuestionActivity.this, MainActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                },
+                e -> {
+                    if (progressDialog != null) {
+                        progressDialog.dismiss();
+                    }
+                    Toast.makeText(UserGeneratesQuestionActivity.this, e.getMessage(), Toast.LENGTH_LONG).show();
+                    // Still navigate to home even if save fails
+                    try {
+                        Intent homeIntent = new Intent(UserGeneratesQuestionActivity.this, MainActivity.class);
+                        homeIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(homeIntent);
+                        finish();
+                    } catch (Exception ex) {
+                        Log.e("SAVE_ERROR", "Error navigating to home after save failure: " + ex.getMessage());
+                        finish();
+                    }
+                });
     }
 
 }

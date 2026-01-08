@@ -146,6 +146,21 @@
                             android:textColor="@color/phyphox_black_100"
                             android:lineSpacingExtra="4dp" />
 
+                        <!-- TypeData display for student reference (from list question) -->
+                        <TextView
+                            android:id="@+id/tvTypeData"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:background="@drawable/bg_button_group"
+                            android:text=""
+                            android:textSize="14sp"
+                            android:gravity="center"
+                            android:padding="12dp"
+                            android:textColor="@color/phyphox_purple"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
                         <EditText
                             android:id="@+id/etQuestion"
                             android:layout_width="match_parent"
@@ -281,137 +296,10 @@
                             android:background="@drawable/bg_button_group"
                             android:visibility="gone" />
 
-                        <!-- Current Color Indicator -->
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="end"
-                            android:layout_marginTop="8dp"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Warna:"
-                                android:textSize="12sp"
-                                android:textColor="@color/phyphox_black_60"
-                                android:layout_marginEnd="8dp" />
-
-                            <View
-                                android:id="@+id/current_color_indicator"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:background="@drawable/color_indicator_black" />
-
-                        </LinearLayout>
-
                     </LinearLayout>
 
                 </androidx.cardview.widget.CardView>
 
-                <!-- Color Picker Overlay -->
-                <LinearLayout
-                    android:id="@+id/color_picker_overlay"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|end"
-                    android:layout_margin="16dp"
-                    android:background="@drawable/bg_button_group"
-                    android:orientation="vertical"
-                    android:padding="8dp"
-                    android:visibility="gone">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🎨 Pilih Warna"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/phyphox_purple"
-                        android:layout_marginBottom="8dp"
-                        android:gravity="center" />
-
-                    <!-- Color Buttons Row 1 -->
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="4dp">
-
-                        <View
-                            android:id="@+id/color_black"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:layout_marginEnd="4dp"
-                            android:background="@drawable/color_selector_black"
-                            android:tag="#000000" />
-
-                        <View
-                            android:id="@+id/color_red"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:layout_marginEnd="4dp"
-                            android:background="@drawable/color_selector_red"
-                            android:tag="#FF0000" />
-
-                        <View
-                            android:id="@+id/color_blue"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:layout_marginEnd="4dp"
-                            android:background="@drawable/color_selector_blue"
-                            android:tag="#0000FF" />
-
-                        <View
-                            android:id="@+id/color_green"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:background="@drawable/color_selector_green"
-                            android:tag="#00FF00" />
-
-                    </LinearLayout>
-
-                    <!-- Color Buttons Row 2 -->
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <View
-                            android:id="@+id/color_orange"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:layout_marginEnd="4dp"
-                            android:background="@drawable/color_selector_orange"
-                            android:tag="#FF9800" />
-
-                        <View
-                            android:id="@+id/color_purple"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:layout_marginEnd="4dp"
-                            android:background="@drawable/color_selector_purple"
-                            android:tag="#9C27B0" />
-
-                        <View
-                            android:id="@+id/color_pink"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:layout_marginEnd="4dp"
-                            android:background="@drawable/color_selector_pink"
-                            android:tag="#E91E63" />
-
-                        <View
-                            android:id="@+id/color_brown"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:background="@drawable/color_selector_brown"
-                            android:tag="#795548" />
-
-                    </LinearLayout>
-
-                </LinearLayout>
 
                 <!-- Photo Section -->
                 <androidx.cardview.widget.CardView
@@ -700,19 +588,22 @@
 
                         </LinearLayout>
 
-                        <!-- Hidden Elements Still Needed by Java Code -->
+                        <!-- TypeData Input Field - Hidden by default, appears when "Ketik" button is clicked -->
                         <EditText
                             android:id="@+id/tvType"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
                             android:layout_marginBottom="8dp"
                             android:background="@drawable/custom_edittext_background_2"
                             android:hint="Input Tipe (Opsional)"
                             android:padding="12dp"
+                            android:text=""
                             android:textColor="@color/phyphox_black_100"
                             android:textColorHint="@color/phyphox_black_60"
                             android:textSize="14sp"
-                            android:visibility="gone" />
+                            android:visibility="gone"
+                            android:inputType="text" />
 
 
 
@@ -722,6 +613,136 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical">
+
+                            <!-- Current Color Indicator - Inside Drawing Area -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="end"
+                                android:layout_marginTop="8dp"
+                                android:layout_marginEnd="8dp"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Warna:"
+                                    android:textSize="12sp"
+                                    android:textColor="@color/phyphox_black_60"
+                                    android:layout_marginEnd="8dp" />
+
+                                <View
+                                    android:id="@+id/current_color_indicator"
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:background="@drawable/color_indicator_black" />
+
+                            </LinearLayout>
+
+                            <!-- Color Picker Overlay - Inside Drawing Area, appears below drawing tools -->
+                            <LinearLayout
+                                android:id="@+id/color_picker_overlay"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center_horizontal"
+                                android:layout_marginTop="8dp"
+                                android:layout_marginBottom="8dp"
+                                android:background="@drawable/bg_button_group"
+                                android:orientation="vertical"
+                                android:padding="8dp"
+                                android:visibility="gone">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="🎨 Pilih Warna"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/phyphox_purple"
+                                    android:layout_marginBottom="8dp"
+                                    android:gravity="center" />
+
+                                <!-- Color Buttons Row 1 -->
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:layout_marginBottom="4dp">
+
+                                    <View
+                                        android:id="@+id/color_black"
+                                        android:layout_width="32dp"
+                                        android:layout_height="32dp"
+                                        android:layout_marginEnd="4dp"
+                                        android:background="@drawable/color_selector_black"
+                                        android:tag="#000000" />
+
+                                    <View
+                                        android:id="@+id/color_red"
+                                        android:layout_width="32dp"
+                                        android:layout_height="32dp"
+                                        android:layout_marginEnd="4dp"
+                                        android:background="@drawable/color_selector_red"
+                                        android:tag="#FF0000" />
+
+                                    <View
+                                        android:id="@+id/color_blue"
+                                        android:layout_width="32dp"
+                                        android:layout_height="32dp"
+                                        android:layout_marginEnd="4dp"
+                                        android:background="@drawable/color_selector_blue"
+                                        android:tag="#0000FF" />
+
+                                    <View
+                                        android:id="@+id/color_green"
+                                        android:layout_width="32dp"
+                                        android:layout_height="32dp"
+                                        android:background="@drawable/color_selector_green"
+                                        android:tag="#00FF00" />
+
+                                </LinearLayout>
+
+                                <!-- Color Buttons Row 2 -->
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal">
+
+                                    <View
+                                        android:id="@+id/color_orange"
+                                        android:layout_width="32dp"
+                                        android:layout_height="32dp"
+                                        android:layout_marginEnd="4dp"
+                                        android:background="@drawable/color_selector_orange"
+                                        android:tag="#FF9800" />
+
+                                    <View
+                                        android:id="@+id/color_purple"
+                                        android:layout_width="32dp"
+                                        android:layout_height="32dp"
+                                        android:layout_marginEnd="4dp"
+                                        android:background="@drawable/color_selector_purple"
+                                        android:tag="#9C27B0" />
+
+                                    <View
+                                        android:id="@+id/color_pink"
+                                        android:layout_width="32dp"
+                                        android:layout_height="32dp"
+                                        android:layout_marginEnd="4dp"
+                                        android:background="@drawable/color_selector_pink"
+                                        android:tag="#E91E63" />
+
+                                    <View
+                                        android:id="@+id/color_brown"
+                                        android:layout_width="32dp"
+                                        android:layout_height="32dp"
+                                        android:background="@drawable/color_selector_brown"
+                                        android:tag="#795548" />
+
+                                </LinearLayout>
+
+                            </LinearLayout>
 
                             <de.rwth_aachen.phyphox.activity.DrawView
                                 android:id="@+id/drawView"

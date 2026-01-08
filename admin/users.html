@@ -15,14 +15,11 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">P-MAGIC Physics Admin</a>
+            <a class="navbar-brand" href="users.html">P-MAGIC Physics Admin</a>
             <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="dashboard.html"><i class="bi bi-house"></i> Dashboard</a>
                 <a class="nav-link active" href="users.html"><i class="bi bi-people"></i> Users</a>
                 <a class="nav-link" href="user_questions.html"><i class="bi bi-question-circle"></i> User Questions</a>
-                <a class="nav-link" href="canvas_answers.html"><i class="bi bi-palette"></i> Canvas Files Analysis</a>
-                <a class="nav-link" href="storage_matching.html"><i class="bi bi-link-45deg"></i> Storage Matching</a>
-                <a class="nav-link" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                <a class="nav-link" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Logout</a>
             </div>
         </div>
     </nav>
@@ -32,11 +29,6 @@
         <div class="sidebar-sticky">
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a class="nav-link" href="dashboard.html">
-                        <i class="bi bi-speedometer2"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link active" href="users.html">
                         <i class="bi bi-people"></i> Users
                     </a>
@@ -44,16 +36,6 @@
                 <li class="nav-item">
                     <a class="nav-link" href="user_questions.html">
                         <i class="bi bi-question-circle"></i> User Questions
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="canvas_answers.html">
-                        <i class="bi bi-palette"></i> Canvas Files Analysis
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="storage_matching.html">
-                        <i class="bi bi-link-45deg"></i> Storage Matching
                     </a>
                 </li>
             </ul>
@@ -236,13 +218,13 @@
     <script>
         // Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyAZL5oSEVbDLrN2hbZeDXSchr8wDWAW4ok",
-            authDomain: "phyphox-34aed.firebaseapp.com",
-            projectId: "phyphox-34aed",
-            storageBucket: "phyphox-34aed.firebasestorage.app",
-            messagingSenderId: "602030706614",
-            appId: "1:602030706614:web:f0d8a44a4c4012749b3b17",
-            measurementId: "G-M7SKB5YS91"
+            apiKey: "AIzaSyBF1Oy7vcWztqtcMAQoG_zx2eqQwevXvRg",
+            authDomain: "gphysolve.firebaseapp.com",
+            projectId: "gphysolve",
+            storageBucket: "gphysolve.firebasestorage.app",
+            messagingSenderId: "794871328792",
+            appId: "1:794871328792:web:2a37ca02c792fc6b83536d",
+            measurementId: "G-MNGEX8W1X4"
         };
 
         // Initialize Firebase

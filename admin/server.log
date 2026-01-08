@@ -422,3 +422,287 @@ User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 2025-07-30 08:54:06,003 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\dashboard.html
 2025-07-30 08:54:06,007 - INFO - Client: 127.0.0.1 - Request: "GET /dashboard.html HTTP/1.1" 304 -
 2025-07-30 09:05:30,933 - INFO - Server shutdown by user
+2026-01-02 14:25:20,601 - INFO - Server started on port 8000
+2026-01-02 14:25:35,976 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:25:35.976051
+Path: /
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/2.2.44 Chrome/138.0.7204.251 Electron/37.7.0 Safari/537.36
+
+2026-01-02 14:25:35,979 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\index.html
+2026-01-02 14:25:35,981 - INFO - Client: 127.0.0.1 - Request: "GET / HTTP/1.1" 200 -
+2026-01-02 14:30:18,806 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:30:18.800610
+Path: /dashboard.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/2.2.44 Chrome/138.0.7204.251 Electron/37.7.0 Safari/537.36
+
+2026-01-02 14:30:18,816 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\dashboard.html
+2026-01-02 14:30:18,822 - INFO - Client: 127.0.0.1 - Request: "GET /dashboard.html HTTP/1.1" 200 -
+2026-01-02 14:30:19,007 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:30:19.005670
+Path: /admin-styles.css
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/2.2.44 Chrome/138.0.7204.251 Electron/37.7.0 Safari/537.36
+
+2026-01-02 14:30:19,010 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\admin-styles.css
+2026-01-02 14:30:19,013 - INFO - Client: 127.0.0.1 - Request: "GET /admin-styles.css HTTP/1.1" 200 -
+2026-01-02 14:31:13,670 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:31:13.665727
+Path: /dashboard.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:31:13,678 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\dashboard.html
+2026-01-02 14:31:13,681 - INFO - Client: 127.0.0.1 - Request: "GET /dashboard.html HTTP/1.1" 200 -
+2026-01-02 14:31:13,733 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:31:13.733496
+Path: /admin-styles.css
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:31:13,737 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\admin-styles.css
+2026-01-02 14:31:13,748 - INFO - Client: 127.0.0.1 - Request: "GET /admin-styles.css HTTP/1.1" 200 -
+2026-01-02 14:31:19,202 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:31:19.202563
+Path: /index.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:31:19,203 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\index.html
+2026-01-02 14:31:19,203 - INFO - Client: 127.0.0.1 - Request: "GET /index.html HTTP/1.1" 200 -
+2026-01-02 14:31:19,559 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:31:19.559714
+Path: /favicon.ico
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:31:19,563 - WARNING - File not found: E:\G-Physolve\G-Uphysic\admin\favicon.ico
+2026-01-02 14:31:19,679 - INFO - Client: 127.0.0.1 - Request: code 404, message File not found
+2026-01-02 14:31:19,679 - INFO - Client: 127.0.0.1 - Request: "GET /favicon.ico HTTP/1.1" 404 -
+2026-01-02 14:31:58,306 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:31:58.306937
+Path: /canvas_answers.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:31:58,306 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\canvas_answers.html
+2026-01-02 14:31:58,306 - INFO - Client: 127.0.0.1 - Request: "GET /canvas_answers.html HTTP/1.1" 200 -
+2026-01-02 14:32:08,919 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:32:08.919045
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:32:08,920 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2026-01-02 14:32:08,921 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 200 -
+2026-01-02 14:32:18,445 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:32:18.445893
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:32:18,446 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 14:32:18,449 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 200 -
+2026-01-02 14:47:30,573 - INFO - Server shutdown by user
+2026-01-02 14:47:32,137 - INFO - Server started on port 8000
+2026-01-02 14:47:55,752 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:47:55.745632
+Path: /storage_matching.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:47:55,755 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\storage_matching.html
+2026-01-02 14:47:55,769 - INFO - Client: 127.0.0.1 - Request: "GET /storage_matching.html HTTP/1.1" 200 -
+2026-01-02 14:51:03,418 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:51:03.418378
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:51:03,437 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2026-01-02 14:51:03,441 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 200 -
+2026-01-02 14:58:33,716 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:58:33.710667
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:58:33,732 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 14:58:33,732 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 200 -
+2026-01-02 14:58:46,337 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:58:46.335530
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:58:46,341 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2026-01-02 14:58:46,341 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 304 -
+2026-01-02 14:58:47,640 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:58:47.640182
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:58:47,640 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 14:58:47,640 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 304 -
+2026-01-02 14:59:31,751 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:59:31.748796
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:59:31,751 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 14:59:31,751 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 304 -
+2026-01-02 14:59:49,052 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 14:59:49.052078
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 14:59:49,054 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 14:59:49,055 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 304 -
+2026-01-02 15:00:01,391 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 15:00:01.391187
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 15:00:01,391 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 15:00:01,391 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 304 -
+2026-01-02 15:00:29,011 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 15:00:29.011818
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 15:00:29,012 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 15:00:29,013 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 304 -
+2026-01-02 15:00:30,420 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 15:00:30.420321
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 15:00:30,421 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2026-01-02 15:00:30,421 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 304 -
+2026-01-02 15:04:19,965 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 15:04:19.964194
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 15:04:19,980 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 15:04:19,984 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 200 -
+2026-01-02 15:04:23,958 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 15:04:23.958153
+Path: /users.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 15:04:23,964 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\users.html
+2026-01-02 15:04:23,964 - INFO - Client: 127.0.0.1 - Request: "GET /users.html HTTP/1.1" 200 -
+2026-01-02 15:04:27,513 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 15:04:27.513118
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 15:04:27,513 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 15:04:27,513 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 304 -
+2026-01-02 15:10:59,219 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 15:10:59.217744
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 15:10:59,236 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 15:10:59,239 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 304 -
+2026-01-02 15:20:27,364 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 15:20:27.337813
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 15:20:27,400 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 15:20:27,415 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 200 -
+2026-01-02 15:25:47,973 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 15:25:47.966787
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 15:25:47,988 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 15:25:47,994 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 200 -
+2026-01-02 15:30:36,551 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 15:30:36.551161
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 15:30:36,564 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 15:30:36,564 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 200 -
+2026-01-02 15:35:48,997 - INFO - 
+Request Details:
+---------------
+Time: 2026-01-02 15:35:48.991684
+Path: /user_questions.html
+Client: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+
+2026-01-02 15:35:49,004 - INFO - Serving file: E:\G-Physolve\G-Uphysic\admin\user_questions.html
+2026-01-02 15:35:49,004 - INFO - Client: 127.0.0.1 - Request: "GET /user_questions.html HTTP/1.1" 200 -

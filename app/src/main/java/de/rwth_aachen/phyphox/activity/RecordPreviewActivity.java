@@ -32,6 +32,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import de.rwth_aachen.phyphox.App;
 import de.rwth_aachen.phyphox.Helper.FirestoreUtil;
+import de.rwth_aachen.phyphox.Helper.SessionManager;
 import de.rwth_aachen.phyphox.databinding.ActivityRecordPreviewBinding;
 import de.rwth_aachen.phyphox.model.DataModel;
 
@@ -45,6 +46,8 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
     private DataModel dataModel;
     private LocationManager locationManager;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+    private boolean isActivityActive = true; // Flag to check if activity is still active
+    private boolean locationSaved = false; // Flag to prevent duplicate location saves
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,7 +75,12 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
     }
 
     private void setupUI() {
-        if (dataModel == null) return;
+        if (dataModel == null) {
+            Log.e("PREVIEW_UI", "DataModel is null!");
+            return;
+        }
+
+        Log.d("PREVIEW_UI", "Setting up UI for record ID: " + dataModel.getId());
 
         // Set question and type
         binding.tvQuestion.setText(dataModel.getQuestion());
@@ -89,33 +97,151 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
             Log.d("PREVIEW_DEBUG", "No canvas drawing available");
         }
 
-        // Handle Graph Images
-        if (dataModel.getBase64() != null && !dataModel.getBase64().isEmpty()) {
-            loadImage(dataModel.getBase64(), binding.iv);
+        // Load question images - prefer URL fields (questionImageUrl*), fallback to legacy base64*
+        // Only display if there is a valid value
+        Log.d("PREVIEW_DEBUG", "=== LOADING QUESTION IMAGES ===");
+        
+        // iv - same approach as Preview Jawaban
+        String questionUrl1 = dataModel.getQuestionImageUrl1();
+        String base64_1 = dataModel.getBase64();
+        Log.d("PREVIEW_DEBUG", "questionImageUrl1: " + (questionUrl1 != null ? (questionUrl1.length() > 50 ? questionUrl1.substring(0, 50) + "..." : questionUrl1) : "null"));
+        Log.d("PREVIEW_DEBUG", "base64_1: " + (base64_1 != null ? (base64_1.length() > 50 ? base64_1.substring(0, 50) + "..." : base64_1) : "null"));
+        
+        String img1 = null;
+        if (questionUrl1 != null && !questionUrl1.trim().isEmpty()) {
+            img1 = questionUrl1;
+            Log.d("PREVIEW_DEBUG", "Using questionImageUrl1 for image 1");
+        } else if (base64_1 != null && !base64_1.trim().isEmpty()) {
+            img1 = base64_1;
+            Log.d("PREVIEW_DEBUG", "Using base64_1 (legacy) for image 1");
+        } else {
+            Log.d("PREVIEW_DEBUG", "No image 1 data available");
+        }
+        
+        if (img1 != null && !img1.trim().isEmpty() && binding.iv != null) {
+            Log.d("PREVIEW_DEBUG", "Loading question image 1 - URL length: " + (img1.length() > 100 ? img1.substring(0, 100) + "..." : img1));
             binding.iv.setVisibility(View.VISIBLE);
+            loadImage(img1, binding.iv);
+        } else {
+            Log.d("PREVIEW_DEBUG", "Hiding image 1 - img1: " + (img1 != null ? "not null but empty" : "null") + ", binding.iv: " + (binding.iv != null ? "not null" : "null"));
+            if (binding.iv != null) {
+                binding.iv.setVisibility(View.GONE);
+            }
         }
-        if (dataModel.getBase64_2() != null && !dataModel.getBase64_2().isEmpty()) {
-            loadImage(dataModel.getBase64_2(), binding.iv2);
+        
+        // iv2 - same approach as Preview Jawaban
+        String questionUrl2 = dataModel.getQuestionImageUrl2();
+        String base64_2 = dataModel.getBase64_2();
+        String img2 = null;
+        if (questionUrl2 != null && !questionUrl2.trim().isEmpty()) {
+            img2 = questionUrl2;
+            Log.d("PREVIEW_DEBUG", "Using questionImageUrl2 for image 2");
+        } else if (base64_2 != null && !base64_2.trim().isEmpty()) {
+            img2 = base64_2;
+            Log.d("PREVIEW_DEBUG", "Using base64_2 (legacy) for image 2");
+        }
+        if (img2 != null && !img2.trim().isEmpty() && binding.iv2 != null) {
+            Log.d("PREVIEW_DEBUG", "Loading question image 2");
             binding.iv2.setVisibility(View.VISIBLE);
+            loadImage(img2, binding.iv2);
+        } else {
+            if (binding.iv2 != null) {
+                binding.iv2.setVisibility(View.GONE);
+            }
         }
-        if (dataModel.getBase64_3() != null && !dataModel.getBase64_3().isEmpty()) {
-            loadImage(dataModel.getBase64_3(), binding.iv3);
+        
+        // iv3 - same approach as Preview Jawaban
+        String questionUrl3 = dataModel.getQuestionImageUrl3();
+        String base64_3 = dataModel.getBase64_3();
+        String img3 = null;
+        if (questionUrl3 != null && !questionUrl3.trim().isEmpty()) {
+            img3 = questionUrl3;
+        } else if (base64_3 != null && !base64_3.trim().isEmpty()) {
+            img3 = base64_3;
+        }
+        if (img3 != null && !img3.trim().isEmpty() && binding.iv3 != null) {
+            Log.d("PREVIEW_DEBUG", "Loading question image 3");
             binding.iv3.setVisibility(View.VISIBLE);
+            loadImage(img3, binding.iv3);
+        } else {
+            if (binding.iv3 != null) {
+                binding.iv3.setVisibility(View.GONE);
+            }
         }
-        if (dataModel.getBase64_4() != null && !dataModel.getBase64_4().isEmpty()) {
-            loadImage(dataModel.getBase64_4(), binding.iv4);
+        
+        // iv4 - same approach as Preview Jawaban
+        String questionUrl4 = dataModel.getQuestionImageUrl4();
+        String base64_4 = dataModel.getBase64_4();
+        String img4 = null;
+        if (questionUrl4 != null && !questionUrl4.trim().isEmpty()) {
+            img4 = questionUrl4;
+        } else if (base64_4 != null && !base64_4.trim().isEmpty()) {
+            img4 = base64_4;
+        }
+        if (img4 != null && !img4.trim().isEmpty() && binding.iv4 != null) {
+            Log.d("PREVIEW_DEBUG", "Loading question image 4");
             binding.iv4.setVisibility(View.VISIBLE);
+            loadImage(img4, binding.iv4);
+        } else {
+            if (binding.iv4 != null) {
+                binding.iv4.setVisibility(View.GONE);
+            }
         }
-        if (dataModel.getBase64_5() != null && !dataModel.getBase64_5().isEmpty()) {
-            loadImage(dataModel.getBase64_5(), binding.iv5);
+        
+        // iv5 - same approach as Preview Jawaban
+        String questionUrl5 = dataModel.getQuestionImageUrl5();
+        String base64_5 = dataModel.getBase64_5();
+        String img5 = null;
+        if (questionUrl5 != null && !questionUrl5.trim().isEmpty()) {
+            img5 = questionUrl5;
+        } else if (base64_5 != null && !base64_5.trim().isEmpty()) {
+            img5 = base64_5;
+        }
+        if (img5 != null && !img5.trim().isEmpty() && binding.iv5 != null) {
+            Log.d("PREVIEW_DEBUG", "Loading question image 5");
             binding.iv5.setVisibility(View.VISIBLE);
+            loadImage(img5, binding.iv5);
+        } else {
+            if (binding.iv5 != null) {
+                binding.iv5.setVisibility(View.GONE);
+            }
         }
+        
+        Log.d("PREVIEW_DEBUG", "=== FINISHED LOADING QUESTION IMAGES ===");
 
-        // Load documentation photo if available
-        if (dataModel.getPhotoAnswer() != null && !dataModel.getPhotoAnswer().isEmpty()) {
+        // Load documentation photo if available - ONLY from student's work (record collection), NOT from questions collection
+        // Priority: photoAnswerUrl (Firebase Storage) > photoAnswer (Base64 from student)
+        // Do NOT show photoAnswer from questions collection (that's a reference, not student's work)
+        String photoAnswerUrl = null;
+        String photoAnswerBase64 = null;
+        
+        // Only show photoAnswer if it's from the student's work (will be saved to record collection)
+        // Check if photoAnswerUrl exists and is NOT from questions collection
+        if (dataModel.getPhotoAnswerUrl() != null && !dataModel.getPhotoAnswerUrl().isEmpty()) {
+            // Check if this is from questions collection by checking if photoAnswerPath contains "questions"
+            // If photoAnswerPath is null or doesn't contain "questions", it's from student's work
+            String photoAnswerPath = dataModel.getPhotoAnswerPath();
+            if (photoAnswerPath == null || !photoAnswerPath.contains("questions")) {
+                photoAnswerUrl = dataModel.getPhotoAnswerUrl();
+                Log.d("PREVIEW_DEBUG", "Loading student's documentation photo from URL: " + photoAnswerUrl);
+            } else {
+                Log.d("PREVIEW_DEBUG", "Ignoring photoAnswerUrl from questions collection (reference, not student's work)");
+            }
+        }
+        
+        // Fallback to Base64 photoAnswer (student's work)
+        if (photoAnswerUrl == null || photoAnswerUrl.isEmpty()) {
+            photoAnswerBase64 = dataModel.getPhotoAnswer();
+            if (photoAnswerBase64 != null && !photoAnswerBase64.isEmpty()) {
+                Log.d("PREVIEW_DEBUG", "Loading student's documentation photo from Base64 (length: " + photoAnswerBase64.length() + ")");
+            }
+        }
+        
+        // Display photo if available (from student's work only)
+        String photoToDisplay = (photoAnswerUrl != null && !photoAnswerUrl.isEmpty()) ? photoAnswerUrl : photoAnswerBase64;
+        if (photoToDisplay != null && !photoToDisplay.isEmpty()) {
             binding.llDocumentationPhotoPreview.setVisibility(View.VISIBLE);
-            Log.d("PREVIEW_DEBUG", "Loading documentation photo (Base64 length: " + dataModel.getPhotoAnswer().length() + ")");
-            loadImage(dataModel.getPhotoAnswer(), binding.ivDocumentationPhotoPreview);
+            loadImage(photoToDisplay, binding.ivDocumentationPhotoPreview);
             
             // Configure PhotoView for documentation photo
             if (binding.ivDocumentationPhotoPreview instanceof com.github.chrisbanes.photoview.PhotoView) {
@@ -125,7 +251,7 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
                     photoView.setMediumScale(2.0f);
                     photoView.setMinimumScale(0.8f);
                     photoView.setZoomable(true);
-                    Log.d("DOC_PHOTO_PREVIEW", "Documentation photo loaded in preview with zoom capability");
+                    Log.d("DOC_PHOTO_PREVIEW", "Student's documentation photo loaded in preview with zoom capability");
                 } catch (Exception e) {
                     Log.e("DOC_PHOTO_PREVIEW", "Error setting zoom for documentation photo preview: " + e.getMessage());
                     photoView.setZoomable(true);
@@ -133,11 +259,16 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
             }
         } else {
             binding.llDocumentationPhotoPreview.setVisibility(View.GONE);
+            Log.d("PREVIEW_DEBUG", "No student's documentation photo available (hiding section)");
         }
     }
 
     private void setupBackToHomeButton() {
         binding.btnBackToHome.setOnClickListener(v -> {
+            // Mark activity as inactive to prevent any pending saves
+            isActivityActive = false;
+            
+            // Just navigate to home, don't save (data already saved by autoSaveLocation if needed)
             Intent intent = new Intent(this, MainActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
@@ -146,11 +277,33 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
     }
 
     private void setupBackButton() {
-        binding.toolbar.setNavigationOnClickListener(v -> finish());
+        binding.toolbar.setNavigationOnClickListener(v -> {
+            // Mark activity as inactive to prevent any pending saves
+            isActivityActive = false;
+            finish();
+        });
+    }
+    
+    @Override
+    public void onBackPressed() {
+        // Mark activity as inactive to prevent any pending saves
+        isActivityActive = false;
+        
+        // Navigate to home page (same behavior as "Kembali ke Beranda" button)
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     private void autoSaveLocation() {
         Log.d("LOCATION_DEBUG", "=== AUTO SAVE LOCATION STARTED ===");
+        
+        // Check if activity is still active
+        if (!isActivityActive) {
+            Log.d("LOCATION_DEBUG", "Activity is not active, skipping auto save location");
+            return;
+        }
         
         // Check DataModel first
         if (dataModel == null) {
@@ -159,9 +312,10 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
             return;
         }
         
+        // CRITICAL: Don't create new document if ID is empty
         if (dataModel.getId() == null || dataModel.getId().isEmpty()) {
-            Log.e("LOCATION_DEBUG", "DataModel ID is null/empty - cannot save location");
-            Toast.makeText(this, "❌ Error: ID data kosong", Toast.LENGTH_SHORT).show();
+            Log.w("LOCATION_DEBUG", "DataModel ID is null/empty - skipping auto save to prevent creating new document");
+            // Don't show error, just skip silently
             return;
         }
         
@@ -217,19 +371,28 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
             
             if (lastKnownLocation != null) {
                 Log.d("LOCATION_DEBUG", "Using last known location: " + lastKnownLocation.getLatitude() + ", " + lastKnownLocation.getLongitude());
-                saveLocationToFirestore(lastKnownLocation);
+                // Only save if activity is still active
+                if (isActivityActive) {
+                    saveLocationToFirestore(lastKnownLocation);
+                }
             } else {
                 Log.d("LOCATION_DEBUG", "No last known location - requesting fresh location updates");
-                Toast.makeText(this, "📍 Mendapatkan lokasi saat ini...", Toast.LENGTH_SHORT).show();
+                // Only request updates if activity is still active
+                if (isActivityActive) {
+                    Toast.makeText(this, "📍 Mendapatkan lokasi saat ini...", Toast.LENGTH_SHORT).show();
+                }
             }
 
             // Request location updates from best available provider
-            if (isGPSEnabled) {
-                Log.d("LOCATION_DEBUG", "Requesting GPS updates");
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 10, this);
-            } else if (isNetworkEnabled) {
-                Log.d("LOCATION_DEBUG", "Requesting Network updates");
-                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 10, this);
+            // Only if activity is still active
+            if (isActivityActive) {
+                if (isGPSEnabled) {
+                    Log.d("LOCATION_DEBUG", "Requesting GPS updates");
+                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 10, this);
+                } else if (isNetworkEnabled) {
+                    Log.d("LOCATION_DEBUG", "Requesting Network updates");
+                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 10, this);
+                }
             }
             
         } catch (SecurityException e) {
@@ -242,24 +405,58 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
     }
 
     private void saveLocationToFirestore(Location location) {
+        // Check if activity is still active and location not already saved
+        if (!isActivityActive) {
+            Log.d("LOCATION_SAVE", "Activity is not active, skipping location save");
+            return;
+        }
+        
+        if (locationSaved) {
+            Log.d("LOCATION_SAVE", "Location already saved, skipping duplicate save");
+            return;
+        }
+        
+        // CRITICAL: Don't create new document if ID is empty
+        if (dataModel == null) {
+            Log.w("LOCATION_SAVE", "DataModel is null, skipping save");
+            return;
+        }
+        
+        if (dataModel.getId() == null || dataModel.getId().trim().isEmpty()) {
+            Log.w("LOCATION_SAVE", "DataModel ID is empty, skipping save to prevent creating new document");
+            return;
+        }
+        
         if (dataModel != null) {
+            // Check if location already exists and is the same (prevent unnecessary updates)
+            if (dataModel.getLatitude() != 0.0 && dataModel.getLongitude() != 0.0) {
+                // Calculate distance between existing and new location
+                float[] results = new float[1];
+                android.location.Location.distanceBetween(
+                    dataModel.getLatitude(), dataModel.getLongitude(),
+                    location.getLatitude(), location.getLongitude(),
+                    results
+                );
+                float distanceInMeters = results[0];
+                
+                // If location is very close (within 10 meters), don't update
+                if (distanceInMeters < 10) {
+                    Log.d("LOCATION_SAVE", "Location is very close to existing location (" + distanceInMeters + "m), skipping update");
+                    locationSaved = true; // Mark as saved to prevent future saves
+                    return;
+                }
+            }
+            
             // Get location name using geocoding
             String locationName = getLocationName(location);
             
+            // Only update location fields, don't touch other fields
             dataModel.setLatitude(location.getLatitude());
             dataModel.setLongitude(location.getLongitude());
-            dataModel.setLocationName(locationName); // THIS WAS MISSING!
+            dataModel.setLocationName(locationName);
             
-            // Set status based on context - don't always set to true
-            // Only set to true if this is a completed experiment, not a custom question
-            if (dataModel.getDesc() != null && dataModel.getDesc().contains("Buat Pertanyaan Sendiri")) {
-                // For custom questions: keep status as is (false = berlanjut)
-                Log.d("LOCATION_SAVE", "Custom question detected - keeping status as berlanjut");
-            } else {
-                // For completed experiments: set status to selesai
-                dataModel.setFinished(true);
-                Log.d("LOCATION_SAVE", "Completed experiment - setting status to selesai");
-            }
+            // Don't change status when just updating location
+            // Status should only be set when explicitly saving from other activities
             
             Log.d("LOCATION_SAVE", "Location: " + locationName + " (" + location.getLatitude() + ", " + location.getLongitude() + ")");
             
@@ -277,21 +474,54 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
                 return;
             }
             
-            // Save to Firestore
-            FirestoreUtil.addOrUpdateDocument("record", dataModel.getId(), dataModel,
-                () -> {
-                    Log.d("Location", "Location saved successfully: " + locationName);
-                    Toast.makeText(this, "📍 Lokasi tersimpan: " + locationName, Toast.LENGTH_SHORT).show();
+            // CRITICAL: Check if document exists in Firestore before saving
+            // Only update existing documents, don't create new ones in Preview Activity
+            FirestoreUtil.getDocument("record", dataModel.getId(), DataModel.class,
+                existingData -> {
+                    // Only save if document already exists
+                    if (existingData == null) {
+                        Log.w("LOCATION_SAVE", "Document does not exist in Firestore, skipping save to prevent creating new document");
+                        // Don't show error, just skip silently
+                        return;
+                    }
+                    
+                    // Document exists, proceed with save
+                    // Mark as saved to prevent duplicate saves
+                    locationSaved = true;
+                    
+                    // Save to Firestore with versioning and history tracking
+                    String userId = SessionManager.getId(this);
+                    String userName = SessionManager.getName(this);
+                    
+                    FirestoreUtil.addOrUpdateDocumentWithVersioning(
+                        "record",
+                        dataModel.getId(),
+                        dataModel,
+                        userId,
+                        userName,
+                        () -> {
+                            if (isActivityActive) {
+                                Log.d("Location", "Location saved successfully with versioning: " + locationName);
+                                Toast.makeText(this, "📍 Lokasi tersimpan: " + locationName, Toast.LENGTH_SHORT).show();
+                            }
+                        },
+                        e -> {
+                            if (isActivityActive) {
+                                Log.e("Location", "Error saving location", e);
+                                String errorMessage = e.getMessage();
+                                if (errorMessage != null && errorMessage.contains("1MB")) {
+                                    Toast.makeText(this, "Data terlalu besar untuk disimpan. Silakan coba dengan gambar yang lebih kecil.", Toast.LENGTH_LONG).show();
+                                } else {
+                                    Toast.makeText(this, "Gagal menyimpan lokasi: " + errorMessage, Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
                 },
                 e -> {
-                    Log.e("Location", "Error saving location", e);
-                    String errorMessage = e.getMessage();
-                    if (errorMessage != null && errorMessage.contains("1MB")) {
-                        Toast.makeText(this, "Data terlalu besar untuk disimpan. Silakan coba dengan gambar yang lebih kecil.", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(this, "Gagal menyimpan lokasi: " + errorMessage, Toast.LENGTH_SHORT).show();
-                    }
-                });
+                    // If get fails, don't create new document
+                    Log.w("LOCATION_SAVE", "Error checking document existence: " + e.getMessage() + ", skipping save");
+                }
+            );
         }
     }
     
@@ -788,12 +1018,21 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
         Log.d("LOCATION_DEBUG", "Location: " + location.getLatitude() + ", " + location.getLongitude());
         Log.d("LOCATION_DEBUG", "Accuracy: " + location.getAccuracy() + "m, Provider: " + location.getProvider());
         
-        saveLocationToFirestore(location);
+        // Only save if activity is still active
+        if (isActivityActive) {
+            saveLocationToFirestore(location);
+        } else {
+            Log.d("LOCATION_DEBUG", "Activity is not active, skipping location save");
+        }
         
         // Stop location updates after getting the first location
         if (locationManager != null) {
-            locationManager.removeUpdates(this);
-            Log.d("LOCATION_DEBUG", "Location updates stopped after successful location");
+            try {
+                locationManager.removeUpdates(this);
+                Log.d("LOCATION_DEBUG", "Location updates stopped after successful location");
+            } catch (SecurityException e) {
+                Log.e("LOCATION_DEBUG", "SecurityException stopping location updates: " + e.getMessage());
+            }
         }
     }
 
@@ -821,7 +1060,10 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Log.d("LOCATION_DEBUG", "Location permission GRANTED - retrying autoSaveLocation");
                 Toast.makeText(this, "✅ Izin lokasi diberikan", Toast.LENGTH_SHORT).show();
-                autoSaveLocation();
+                // Only retry if activity is still active
+                if (isActivityActive) {
+                    autoSaveLocation();
+                }
             } else {
                 Log.w("LOCATION_DEBUG", "Location permission DENIED");
                 Toast.makeText(this, "❌ Izin lokasi diperlukan untuk menyimpan data. Lokasi tidak akan tersimpan.", Toast.LENGTH_LONG).show();
@@ -830,42 +1072,206 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
     }
 
     private void loadImage(String url, android.widget.ImageView imageView) {
-        if (url == null || url.isEmpty()) return;
+        android.util.Log.d("ImageLoading", "=== loadImage() START ===");
+        android.util.Log.d("ImageLoading", "URL: " + (url != null ? (url.length() > 100 ? url.substring(0, 100) + "..." : url) : "null"));
+        android.util.Log.d("ImageLoading", "ImageView: " + (imageView != null ? "not null" : "null"));
+        
+        if (url == null || url.isEmpty()) {
+            android.util.Log.w("ImageLoading", "URL is null or empty - RETURNING");
+            return;
+        }
+        
+        if (imageView == null) {
+            android.util.Log.e("ImageLoading", "ImageView is null - RETURNING");
+            return;
+        }
 
         try {
             if (url.startsWith("http")) {
-                // Load from URL
-                Glide.with(this)
+                // Load from URL - use direct ImageView loading for better compatibility
+                android.util.Log.d("ImageLoading", "URL starts with http - loading from URL");
+                android.util.Log.d("ImageLoading", "Full URL: " + url);
+                android.util.Log.d("ImageLoading", "Context: " + (this != null ? "not null" : "null"));
+                android.util.Log.d("ImageLoading", "ImageView visibility: " + (imageView.getVisibility() == View.VISIBLE ? "VISIBLE" : "GONE/HIDDEN"));
+                android.util.Log.d("ImageLoading", "ImageView dimensions: " + imageView.getWidth() + "x" + imageView.getHeight());
+                
+                // Ensure ImageView is visible before loading
+                imageView.setVisibility(View.VISIBLE);
+                
+                android.util.Log.d("ImageLoading", "About to call Glide.with()");
+                com.bumptech.glide.Glide.with(this)
                     .load(url)
-                    .into(new CustomTarget<Drawable>() {
+                    .placeholder(android.R.drawable.ic_menu_gallery) // Placeholder while loading
+                    .error(android.R.drawable.ic_dialog_alert) // Error placeholder
+                    .listener(new com.bumptech.glide.request.RequestListener<Drawable>() {
                         @Override
-                        public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
-                            imageView.setImageDrawable(resource);
+                        public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<Drawable> target, boolean isFirstResource) {
+                            android.util.Log.e("ImageLoading", "Glide onLoadFailed - URL: " + url.substring(0, Math.min(100, url.length())) + "...", e);
+                            if (e != null && e.getRootCauses() != null) {
+                                for (Throwable cause : e.getRootCauses()) {
+                                    android.util.Log.e("ImageLoading", "Root cause: " + cause.getMessage());
+                                }
+                            }
+                            imageView.setVisibility(View.VISIBLE);
+                            return false;
                         }
 
                         @Override
-                        public void onLoadCleared(@Nullable Drawable placeholder) {
-                            // Handle cleared state
+                        public boolean onResourceReady(Drawable resource, Object model, com.bumptech.glide.request.target.Target<Drawable> target, com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                            android.util.Log.d("ImageLoading", "Glide onResourceReady - size: " + resource.getIntrinsicWidth() + "x" + resource.getIntrinsicHeight());
+                            return false; // Let Glide handle setting the drawable
                         }
-                    });
+                    })
+                    .into(imageView); // Load directly into ImageView
+                
+                android.util.Log.d("ImageLoading", "Glide.into() called successfully");
             } else {
                 // Load from Base64
-                byte[] decodedBytes = Base64.decode(url, Base64.DEFAULT);
-                Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
-                if (bitmap != null) {
-                    imageView.setImageBitmap(bitmap);
+                Log.d("ImageLoading", "Loading image from Base64 - Length: " + url.length());
+                
+                // Clean Base64 string - remove data URI prefix if present
+                String cleanBase64 = url;
+                if (cleanBase64.contains(",")) {
+                    cleanBase64 = cleanBase64.substring(cleanBase64.indexOf(",") + 1);
+                    Log.d("ImageLoading", "Removed data URI prefix, new length: " + cleanBase64.length());
+                }
+                
+                // Remove whitespace
+                cleanBase64 = cleanBase64.replaceAll("\\s+", "").trim();
+
+                // Remove surrounding quotes if any (defensive)
+                if (cleanBase64.length() >= 2 && cleanBase64.startsWith("\"") && cleanBase64.endsWith("\"")) {
+                    cleanBase64 = cleanBase64.substring(1, cleanBase64.length() - 1).trim();
+                    Log.d("ImageLoading", "Removed surrounding quotes, new length: " + cleanBase64.length());
+                }
+
+                // Pad to multiple of 4 if needed (defensive; helps when '=' stripped)
+                int mod = cleanBase64.length() % 4;
+                if (mod != 0) {
+                    int pad = 4 - mod;
+                    StringBuilder sb = new StringBuilder(cleanBase64.length() + pad);
+                    sb.append(cleanBase64);
+                    for (int i = 0; i < pad; i++) sb.append('=');
+                    cleanBase64 = sb.toString();
+                    Log.w("ImageLoading", "Padded Base64 with " + pad + " '=' chars to fix length%4, new length: " + cleanBase64.length());
+                }
+                
+                try {
+                    // Try multiple decode flags (NO_WRAP/DEFAULT/URL_SAFE) for robustness
+                    byte[] decodedBytes = null;
+                    Bitmap bitmap = null;
+
+                    int[] flagsToTry = new int[] { Base64.NO_WRAP, Base64.DEFAULT, Base64.URL_SAFE };
+                    for (int i = 0; i < flagsToTry.length; i++) {
+                        try {
+                            decodedBytes = Base64.decode(cleanBase64, flagsToTry[i]);
+                            Log.d("ImageLoading", "Decoded Base64 with flag=" + flagsToTry[i] + " to " + (decodedBytes != null ? decodedBytes.length : 0) + " bytes");
+                            if (decodedBytes != null && decodedBytes.length > 0) {
+                                // Inspect image header first
+                                BitmapFactory.Options bounds = new BitmapFactory.Options();
+                                bounds.inJustDecodeBounds = true;
+                                BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length, bounds);
+                                Log.d("ImageLoading", "Bounds decode (flag=" + flagsToTry[i] + "): mime=" + bounds.outMimeType + ", w=" + bounds.outWidth + ", h=" + bounds.outHeight);
+
+                                // First try decodeByteArray
+                                BitmapFactory.Options opts = new BitmapFactory.Options();
+                                opts.inPreferredConfig = Bitmap.Config.RGB_565; // lower memory
+                                bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length, opts);
+
+                                // If that fails, try decodeStream (sometimes more tolerant)
+                                if (bitmap == null) {
+                                    java.io.ByteArrayInputStream bais = new java.io.ByteArrayInputStream(decodedBytes);
+                                    bitmap = BitmapFactory.decodeStream(bais, null, opts);
+                                }
+
+                                Log.d("ImageLoading", "Bitmap decode result (flag=" + flagsToTry[i] + "): " + (bitmap != null ? ("OK " + bitmap.getWidth() + "x" + bitmap.getHeight()) : "NULL"));
+                            }
+                        } catch (IllegalArgumentException ignore) {
+                            Log.w("ImageLoading", "Base64 decode failed with flag=" + flagsToTry[i] + ": " + ignore.getMessage());
+                        }
+
+                        if (bitmap != null) break;
+                    }
+                    
+                    if (bitmap != null) {
+                        // Make final copy for use in inner class
+                        final Bitmap finalBitmap = bitmap;
+                        final android.widget.ImageView finalImageView = imageView;
+                        // Use Activity UI thread to ensure render
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                finalImageView.setImageBitmap(finalBitmap);
+                                // Clear placeholder background so it doesn't visually dominate
+                                finalImageView.setBackground(null);
+                                finalImageView.setVisibility(View.VISIBLE);
+                                finalImageView.requestLayout();
+                                finalImageView.invalidate();
+                                String viewName = "";
+                                try {
+                                    viewName = getResources().getResourceEntryName(finalImageView.getId());
+                                } catch (Exception ignore) {}
+                                Log.d("ImageLoading", "SET bitmap to ImageView OK - Bitmap: " + finalBitmap.getWidth() + "x" + finalBitmap.getHeight() +
+                                        ", viewId=" + finalImageView.getId() +
+                                        ", viewName=" + viewName +
+                                        ", visibility=" + (finalImageView.getVisibility() == View.VISIBLE ? "VISIBLE" : "GONE"));
+                            }
+                        });
+                    } else {
+                        Log.e("ImageLoading", "Failed to decode bitmap from Base64 after trying multiple flags. Base64 length=" + cleanBase64.length());
+                    }
+                } catch (IllegalArgumentException e) {
+                    Log.e("ImageLoading", "IllegalArgumentException decoding Base64: " + e.getMessage());
+                    // Try with DEFAULT flag as fallback
+                    try {
+                        byte[] decodedBytes = Base64.decode(cleanBase64, Base64.DEFAULT);
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                        if (bitmap != null) {
+                            imageView.setImageBitmap(bitmap);
+                            imageView.setVisibility(View.VISIBLE);
+                            Log.d("ImageLoading", "Image loaded successfully with DEFAULT flag after IllegalArgumentException");
+                        }
+                    } catch (Exception e2) {
+                        Log.e("ImageLoading", "Error loading image with DEFAULT flag: " + e2.getMessage());
+                    }
                 }
             }
         } catch (Exception e) {
-            Log.e("ImageLoading", "Error loading image", e);
+            Log.e("ImageLoading", "Error loading image: " + e.getMessage(), e);
         }
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        // Mark activity as inactive when paused to prevent saves
+        isActivityActive = false;
+        
+        // Stop location updates immediately when paused
+        if (locationManager != null) {
+            try {
+                locationManager.removeUpdates(this);
+                Log.d("LOCATION_DEBUG", "Location updates stopped in onPause()");
+            } catch (SecurityException e) {
+                Log.e("LOCATION_DEBUG", "SecurityException stopping location updates: " + e.getMessage());
+            }
+        }
+    }
+    
+    @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Mark activity as inactive
+        isActivityActive = false;
+        
+        // Stop location updates
         if (locationManager != null) {
-            locationManager.removeUpdates(this);
+            try {
+                locationManager.removeUpdates(this);
+                Log.d("LOCATION_DEBUG", "Location updates stopped in onDestroy()");
+            } catch (SecurityException e) {
+                Log.e("LOCATION_DEBUG", "SecurityException stopping location updates: " + e.getMessage());
+            }
         }
     }
 } 

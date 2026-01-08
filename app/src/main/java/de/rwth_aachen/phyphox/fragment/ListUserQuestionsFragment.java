@@ -79,13 +79,25 @@ public class ListUserQuestionsFragment extends Fragment {
 
     private void loadQuestions() {
         // Fetch data from Firestore
+        android.util.Log.d("LIST_QUESTIONS", "Loading questions from Firestore...");
         FirestoreUtil.getAllDocuments("questions", DataModel.class, data -> {
+            android.util.Log.d("LIST_QUESTIONS", "Loaded " + data.size() + " questions from Firestore");
+            
+            // Log each question for debugging
+            for (DataModel question : data) {
+                android.util.Log.d("LIST_QUESTIONS", "Question ID: " + question.getId() + 
+                    ", Question: " + question.getQuestion() + 
+                    ", CustomerName: " + question.getCustomerName() +
+                    ", TypeData: " + question.getTypeData());
+            }
+            
             allQuestions = data;
             filteredQuestions = new ArrayList<>(data);
             adapter.addData(filteredQuestions);
             updateStatistics();
             updateEmptyState();
         }, e -> {
+            android.util.Log.e("LIST_QUESTIONS", "Error loading questions: " + e.getMessage(), e);
             Toast.makeText(requireContext(), "❌ Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             updateEmptyState();
         });

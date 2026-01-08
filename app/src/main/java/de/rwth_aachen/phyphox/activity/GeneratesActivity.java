@@ -22,6 +22,7 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -64,6 +65,7 @@ import de.rwth_aachen.phyphox.App;
 import de.rwth_aachen.phyphox.Helper.FirestoreUtil;
 import de.rwth_aachen.phyphox.Helper.SessionManager;
 import de.rwth_aachen.phyphox.Helper.StorageUtil;
+import de.rwth_aachen.phyphox.Helper.VersionHelper;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiRequest;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiResponse;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
@@ -92,6 +94,7 @@ public class GeneratesActivity extends AppCompatActivity {
     private DataModel dataModel;
     private boolean isCustomQuestion;
     private boolean suppressBackSave = true; // do not save anything on back press
+    private String originalTypeDataFromList; // Store original typeData from list question for reference
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,6 +108,15 @@ public class GeneratesActivity extends AppCompatActivity {
         boolean isFromMainMenu = getIntent().getBooleanExtra("isFromMainMenu", true);
         isCustomQuestion = getIntent().getBooleanExtra("isCustomQuestion", false);
         boolean isCustomQuestionNew = getIntent().getBooleanExtra("isCustomQuestionNew", false);
+        
+        // Hide tvTypeData and tvType by default
+        if (binding.tvTypeData != null) {
+            binding.tvTypeData.setVisibility(View.GONE);
+        }
+        // Ensure tvType is hidden and empty by default
+        binding.tvType.setVisibility(View.GONE);
+        binding.tvType.setText("");
+        
         if (isFromMainMenu) {
             dataModel.setDesc(SessionManager.getName(this) + " mengerjakan pertanyaan dari Sistem");
             fetchAdvancedQuestion("indonesia", dataModel.getTypeQuestion());
@@ -135,6 +147,17 @@ public class GeneratesActivity extends AppCompatActivity {
                     // For questions from the list, ensure proper progress tracking
                     int totalEdit = dataModel.getTotalEdit() + 1;
                     dataModel.setTotalEdit(totalEdit);
+                    
+                    // Store original typeData from list question separately for reference display
+                    // Student will input their own typeData in tvType (separate field)
+                    originalTypeDataFromList = dataModel.getTypeData();
+                    if (originalTypeDataFromList == null || originalTypeDataFromList.isEmpty()) {
+                        originalTypeDataFromList = "";
+                    }
+                    // Clear typeData in dataModel - student will input their own
+                    dataModel.setTypeData("");
+                    Log.d("LIST_QUESTION_LOAD", "Stored original typeData from list question for reference: " + originalTypeDataFromList);
+                    
                     // Determine original question owner (do NOT overwrite original owner fields)
                     String originalOwnerName = dataModel.getCustomerName();
                     String originalOwnerId = dataModel.getIdCustomer();
@@ -144,7 +167,9 @@ public class GeneratesActivity extends AppCompatActivity {
                         dataModel.setDesc(workerName + " Mengerjakan pertanyaan dari " + originalOwnerName + ")");
                     } else if (originalOwnerId != null && !originalOwnerId.isEmpty()) {
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
-                        db.collection("user").document(originalOwnerId).get().addOnSuccessListener(userDoc -> {
+                        // Collection "user" is shared, but use VersionHelper for consistency
+                        String userCollection = VersionHelper.getCollectionName("user");
+                        db.collection(userCollection).document(originalOwnerId).get().addOnSuccessListener(userDoc -> {
                             String userName = userDoc.getString("name");
                             if (userName == null || userName.trim().isEmpty()) userName = "Unknown";
                             dataModel.setDesc(workerName + " Mengerjakan pertanyaan dari " + userName + ")");
@@ -156,6 +181,7 @@ public class GeneratesActivity extends AppCompatActivity {
                     }
 
 
+                    // Load question images (base64) first
                     if (!dataModel.getBase64().isEmpty()) {
                         loadImage(dataModel.getBase64(), binding.iv);
                         binding.iv.setVisibility(View.VISIBLE);
@@ -165,6 +191,7 @@ public class GeneratesActivity extends AppCompatActivity {
                         binding.iv.bringToFront();
                         Log.d("LIST_QUESTION_LOAD", "Loaded base64 (iv) - Length: " + dataModel.getBase64().length());
                     }
+                    
                     // Remove duplicate loading for iv2 - only load once with fallback logic
                     if (dataModel.getBase64_2() != null && !dataModel.getBase64_2().isEmpty()) {
                         loadImage(dataModel.getBase64_2(), binding.iv2);
@@ -201,6 +228,7 @@ public class GeneratesActivity extends AppCompatActivity {
                             binding.iv2.setVisibility(View.GONE);
                         }
                     }
+                    
                     if (!dataModel.getBase64_3().isEmpty()) {
                         loadImage(dataModel.getBase64_3(), binding.iv3);
                         binding.iv3.setVisibility(View.VISIBLE);
@@ -229,16 +257,105 @@ public class GeneratesActivity extends AppCompatActivity {
                         Log.d("EDIT_IMAGE_LOAD", "Loaded base64_5 (iv5) - Length: " + dataModel.getBase64_5().length());
                     }
 
-                    // Load documentation photo if exists (for questions from user list)
-                    if (dataModel.getPhotoAnswer() != null && !dataModel.getPhotoAnswer().isEmpty()) {
-                        Log.d("DOC_PHOTO_LOAD", "Loading documentation photo from user list question - Length: " + dataModel.getPhotoAnswer().length());
-                        Log.d("DOC_PHOTO_LOAD", "PhotoAnswer field: " + dataModel.getPhotoAnswer().substring(0, Math.min(50, dataModel.getPhotoAnswer().length())) + "...");
-                        displayPhotoInDocumentationSection(dataModel.getPhotoAnswer());
+                    // Load photoDraw (canvas drawing from list question) into Preview Jawaban section (ivDraw)
+                    // This is a reference image for students when working on the question
+                    if (dataModel.getPhotoDraw() != null && !dataModel.getPhotoDraw().isEmpty()) {
+                        binding.ivDraw.setVisibility(View.VISIBLE);
+                        // Show the last canvas drawing (most recent)
+                        String canvasUrl = dataModel.getPhotoDraw().get(dataModel.getPhotoDraw().size() - 1);
+                        Log.d("PHOTO_DRAW_LOAD", "Loading canvas drawing from list question into ivDraw (Preview Jawaban) - URL: " + canvasUrl);
+                        loadImage(canvasUrl, binding.ivDraw);
                     } else {
-                        Log.w("DOC_PHOTO_LOAD", "No documentation photo found in user list question");
-                        Log.w("DOC_PHOTO_LOAD", "PhotoAnswer is null: " + (dataModel.getPhotoAnswer() == null));
-                        Log.w("DOC_PHOTO_LOAD", "PhotoAnswer is empty: " + (dataModel.getPhotoAnswer() != null && dataModel.getPhotoAnswer().isEmpty()));
+                        Log.w("PHOTO_DRAW_LOAD", "No canvas drawing found in user list question");
+                        binding.ivDraw.setVisibility(View.GONE);
                     }
+                    
+                    // Load photoAnswerUrl/photoAnswer from list question into "Gambar Soal" section
+                    // This is a reference image for students when working on the question
+                    // Priority: Load into first available image slot (iv if empty, then iv2, etc.)
+                    String photoAnswerUrl = dataModel.getPhotoAnswerUrl();
+                    String photoAnswerBase64 = null;
+                    if (photoAnswerUrl == null || photoAnswerUrl.isEmpty()) {
+                        // Fallback to photoAnswer (Base64)
+                        photoAnswerBase64 = dataModel.getPhotoAnswer();
+                        if (photoAnswerBase64 != null && !photoAnswerBase64.isEmpty()) {
+                            Log.d("PHOTO_ANSWER_LOAD", "Found photoAnswer (Base64) from list question");
+                        }
+                    } else {
+                        Log.d("PHOTO_ANSWER_LOAD", "Found photoAnswerUrl from list question - URL: " + photoAnswerUrl);
+                    }
+                    
+                    // Load photoAnswerUrl/photoAnswer into first available image slot (Gambar Soal)
+                    if (photoAnswerUrl != null && !photoAnswerUrl.isEmpty()) {
+                        // Use photoAnswerUrl (Firebase Storage URL)
+                        // Find first available slot (check if base64 fields are empty)
+                        if (dataModel.getBase64() == null || dataModel.getBase64().isEmpty()) {
+                            // Load into iv (Gambar Soal 1)
+                            loadImage(photoAnswerUrl, binding.iv);
+                            binding.iv.setVisibility(View.VISIBLE);
+                            binding.iv.setAdjustViewBounds(true);
+                            binding.iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                            binding.iv.requestLayout();
+                            binding.iv.bringToFront();
+                            Log.d("PHOTO_ANSWER_LOAD", "Loaded photoAnswerUrl into iv (Gambar Soal 1)");
+                        } else if (dataModel.getBase64_2() == null || dataModel.getBase64_2().isEmpty()) {
+                            // Load into iv2 (Gambar Soal 2) if available
+                            loadImage(photoAnswerUrl, binding.iv2);
+                            binding.iv2.setVisibility(View.VISIBLE);
+                            binding.iv2.setAdjustViewBounds(true);
+                            binding.iv2.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                            binding.iv2.requestLayout();
+                            binding.iv2.bringToFront();
+                            Log.d("PHOTO_ANSWER_LOAD", "Loaded photoAnswerUrl into iv2 (Gambar Soal 2)");
+                        } else if (dataModel.getBase64_3() == null || dataModel.getBase64_3().isEmpty()) {
+                            // Load into iv3 (Table 1) if available
+                            loadImage(photoAnswerUrl, binding.iv3);
+                            binding.iv3.setVisibility(View.VISIBLE);
+                            binding.iv3.setAdjustViewBounds(true);
+                            binding.iv3.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                            binding.iv3.requestLayout();
+                            binding.iv3.bringToFront();
+                            Log.d("PHOTO_ANSWER_LOAD", "Loaded photoAnswerUrl into iv3 (Table 1)");
+                        }
+                    } else if (photoAnswerBase64 != null && !photoAnswerBase64.isEmpty()) {
+                        // Fallback to photoAnswer (Base64)
+                        // Find first available slot (check if base64 fields are empty)
+                        if (dataModel.getBase64() == null || dataModel.getBase64().isEmpty()) {
+                            // Load into iv (Gambar Soal 1)
+                            loadImage(photoAnswerBase64, binding.iv);
+                            binding.iv.setVisibility(View.VISIBLE);
+                            binding.iv.setAdjustViewBounds(true);
+                            binding.iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                            binding.iv.requestLayout();
+                            binding.iv.bringToFront();
+                            Log.d("PHOTO_ANSWER_LOAD", "Loaded photoAnswer (Base64) into iv (Gambar Soal 1)");
+                        } else if (dataModel.getBase64_2() == null || dataModel.getBase64_2().isEmpty()) {
+                            // Load into iv2 (Gambar Soal 2) if available
+                            loadImage(photoAnswerBase64, binding.iv2);
+                            binding.iv2.setVisibility(View.VISIBLE);
+                            binding.iv2.setAdjustViewBounds(true);
+                            binding.iv2.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                            binding.iv2.requestLayout();
+                            binding.iv2.bringToFront();
+                            Log.d("PHOTO_ANSWER_LOAD", "Loaded photoAnswer (Base64) into iv2 (Gambar Soal 2)");
+                        } else if (dataModel.getBase64_3() == null || dataModel.getBase64_3().isEmpty()) {
+                            // Load into iv3 (Table 1) if available
+                            loadImage(photoAnswerBase64, binding.iv3);
+                            binding.iv3.setVisibility(View.VISIBLE);
+                            binding.iv3.setAdjustViewBounds(true);
+                            binding.iv3.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                            binding.iv3.requestLayout();
+                            binding.iv3.bringToFront();
+                            Log.d("PHOTO_ANSWER_LOAD", "Loaded photoAnswer (Base64) into iv3 (Table 1)");
+                        }
+                    }
+                    
+                    // Hide llDocumentationPhoto for list questions
+                    // This section is for student's own documentation photos (from "Ambil foto"), not reference from list question
+                    if (binding.llDocumentationPhoto != null) {
+                        binding.llDocumentationPhoto.setVisibility(View.GONE);
+                    }
+                    Log.d("LIST_QUESTION_LOAD", "Hidden llDocumentationPhoto - this is for student's own documentation photos, not list question reference");
 
                     // Log summary of all loaded images for List Question
                     Log.d("LIST_QUESTION_LOAD", "=== LIST QUESTION IMAGE LOADING SUMMARY ===");
@@ -319,7 +436,38 @@ public class GeneratesActivity extends AppCompatActivity {
                     }
 
                     binding.tvQuestion.setText(dataModel.getQuestion());
-                    binding.tvType.setText(dataModel.getTypeData());
+                    
+                    // Display original typeData from list question as reference below the question (tvTypeData)
+                    // This is separate from student's input typeData (tvType)
+                    Log.d("LIST_QUESTION_LOAD", "=== TYPE DATA DISPLAY DEBUG ===");
+                    Log.d("LIST_QUESTION_LOAD", "originalTypeDataFromList: " + originalTypeDataFromList);
+                    Log.d("LIST_QUESTION_LOAD", "tvTypeData binding: " + (binding.tvTypeData != null ? "NOT NULL" : "NULL"));
+                    
+                    if (originalTypeDataFromList != null && !originalTypeDataFromList.isEmpty()) {
+                        // Display in tvTypeData (TextView below question) as reference
+                        if (binding.tvTypeData != null) {
+                            binding.tvTypeData.setText("📋 " + originalTypeDataFromList);
+                            binding.tvTypeData.setVisibility(View.VISIBLE);
+                            Log.d("LIST_QUESTION_LOAD", "✓ Displaying original typeData from list question below question as reference: " + originalTypeDataFromList);
+                            Log.d("LIST_QUESTION_LOAD", "✓ tvTypeData visibility set to VISIBLE");
+                            Log.d("LIST_QUESTION_LOAD", "✓ tvTypeData text set to: " + binding.tvTypeData.getText());
+                        } else {
+                            Log.e("LIST_QUESTION_LOAD", "✗ tvTypeData is null! Cannot display typeData reference");
+                        }
+                    } else {
+                        // Hide if no typeData from list
+                        if (binding.tvTypeData != null) {
+                            binding.tvTypeData.setVisibility(View.GONE);
+                        }
+                        Log.d("LIST_QUESTION_LOAD", "No typeData from list question to display as reference (empty or null)");
+                    }
+                    Log.d("LIST_QUESTION_LOAD", "===============================");
+                    
+                    // Hide input field (tvType) by default - will appear when student clicks "Ketik" button
+                    // This is for student's own typeData input, separate from list question's typeData
+                    binding.tvType.setVisibility(View.GONE);
+                    binding.tvType.setText(""); // Clear the input field
+                    Log.d("LIST_QUESTION_LOAD", "typeData input field (tvType) hidden - will appear when 'Ketik' button is clicked for student input");
                 }
 
             } else {
@@ -577,9 +725,25 @@ public class GeneratesActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (binding.tvType.getVisibility() == View.VISIBLE) {
+                    // Hide and clear the field
                     binding.tvType.setVisibility(View.GONE);
+                    binding.tvType.setText("");
+                    dataModel.setTypeData("");
+                    // Hide keyboard
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+                        imm.hideSoftInputFromWindow(binding.tvType.getWindowToken(), 0);
+                    }
                 } else {
+                    // Show the field and clear any existing data
                     binding.tvType.setVisibility(View.VISIBLE);
+                    binding.tvType.setText("");
+                    binding.tvType.requestFocus();
+                    // Show keyboard
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+                        imm.showSoftInput(binding.tvType, InputMethodManager.SHOW_IMPLICIT);
+                    }
                 }
             }
         });
@@ -598,7 +762,15 @@ public class GeneratesActivity extends AppCompatActivity {
                         dataModel.setQuestion(binding.etQuestion.getText().toString());
                         table = "questions";
                     }
-                    dataModel.setTypeData(binding.tvType.getText().toString());
+                    // Use student's input typeData (from tvType), not originalTypeDataFromList
+                    // This ensures student's typeData is separate from list question's typeData
+                    String studentTypeData = binding.tvType.getText().toString();
+                    if (studentTypeData == null || studentTypeData.trim().isEmpty()) {
+                        // If student didn't input typeData, use empty string (not originalTypeDataFromList)
+                        studentTypeData = "";
+                    }
+                    dataModel.setTypeData(studentTypeData);
+                    Log.d("SAVE_TYPE_DATA", "Saving student's typeData: '" + studentTypeData + "' (original from list was: '" + originalTypeDataFromList + "')");
                     // Ensure worker identity for history filter
                     dataModel.setIdCustomer(SessionManager.getId(GeneratesActivity.this));
                     dataModel.setCustomerName(SessionManager.getName(GeneratesActivity.this));
@@ -839,8 +1011,14 @@ public class GeneratesActivity extends AppCompatActivity {
                         String base64Image = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
 
                         // Combine with previous documentation photo (old on top, new below) if exists
+                        // Only combine if existing photo is from student's work (not from questions collection)
+                        // Check if photoAnswerUrl exists and is from questions collection - if so, don't combine
                         String existingDoc = dataModel.getPhotoAnswer();
-                        if (existingDoc != null && !existingDoc.trim().isEmpty()) {
+                        String existingPhotoAnswerPath = dataModel.getPhotoAnswerPath();
+                        boolean isFromQuestionsCollection = (existingPhotoAnswerPath != null && existingPhotoAnswerPath.contains("questions"));
+                        
+                        // Only combine if existing photo is NOT from questions collection (it's student's own work)
+                        if (existingDoc != null && !existingDoc.trim().isEmpty() && !isFromQuestionsCollection) {
                             try {
                                 Bitmap oldBmp = base64ToBitmap(existingDoc);
                                 Bitmap newBmp = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
@@ -853,17 +1031,25 @@ public class GeneratesActivity extends AppCompatActivity {
                                     oldBmp.recycle();
                                     newBmp.recycle();
                                     stacked.recycle();
+                                    Log.d("DOC_PHOTO_SAVE", "Combined with previous student's documentation photo");
                                 }
                             } catch (Exception ignore) {}
+                        } else if (isFromQuestionsCollection) {
+                            Log.d("DOC_PHOTO_SAVE", "Ignoring photoAnswer from questions collection - using only student's new photo");
                         }
 
-                        // Save combined/new documentation photo as Base64 only (NOT uploaded to Firebase)
+                        // Save combined/new documentation photo as Base64
+                        // This is the student's own documentation photo, not from questions collection
                         App app = (App) getApplication();
                         dataModel.setPhotoAnswer(base64Image);
+                        // Clear photoAnswerUrl and photoAnswerPath from questions collection (if any)
+                        // This ensures we use the student's own photo, not the reference from questions
+                        dataModel.setPhotoAnswerUrl(null);
+                        dataModel.setPhotoAnswerPath(null);
                         // Keep Base64 fields intact for Edit mode display; size enforcement will happen at final save
                         app.setDataModel(dataModel);
 
-                        Log.d("DOC_PHOTO_SAVE", "Documentation photo saved as Base64 (length: " + base64Image.length() + ") - NOT uploaded to Firebase");
+                        Log.d("DOC_PHOTO_SAVE", "Student's documentation photo saved as Base64 (length: " + base64Image.length() + ") - Will be uploaded to Firebase Storage on save");
 
                         // Display photo in documentation section
                         displayPhotoInDocumentationSection(base64Image);
@@ -1126,6 +1312,73 @@ public class GeneratesActivity extends AppCompatActivity {
     }
 
     /**
+     * Display photo documentation from URL (Firebase Storage)
+     */
+    private void displayPhotoInDocumentationSectionFromUrl(String imageUrl) {
+        try {
+            Log.d("DOC_PHOTO", "=== DISPLAY PHOTO DOCUMENTATION FROM URL START ===");
+            Log.d("DOC_PHOTO", "Image URL: " + imageUrl);
+
+            // Check if binding is available
+            if (binding == null) {
+                Log.e("DOC_PHOTO", "Binding is null!");
+                return;
+            }
+
+            // Check if llDocumentationPhoto exists
+            if (binding.llDocumentationPhoto == null) {
+                Log.e("DOC_PHOTO", "llDocumentationPhoto is null!");
+                return;
+            }
+
+            // Show the documentation photo container
+            binding.llDocumentationPhoto.setVisibility(View.VISIBLE);
+            Log.d("DOC_PHOTO", "llDocumentationPhoto visibility set to VISIBLE");
+
+            // Check if ivDocumentationPhoto exists
+            if (binding.ivDocumentationPhoto == null) {
+                Log.e("DOC_PHOTO", "ivDocumentationPhoto is null!");
+                return;
+            }
+
+            // Load image directly from URL using loadImage method
+            loadImage(imageUrl, binding.ivDocumentationPhoto);
+            Log.d("DOC_PHOTO", "Image loaded from URL");
+
+            // Configure PhotoView for documentation photo
+            if (binding.ivDocumentationPhoto instanceof com.github.chrisbanes.photoview.PhotoView) {
+                com.github.chrisbanes.photoview.PhotoView photoView = (com.github.chrisbanes.photoview.PhotoView) binding.ivDocumentationPhoto;
+
+                try {
+                    // Reset PhotoView state first
+                    photoView.setScale(1.0f, true);
+
+                    // Set zoom levels for documentation photo
+                    photoView.setMaximumScale(4.0f);
+                    photoView.setMediumScale(2.0f);
+                    photoView.setMinimumScale(0.8f);
+                    photoView.setZoomable(true);
+
+                    Log.d("DOC_PHOTO", "Documentation photo displayed successfully with zoom capability");
+                } catch (Exception e) {
+                    Log.e("DOC_PHOTO", "Error setting zoom for documentation photo: " + e.getMessage());
+                    // Fallback to basic display
+                    photoView.setZoomable(true);
+                }
+            } else {
+                Log.w("DOC_PHOTO", "ivDocumentationPhoto is not a PhotoView instance");
+            }
+
+            Log.d("DOC_PHOTO", "=== DISPLAY PHOTO DOCUMENTATION FROM URL SUCCESS ===");
+
+        } catch (Exception e) {
+            Log.e("DOC_PHOTO", "Error displaying documentation photo from URL: " + e.getMessage());
+            Log.e("DOC_PHOTO", "Stack trace: ", e);
+            Toast.makeText(this, "Error menampilkan foto: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
      * Compress or truncate base64 string to stay under Firestore limit (1MB)
      * @param base64String Original base64 string
      * @return Compressed or truncated base64 string
@@ -1221,9 +1474,9 @@ public class GeneratesActivity extends AppCompatActivity {
                 Log.e("FIRESTORE_COMPRESS", "Error compressing image: " + e.getMessage());
             }
 
-            // If compression fails, try to truncate intelligently
-            Log.w("FIRESTORE_COMPRESS", "Compression failed, truncating...");
-            return base64String.substring(0, FIRESTORE_LIMIT);
+            // If compression fails, DO NOT truncate base64 (it will become invalid and cannot be decoded).
+            Log.e("FIRESTORE_COMPRESS", "Compression failed; returning empty to avoid invalid Base64");
+            return "";
         }
 
         return base64String;
@@ -1231,199 +1484,316 @@ public class GeneratesActivity extends AppCompatActivity {
 
     public void uploadImageToFirestore(byte[] imageData, String fileName) {
         // Create and configure ProgressDialog
-        ProgressDialog progressDialog = new ProgressDialog(this); // Replace 'this' with 'requireContext()' if inside a Fragment
+        ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setTitle("Uploading Image");
         progressDialog.setMessage("Please wait while the image is being uploaded...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 
-        // Get Firebase Storage instance
-        FirebaseStorage storage = FirebaseStorage.getInstance();
-        StorageReference storageRef = storage.getReference();
+        // Generate filename with userId and timestamp
+        String userId = SessionManager.getId(this);
+        String userName = SessionManager.getName(this);
+        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String finalFileName = userId + "_canvas_" + timestamp + "_" + System.currentTimeMillis() + ".jpg";
 
-        // Create a reference to the image
-        StorageReference imageRef = storageRef.child("images/" + fileName);
+        // Determine source based on question type
+        boolean isCustomQuestionNew = getIntent().getBooleanExtra("isCustomQuestionNew", false);
+        final String source; // Must be final for use in lambda
+        if (isCustomQuestionNew) {
+            source = "Buat Pertanyaan Sendiri";
+        } else {
+            boolean isCustomQuestion = getIntent().getBooleanExtra("isCustomQuestion", false);
+            if (isCustomQuestion) {
+                if (dataModel.getTypeData() != null && dataModel.getTypeData().contains("By AI")) {
+                    source = "Buat Pertanyaan dengan AI";
+                } else {
+                    source = "Buat Pertanyaan Sendiri";
+                }
+            } else {
+                source = "Experiment"; // Default for regular experiments
+            }
+        }
 
-        // Upload the image
-        UploadTask uploadTask = imageRef.putBytes(imageData);
-        uploadTask
-                .addOnProgressListener(snapshot -> {
-                    // Update the ProgressDialog with the upload progress
-                    double progress = (100.0 * snapshot.getBytesTransferred()) / snapshot.getTotalByteCount();
-                    progressDialog.setMessage("Uploaded: " + (int) progress + "%");
-                })
-                .addOnSuccessListener(taskSnapshot -> {
-                    // Get the download URL
-                    imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                        String downloadUrl = uri.toString();
+        // Upload using StorageUtil with userId organization and metadata
+        StorageUtil.uploadBytesWithUserIdAndMetadata(
+            this,
+            imageData,
+            StorageUtil.STORAGE_PATH_DRAWINGS,
+            finalFileName,
+            source, // Source metadata
+            userName, // User name metadata
+            (downloadUrl, storagePath) -> {
+                // Save the download URL to DataModel
+                App app = (App) getApplication();
+                ArrayList<String> photoDraws = dataModel.getPhotoDraw();
+                photoDraws.add(downloadUrl);
+                dataModel.setPhotoDraw(photoDraws);
+                // Use student's input typeData (from tvType), not originalTypeDataFromList
+                String studentTypeData = binding.tvType.getText().toString();
+                if (studentTypeData == null || studentTypeData.trim().isEmpty()) {
+                    studentTypeData = "";
+                }
+                dataModel.setTypeData(studentTypeData);
+                Log.d("UPLOAD_TYPE_DATA", "Setting student's typeData: '" + studentTypeData + "' (original from list was: '" + originalTypeDataFromList + "')");
+                app.setDataModel(dataModel);
 
-                        // Save the download URL to DataModel
-                        App app = (App) getApplication();
-                        ArrayList<String> photoDraws= dataModel.getPhotoDraw();
-                        photoDraws.add(downloadUrl);
-                        dataModel.setPhotoDraw(photoDraws);
-                        dataModel.setTypeData(binding.tvType.getText().toString());
-                        app.setDataModel(dataModel);
+                // Enable only Upload here. Lanjutkan (btnSave) tetap disabled sampai Save ke Firestore sukses.
+                binding.btnUpload.setEnabled(true);
 
-                        // Enable only Upload here. Lanjutkan (btnSave) tetap disabled sampai Save ke Firestore sukses.
-                        binding.btnUpload.setEnabled(true);
+                // Log success
+                Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
+                Log.d("Firebase", "Storage path: " + storagePath + ", Source: " + source);
+                
+                progressDialog.dismiss();
+                
+                // Save data to Firestore after successful upload
+                ProgressDialog saveProgressDialog = new ProgressDialog(GeneratesActivity.this);
+                saveProgressDialog.setTitle("Save data to Server");
+                saveProgressDialog.setMessage("Please wait...");
+                saveProgressDialog.setCancelable(false);
+                saveProgressDialog.show();
 
-                        // Log success
-                        Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
-                        boolean isCustomQuestionNew = getIntent().getBooleanExtra("isCustomQuestionNew", false);
-                        // Save data to Firestore after successful upload
-                        ProgressDialog saveProgressDialog = new ProgressDialog(GeneratesActivity.this);
-                        saveProgressDialog.setTitle("Save data to Server");
-                        saveProgressDialog.setMessage("Please wait...");
-                        saveProgressDialog.setCancelable(false);
-                        saveProgressDialog.show();
+                String documentId = dataModel.getId();
+                if (documentId == null || documentId.isEmpty()) {
+                    documentId = String.valueOf(System.currentTimeMillis());
+                }
+                dataModel.setId(documentId);
+                
+                // Capture original source info (from question list) - define early for use throughout callback
+                String sourceQuestionId = dataModel.getId();
+                String sourceCreatorName = dataModel.getCustomerName();
+                
+                // Continue with save logic
+                String table = "record";
+                boolean isCustomQuestion = getIntent().getBooleanExtra("isCustomQuestion", false);
+                
+                if (isCustomQuestionNew) {
+                    dataModel.setQuestion(binding.etQuestion.getText().toString());
+                    table = "questions";
+                } else if (isCustomQuestion) {
+                    // For questions from list: keep original owner; only set descriptive text with both users
+                    String originalOwnerName = sourceCreatorName;
+                    String workerName = SessionManager.getName(this);
+                    if (originalOwnerName == null || originalOwnerName.trim().isEmpty()) {
+                        originalOwnerName = "Unknown";
+                    }
+                    dataModel.setDesc(workerName + " Mengerjakan pertanyaan dari " + originalOwnerName + ")");
+                }
+                app.setDataModel(dataModel);
+                
+                try {
+                    // Final guard before save from this screen as well
+                    // Reuse RecordPreviewActivity's enforcement via preview step, but we ensure here too
+                    // by validating base64 sizes so we don't pass oversized data forward
+                    validateBase64Data();
+                } catch (Exception ignore) {
+                    // If invalid here, still proceed to preview where stronger enforcement runs
+                }
+                
+                // Ensure worker identity set for history filtering
+                dataModel.setIdCustomer(SessionManager.getId(this));
+                dataModel.setCustomerName(SessionManager.getName(this));
 
-                        // Capture original source info (from question list)
-                        String sourceQuestionId = dataModel.getId();
-                        String sourceCreatorName = dataModel.getCustomerName();
-
-                        String documentId = dataModel.getId();
-                        if (documentId == null || documentId.isEmpty()) {
-                            documentId = String.valueOf(System.currentTimeMillis());
+                // Build progress payload (include base64 for questions collection so images appear when accessed from list)
+                // Determine creator name (for question list context)
+                String creatorNameForList = "";
+                
+                if (isCustomQuestion) {
+                    // For custom questions, use current user as creator
+                    if (isCustomQuestionNew) {
+                        // New custom question: use current user name
+                        creatorNameForList = SessionManager.getName(this);
+                        if (creatorNameForList == null || creatorNameForList.trim().isEmpty()) {
+                            creatorNameForList = dataModel.getCustomerName();
                         }
-                        dataModel.setId(documentId);
-                        String table = "record";
-                        if (isCustomQuestionNew) {
-                            dataModel.setQuestion(binding.etQuestion.getText().toString());
-                            table = "questions";
-                        } else if (isCustomQuestion) {
-                            // For questions from list: keep original owner; only set descriptive text with both users
-                            String originalOwnerName = sourceCreatorName;
-                            String workerName = SessionManager.getName(this);
-                            if (originalOwnerName == null || originalOwnerName.trim().isEmpty()) {
-                                originalOwnerName = "Unknown";
-                            }
-                            dataModel.setDesc(workerName + " Mengerjakan pertanyaan dari " + originalOwnerName + ")");
-                        }
-                        app.setDataModel(dataModel);
-                        try {
-                            // Final guard before save from this screen as well
-                            // Reuse RecordPreviewActivity's enforcement via preview step, but we ensure here too
-                            // by validating base64 sizes so we don't pass oversized data forward
-                            validateBase64Data();
-                        } catch (Exception ignore) {
-                            // If invalid here, still proceed to preview where stronger enforcement runs
-                        }
-                        // Ensure worker identity set for history filtering
-                        dataModel.setIdCustomer(SessionManager.getId(this));
-                        dataModel.setCustomerName(SessionManager.getName(this));
+                    } else {
+                        // Existing custom question from list: use source creator or current user
+                        creatorNameForList = (sourceCreatorName != null && !sourceCreatorName.trim().isEmpty()) ? sourceCreatorName : dataModel.getCustomerName();
+                    }
+                    if (creatorNameForList == null || creatorNameForList.trim().isEmpty()) {
+                        creatorNameForList = "Unknown";
+                    }
+                }
+                
+                java.util.Map<String, Object> progressData = new java.util.HashMap<>();
+                progressData.put("id", documentId);
+                if (isCustomQuestion && sourceQuestionId != null && !sourceQuestionId.isEmpty()) {
+                    progressData.put("sourceQuestionId", sourceQuestionId);
+                    dataModel.setSourceQuestionId(sourceQuestionId);
+                }
+                
+                progressData.put("idCustomer", dataModel.getIdCustomer());
+                progressData.put("customerName", dataModel.getCustomerName());
+                
+                // Persist creator info for admin (Dibuat Oleh) using multiple keys
+                // For custom questions, always set creator fields
+                if (isCustomQuestionNew) {
+                    progressData.put("dibuatOleh", creatorNameForList);
+                    progressData.put("Dibuat Oleh", creatorNameForList);
+                    progressData.put("creatorName", creatorNameForList);
+                    progressData.put("createdBy", creatorNameForList);
+                    
+                    // Set admin tracking fields in DataModel
+                    dataModel.setCreatorName(creatorNameForList);
+                    dataModel.setDibuatOleh(creatorNameForList);
+                    dataModel.setCreatedBy(creatorNameForList);
+                } else if (isCustomQuestion) {
+                    // For existing custom questions, preserve existing creator or set if empty
+                    progressData.put("dibuatOleh", creatorNameForList);
+                    progressData.put("Dibuat Oleh", creatorNameForList);
+                    progressData.put("creatorName", creatorNameForList);
+                    progressData.put("createdBy", creatorNameForList);
+                    
+                    // Set admin tracking fields in DataModel
+                    dataModel.setCreatorName(creatorNameForList);
+                    dataModel.setDibuatOleh(creatorNameForList);
+                    dataModel.setCreatedBy(creatorNameForList);
+                }
 
-                        // Build progress payload (include base64 for questions collection so images appear when accessed from list)
-                        // Determine creator name (for question list context)
-                        String creatorNameForList = "";
-                        if (isCustomQuestion) {
-                            creatorNameForList = (sourceCreatorName != null && !sourceCreatorName.trim().isEmpty()) ? sourceCreatorName : dataModel.getCustomerName();
-                            if (creatorNameForList == null || creatorNameForList.trim().isEmpty()) {
-                                creatorNameForList = "Unknown";
-                            }
-                        }
-                        java.util.Map<String, Object> progressData = new java.util.HashMap<>();
-                        progressData.put("id", documentId);
-                        if (isCustomQuestion && sourceQuestionId != null && !sourceQuestionId.isEmpty()) {
-                            progressData.put("sourceQuestionId", sourceQuestionId);
-                            dataModel.setSourceQuestionId(sourceQuestionId);
-                        }
-                        progressData.put("idCustomer", dataModel.getIdCustomer());
-                        progressData.put("customerName", dataModel.getCustomerName());
-                        // Persist creator info for admin (Dibuat Oleh) using multiple keys
-                        progressData.put("dibuatOleh", creatorNameForList);
-                        progressData.put("Dibuat Oleh", creatorNameForList);
-                        progressData.put("creatorName", creatorNameForList);
-                        progressData.put("createdBy", creatorNameForList);
+                // Set status based on context
+                if (isCustomQuestion) {
+                    // For custom questions: status "berlanjut" (false)
+                    dataModel.setFinished(false);
 
-                        // Set admin tracking fields in DataModel
-                        dataModel.setCreatorName(creatorNameForList);
-                        dataModel.setDibuatOleh(creatorNameForList);
-                        dataModel.setCreatedBy(creatorNameForList);
+                    // Set custom title for Out Class questions
+                    if (dataModel.getTypeData() != null && dataModel.getTypeData().contains("Out Class")) {
+                        dataModel.setTypeData("Out - Class (By AI)");
+                    }
+                    
+                    // Remove location fields for custom questions
+                    if (isCustomQuestionNew) {
+                        dataModel.setLatitude(0.0);
+                        dataModel.setLongitude(0.0);
+                        dataModel.setLocationName(null);
+                    }
+                } else {
+                    // For completed experiments: status "selesai" (true)
+                    dataModel.setFinished(true);
+                }
 
-                        // Set status based on context
-                        if (isCustomQuestion) {
-                            // For custom questions: status "berlanjut" (false)
-                            dataModel.setFinished(false);
-
-                            // Set custom title for Out Class questions
-                            if (dataModel.getTypeData() != null && dataModel.getTypeData().contains("Out Class")) {
-                                dataModel.setTypeData("Out - Class (By AI)");
-                            }
-                        } else {
-                            // For completed experiments: status "selesai" (true)
-                            dataModel.setFinished(true);
-                        }
-
-                        progressData.put("typeData", dataModel.getTypeData());
-                        progressData.put("topics", dataModel.getTopics());
-                        progressData.put("typeQuestion", dataModel.getTypeQuestion());
-                        progressData.put("question", dataModel.getQuestion());
-                        progressData.put("desc", dataModel.getDesc());
-                        progressData.put("photo", dataModel.getPhoto());
-                        progressData.put("photoDraw", dataModel.getPhotoDraw());
-                        progressData.put("latitude", dataModel.getLatitude());
-                        progressData.put("longitude", dataModel.getLongitude());
-                        progressData.put("locationName", dataModel.getLocationName());
-                        progressData.put("isFinished", dataModel.getFinished());
-                        progressData.put("dateTime", dataModel.getDateTime());
-                        progressData.put("totalEdit", dataModel.getTotalEdit());
-                        progressData.put("views", dataModel.getViews());
-
-                        // Add photo documentation fields
-                        progressData.put("photoDocumentation", dataModel.getPhotoDocumentation());
-                        progressData.put("photoDocumentationPaths", dataModel.getPhotoDocumentationPaths());
-                        progressData.put("notePhotos", dataModel.getNotePhotos());
-                        progressData.put("notePhotoPaths", dataModel.getNotePhotoPaths());
-                        progressData.put("experimentPhotoUrl", dataModel.getExperimentPhotoUrl());
-                        progressData.put("experimentPhotoPath", dataModel.getExperimentPhotoPath());
-                        progressData.put("documentationNotes", dataModel.getDocumentationNotes());
+                progressData.put("typeData", dataModel.getTypeData());
+                progressData.put("topics", dataModel.getTopics());
+                progressData.put("typeQuestion", dataModel.getTypeQuestion());
+                progressData.put("question", dataModel.getQuestion());
+                progressData.put("desc", dataModel.getDesc());
+                progressData.put("photo", dataModel.getPhoto());
+                
+                // Ensure photoDraw is not null (required for deserialization)
+                ArrayList<String> photoDraw = dataModel.getPhotoDraw();
+                if (photoDraw == null) {
+                    photoDraw = new ArrayList<>();
+                    dataModel.setPhotoDraw(photoDraw);
+                }
+                progressData.put("photoDraw", photoDraw);
+                
+                // For custom questions (Buat Pertanyaan Sendiri), set location fields to 0.0 (not null)
+                // Firestore cannot deserialize null to primitive double, so use 0.0 instead
+                if (!isCustomQuestionNew) {
+                    progressData.put("latitude", dataModel.getLatitude());
+                    progressData.put("longitude", dataModel.getLongitude());
+                    progressData.put("locationName", dataModel.getLocationName());
+                } else {
+                    // Set location fields to 0.0 for custom questions (not null, to avoid deserialization errors)
+                    progressData.put("latitude", 0.0);
+                    progressData.put("longitude", 0.0);
+                    progressData.put("locationName", null);
+                    // Also update DataModel to ensure consistency
+                    dataModel.setLatitude(0.0);
+                    dataModel.setLongitude(0.0);
+                }
+                
+                progressData.put("isFinished", dataModel.getFinished());
+                
+                // Ensure dateTime is set (required for sorting/display)
+                String dateTime = dataModel.getDateTime();
+                if (dateTime == null || dateTime.isEmpty()) {
+                    dateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
+                    dataModel.setDateTime(dateTime);
+                }
+                progressData.put("dateTime", dateTime);
+                
+                // For custom questions, remove experiment-related fields
+                if (isCustomQuestionNew) {
+                    // Custom questions: set views and totalEdit to 0 (not null) for proper display
+                    progressData.put("totalEdit", 0);
+                    progressData.put("views", 0);
+                    progressData.put("experimentPhotoUrl", null);
+                    progressData.put("experimentPhotoPath", null);
+                    progressData.put("documentationNotes", null);
+                    progressData.put("photo", null); // Not needed for questions
+                    // storageUserId can be kept for organization
+                    if (dataModel.getStorageUserId() != null) {
                         progressData.put("storageUserId", dataModel.getStorageUserId());
-                        progressData.put("lastPhotoUpdate", dataModel.getLastPhotoUpdate());
-                        if ("questions".equals(table)) {
-                            try {
-                                if (dataModel.getBase64() != null && !dataModel.getBase64().isEmpty()) progressData.put("base64", compressBase64ForFirestore(dataModel.getBase64()));
-                                if (dataModel.getBase64_2() != null && !dataModel.getBase64_2().isEmpty()) progressData.put("base64_2", compressBase64ForFirestore(dataModel.getBase64_2()));
-                                if (dataModel.getBase64_3() != null && !dataModel.getBase64_3().isEmpty()) progressData.put("base64_3", compressBase64ForFirestore(dataModel.getBase64_3()));
-                                if (dataModel.getBase64_4() != null && !dataModel.getBase64_4().isEmpty()) progressData.put("base64_4", compressBase64ForFirestore(dataModel.getBase64_4()));
-                                if (dataModel.getBase64_5() != null && !dataModel.getBase64_5().isEmpty()) progressData.put("base64_5", compressBase64ForFirestore(dataModel.getBase64_5()));
-                                if (dataModel.getPhotoAnswer() != null && !dataModel.getPhotoAnswer().isEmpty()) progressData.put("photoAnswer", compressBase64ForFirestore(dataModel.getPhotoAnswer()));
-                                if (dataModel.getPhotoAcceleration() != null && !dataModel.getPhotoAcceleration().isEmpty()) progressData.put("photoAcceleration", compressBase64ForFirestore(dataModel.getPhotoAcceleration()));
-                            } catch (Exception ignore) {}
+                    }
+                } else {
+                    // For regular records/experiments, keep all fields
+                    progressData.put("totalEdit", dataModel.getTotalEdit());
+                    progressData.put("views", dataModel.getViews());
+                    
+                    // Add photo documentation fields
+                    progressData.put("photoDocumentation", dataModel.getPhotoDocumentation());
+                    progressData.put("photoDocumentationPaths", dataModel.getPhotoDocumentationPaths());
+                    progressData.put("notePhotos", dataModel.getNotePhotos());
+                    progressData.put("notePhotoPaths", dataModel.getNotePhotoPaths());
+                    progressData.put("experimentPhotoUrl", dataModel.getExperimentPhotoUrl());
+                    progressData.put("experimentPhotoPath", dataModel.getExperimentPhotoPath());
+                    progressData.put("documentationNotes", dataModel.getDocumentationNotes());
+                    progressData.put("storageUserId", dataModel.getStorageUserId());
+                    progressData.put("lastPhotoUpdate", dataModel.getLastPhotoUpdate());
+                    progressData.put("photo", dataModel.getPhoto());
+                }
+                
+                if ("questions".equals(table)) {
+                    try {
+                        if (dataModel.getBase64() != null && !dataModel.getBase64().isEmpty()) progressData.put("base64", compressBase64ForFirestore(dataModel.getBase64()));
+                        if (dataModel.getBase64_2() != null && !dataModel.getBase64_2().isEmpty()) progressData.put("base64_2", compressBase64ForFirestore(dataModel.getBase64_2()));
+                        if (dataModel.getBase64_3() != null && !dataModel.getBase64_3().isEmpty()) progressData.put("base64_3", compressBase64ForFirestore(dataModel.getBase64_3()));
+                        if (dataModel.getBase64_4() != null && !dataModel.getBase64_4().isEmpty()) progressData.put("base64_4", compressBase64ForFirestore(dataModel.getBase64_4()));
+                        if (dataModel.getBase64_5() != null && !dataModel.getBase64_5().isEmpty()) progressData.put("base64_5", compressBase64ForFirestore(dataModel.getBase64_5()));
+                        
+                        // For custom questions: upload photoAnswer to Storage and use URL/path instead of base64
+                        if (dataModel.getPhotoAnswer() != null && !dataModel.getPhotoAnswer().isEmpty()) {
+                            // Upload photoAnswer to Firebase Storage for all questions (custom and non-custom)
+                            uploadPhotoAnswerToStorage(dataModel, table, progressData);
+                            return; // Exit early, save will be called after upload
                         }
+                        
+                        if (dataModel.getPhotoAcceleration() != null && !dataModel.getPhotoAcceleration().isEmpty()) progressData.put("photoAcceleration", compressBase64ForFirestore(dataModel.getPhotoAcceleration()));
+                    } catch (Exception ignore) {}
+                }
 
-                        // Upload photo if exists before saving to Firestore
-                        // Check for local photo path or base64 data that needs to be uploaded
-                        String localPhotoPath = dataModel.getLocalPhotoPath();
-                        String localPhotoBase64 = dataModel.getLocalPhotoBase64();
+                // Upload photo if exists before saving to Firestore
+                // Check for local photo path or base64 data that needs to be uploaded
+                String localPhotoPath = dataModel.getLocalPhotoPath();
+                String localPhotoBase64 = dataModel.getLocalPhotoBase64();
 
-                        if ((localPhotoPath != null && !localPhotoPath.isEmpty()) ||
-                            (localPhotoBase64 != null && !localPhotoBase64.isEmpty())) {
-                            // We have local photo data to upload
-                            if (localPhotoPath != null && !localPhotoPath.isEmpty()) {
-                                Log.d("PHOTO_UPLOAD", "Uploading local photo file: " + localPhotoPath);
-                                uploadPhotoBeforeSave(dataModel, table, progressData);
-                            } else if (localPhotoBase64 != null && !localPhotoBase64.isEmpty()) {
-                                Log.d("PHOTO_UPLOAD", "Uploading base64 photo data");
-                                uploadBase64PhotoBeforeSave(dataModel, table, progressData);
-                            }
-                                    } else {
-                            // No local photo to upload, save directly
-                            Log.d("PHOTO_UPLOAD", "No local photo to upload, saving directly");
-                            saveToFirestoreWithBackup(table, progressData);
-                        }
-                    });
-                })
-                .addOnFailureListener(e -> {
-                    // Handle upload failure
-                    Log.e("Firebase", "Image upload failed", e);
-
-                    // Dismiss the progress dialog
-                    progressDialog.dismiss();
-
-                    // Notify the user of the error
-                    Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
+                if ((localPhotoPath != null && !localPhotoPath.isEmpty()) ||
+                    (localPhotoBase64 != null && !localPhotoBase64.isEmpty())) {
+                    // We have local photo data to upload
+                    if (localPhotoPath != null && !localPhotoPath.isEmpty()) {
+                        Log.d("PHOTO_UPLOAD", "Uploading local photo file: " + localPhotoPath);
+                        uploadPhotoBeforeSave(dataModel, table, progressData);
+                    } else if (localPhotoBase64 != null && !localPhotoBase64.isEmpty()) {
+                        Log.d("PHOTO_UPLOAD", "Uploading base64 photo data");
+                        uploadBase64PhotoBeforeSave(dataModel, table, progressData);
+                    }
+                } else {
+                    // No local photo to upload, save directly
+                    Log.d("PHOTO_UPLOAD", "No local photo to upload, saving directly");
+                    saveToFirestoreWithBackup(table, progressData);
+                }
+            },
+            e -> {
+                // Handle upload failure
+                Log.e("Firebase", "Image upload failed", e);
+                progressDialog.dismiss();
+                Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            },
+            progress -> {
+                // Update progress
+                progressDialog.setMessage("Uploaded: " + (int) progress + "%");
+            }
+        );
     }
 
     private void fetchAdvancedQuestion(String language, String type) {
@@ -1462,8 +1832,8 @@ public class GeneratesActivity extends AppCompatActivity {
                         try {
                         String originalBase64 = apiResponse.getGraphImages().get(0);
                             if (originalBase64 != null && !originalBase64.trim().isEmpty()) {
-                        String compressedBase64 = compressBase64ForFirestore(originalBase64);
-                        dataModel.setBase64(compressedBase64);
+                        // Legacy: No longer save to base64* fields - should upload to Storage and save URL to questionImageUrl1
+                        // TODO: Upload image to Storage and set questionImageUrl1 instead
                         Log.d("IMAGE_LOAD", "Loading GraphImage to iv: " + originalBase64.substring(0, Math.min(50, originalBase64.length())));
 
                                 BitmapDrawable drawable = base64ToDrawable(originalBase64, GeneratesActivity.this);
@@ -1481,8 +1851,8 @@ public class GeneratesActivity extends AppCompatActivity {
                     // Handle Image (image1_base64 -> iv2)
                     if (apiResponse.getImage1_base64() != null && !apiResponse.getImage1_base64().isEmpty()) {
                         String originalBase64_2 = apiResponse.getImage1_base64();
-                        String compressedBase64_2 = compressBase64ForFirestore(originalBase64_2);
-                        dataModel.setBase64_2(compressedBase64_2);
+                        // Legacy: No longer save to base64* fields - should upload to Storage and save URL to questionImageUrl2
+                        // TODO: Upload image to Storage and set questionImageUrl2 instead
                         Log.d("IMAGE_LOAD", "Loading Image1 to iv2: " + originalBase64_2.substring(0, Math.min(50, originalBase64_2.length())));
                         loadImageWithGlide(base64ToDrawable(originalBase64_2, GeneratesActivity.this), binding.iv2);
                         binding.iv2.setVisibility(View.VISIBLE);
@@ -1499,8 +1869,8 @@ public class GeneratesActivity extends AppCompatActivity {
                                 Log.d("TABLE_IMAGE_DEBUG", "Table 1 base64 length: " + originalBase64_3.length());
                                 Log.d("TABLE_IMAGE_DEBUG", "Table 1 base64 preview: " + originalBase64_3.substring(0, Math.min(100, originalBase64_3.length())));
 
-                        String compressedBase64_3 = compressBase64ForFirestore(originalBase64_3);
-                        dataModel.setBase64_3(compressedBase64_3);
+                        // Legacy: No longer save to base64* fields - should upload to Storage and save URL to questionImageUrl3
+                        // TODO: Upload image to Storage and set questionImageUrl3 instead
                         Log.d("getTable_img_base64_1 --&> ", "" + originalBase64_3.substring(0, Math.min(50, originalBase64_3.length())));
 
                                 // Try to convert base64 to drawable with better error handling
@@ -1554,8 +1924,8 @@ public class GeneratesActivity extends AppCompatActivity {
                                 Log.d("TABLE_IMAGE_DEBUG", "Table 2 base64 length: " + originalBase64_4.length());
                                 Log.d("TABLE_IMAGE_DEBUG", "Table 2 base64 preview: " + originalBase64_4.substring(0, Math.min(100, originalBase64_4.length())));
 
-                        String compressedBase64_4 = compressBase64ForFirestore(originalBase64_4);
-                        dataModel.setBase64_4(compressedBase64_4);
+                        // Legacy: No longer save to base64* fields - should upload to Storage and save URL to questionImageUrl4
+                        // TODO: Upload image to Storage and set questionImageUrl4 instead
                         Log.d("getTable_img_base64_2 --&> ", "" + originalBase64_4.substring(0, Math.min(50, originalBase64_4.length())));
 
                                 // Try to convert base64 to drawable with better error handling
@@ -1605,8 +1975,8 @@ public class GeneratesActivity extends AppCompatActivity {
                         && apiResponse.getTable_img_base64() != null && !apiResponse.getTable_img_base64().isEmpty()) {
                         try {
                         String originalFallback3 = apiResponse.getTable_img_base64();
-                        String compressedFallback3 = compressBase64ForFirestore(originalFallback3);
-                        dataModel.setBase64_3(compressedFallback3);
+                        // Legacy: No longer save to base64* fields - should upload to Storage and save URL to questionImageUrl3
+                        // TODO: Upload image to Storage and set questionImageUrl3 instead
                             Log.d("TABLE_FALLBACK_DEBUG", "Using fallback table image for iv3");
                         Log.d("getTable_img_base64 fallback --&> ", "" + originalFallback3.substring(0, Math.min(50, originalFallback3.length())));
 
@@ -1646,8 +2016,8 @@ public class GeneratesActivity extends AppCompatActivity {
                     if ((apiResponse.getImage1_base64() == null || apiResponse.getImage1_base64().isEmpty())
                         && apiResponse.getLocal_image_base64() != null && !apiResponse.getLocal_image_base64().isEmpty()) {
                         String originalFallback2 = apiResponse.getLocal_image_base64();
-                        String compressedFallback2 = compressBase64ForFirestore(originalFallback2);
-                        dataModel.setBase64_2(compressedFallback2);
+                        // Legacy: No longer save to base64* fields - should upload to Storage and save URL to questionImageUrl2
+                        // TODO: Upload image to Storage and set questionImageUrl2 instead
                         Log.d("getLocal_image_base64 fallback --&> ", "" + originalFallback2.substring(0, Math.min(50, originalFallback2.length())));
                         loadImageWithGlide(base64ToDrawable(originalFallback2, GeneratesActivity.this), binding.iv2);
                         binding.iv2.setVisibility(View.VISIBLE);
@@ -1656,8 +2026,8 @@ public class GeneratesActivity extends AppCompatActivity {
                     // Handle image2_base64 (baru) -> iv5
                     if (apiResponse.getImage2_base64() != null && !apiResponse.getImage2_base64().isEmpty()) {
                         String originalBase64_5 = apiResponse.getImage2_base64();
-                        String compressedBase64_5 = compressBase64ForFirestore(originalBase64_5);
-                        dataModel.setBase64_5(compressedBase64_5);
+                        // Legacy: No longer save to base64_5 field - should upload to Storage and save URL to questionImageUrl5
+                        // TODO: Upload image to Storage and set questionImageUrl5 instead
                         Log.d("getImage2_base64 --&> ", "" + originalBase64_5.substring(0, Math.min(50, originalBase64_5.length())));
                         loadImageWithGlide(base64ToDrawable(originalBase64_5, GeneratesActivity.this), binding.iv5);
                         binding.iv5.setVisibility(View.VISIBLE);
@@ -2049,7 +2419,9 @@ public class GeneratesActivity extends AppCompatActivity {
 
     public void updateTotalVisitingIntroduction(long visitStartTimeMillis) {
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
-        DocumentReference userDocRef = firestore.collection("user").document(SessionManager.getId(this));
+        // Collection "user" is shared, but use VersionHelper for consistency
+        String userCollection = VersionHelper.getCollectionName("user");
+        DocumentReference userDocRef = firestore.collection(userCollection).document(SessionManager.getId(this));
 
         long visitDuration = System.currentTimeMillis() - visitStartTimeMillis;
 
@@ -2135,16 +2507,32 @@ public class GeneratesActivity extends AppCompatActivity {
             String photoPath = dataModel.getLocalPhotoPath(); // Use local photo path
             String experimentId = dataModel.getId();
             String experimentType = dataModel.getTypeData();
+            
+            // Determine source based on question type
+            boolean isCustomQuestionNew = getIntent().getBooleanExtra("isCustomQuestionNew", false);
+            final String source; // Must be final for use in lambda
+            if (isCustomQuestionNew) {
+                source = "Buat Pertanyaan Sendiri";
+            } else {
+                boolean isCustomQuestion = getIntent().getBooleanExtra("isCustomQuestion", false);
+                if (isCustomQuestion) {
+                    source = "Buat Pertanyaan dengan AI";
+                } else {
+                    source = "Experiment"; // Default
+                }
+            }
 
-            StorageUtil.uploadExperimentPhoto(
+            StorageUtil.uploadExperimentPhotoWithSource(
                 this,
                 photoPath,
                 experimentId,
                 experimentType,
+                source, // Source metadata
                 (downloadUrl, storagePath) -> {
                     // Update progress data with photo URL and path
                     progressData.put("experimentPhotoUrl", downloadUrl);
                     progressData.put("experimentPhotoPath", storagePath);
+                    Log.d("PHOTO_UPLOAD", "Experiment photo uploaded: " + storagePath + ", Source: " + source);
 
                     // Save to Firestore
                     saveToFirestoreWithBackup(table, progressData);
@@ -2179,15 +2567,37 @@ public class GeneratesActivity extends AppCompatActivity {
             // Convert base64 to bytes and upload
             byte[] imageBytes = android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT);
 
-            StorageUtil.uploadBytesWithUserId(
+            // Determine source based on question type
+            String userId = SessionManager.getId(this);
+            String userName = SessionManager.getName(this);
+            boolean isCustomQuestionNew = getIntent().getBooleanExtra("isCustomQuestionNew", false);
+            final String source; // Must be final for use in lambda
+            if (isCustomQuestionNew) {
+                source = "Buat Pertanyaan Sendiri";
+            } else {
+                boolean isCustomQuestion = getIntent().getBooleanExtra("isCustomQuestion", false);
+                if (isCustomQuestion) {
+                    source = "Buat Pertanyaan dengan AI";
+                } else {
+                    source = "Experiment"; // Default
+                }
+            }
+            
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String fileName = userId + "_exp_" + experimentId + "_" + experimentType + "_" + timestamp + ".jpg";
+            
+            StorageUtil.uploadBytesWithUserIdAndMetadata(
                 this,
                 imageBytes,
                 StorageUtil.STORAGE_PATH_EXPERIMENTS,
-                "exp_" + experimentId + "_" + experimentType + "_" + System.currentTimeMillis() + ".jpg",
+                fileName,
+                source, // Source metadata
+                userName, // User name metadata
                 (downloadUrl, storagePath) -> {
                     // Update progress data with photo URL and path
                     progressData.put("experimentPhotoUrl", downloadUrl);
                     progressData.put("experimentPhotoPath", storagePath);
+                    Log.d("PHOTO_UPLOAD", "Experiment photo uploaded: " + storagePath + ", Source: " + source);
 
                     // Save to Firestore
                     saveToFirestoreWithBackup(table, progressData);
@@ -2212,23 +2622,135 @@ public class GeneratesActivity extends AppCompatActivity {
     }
 
     /**
-     * Save to Firestore with backup
+     * Upload photoAnswer to Firebase Storage for all questions (custom and non-custom)
+     */
+    private void uploadPhotoAnswerToStorage(DataModel dataModel, String table, java.util.Map<String, Object> progressData) {
+        try {
+            String photoAnswerBase64 = dataModel.getPhotoAnswer();
+            if (photoAnswerBase64 == null || photoAnswerBase64.isEmpty()) {
+                // No photoAnswer to upload, save directly
+                saveToFirestoreWithBackup(table, progressData);
+                return;
+            }
+            
+            // Convert base64 to bytes
+            String base64Data = photoAnswerBase64;
+            if (photoAnswerBase64.contains(",")) {
+                base64Data = photoAnswerBase64.split(",")[1];
+            }
+            byte[] imageBytes = android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT);
+            
+            // Generate filename with userId
+            String userId = SessionManager.getId(this);
+            String userName = SessionManager.getName(this);
+            String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date());
+            String fileName = userId + "_photo_answer_" + dataModel.getId() + "_" + timestamp + ".jpg";
+            
+            // Determine source based on question type
+            boolean isCustomQuestionNew = getIntent().getBooleanExtra("isCustomQuestionNew", false);
+            boolean isCustomQuestion = getIntent().getBooleanExtra("isCustomQuestion", false);
+            final String source; // Must be final for use in lambda
+            if (isCustomQuestionNew) {
+                source = "Buat Pertanyaan Sendiri"; // Default for custom questions
+            } else if (isCustomQuestion) {
+                source = "Buat Pertanyaan dengan AI"; // For questions from list
+            } else {
+                source = "Experiment"; // For regular experiments/records
+            }
+            
+            // Upload to Firebase Storage with metadata (userId, source, userName)
+            StorageUtil.uploadBytesWithUserIdAndMetadata(
+                this,
+                imageBytes,
+                StorageUtil.STORAGE_PATH_DOCUMENTATION,
+                fileName,
+                source, // Source metadata
+                userName, // User name metadata
+                (downloadUrl, storagePath) -> {
+                    Log.d("PHOTO_ANSWER_UPLOAD", "Photo answer uploaded successfully: " + downloadUrl);
+                    Log.d("PHOTO_ANSWER_UPLOAD", "Storage path: " + storagePath + ", Source: " + source);
+                    
+                    // Set photoAnswerUrl and photoAnswerPath in progressData
+                    progressData.put("photoAnswerUrl", downloadUrl);
+                    progressData.put("photoAnswerPath", storagePath);
+                    
+                    // Remove photoAnswer (base64) from progressData
+                    progressData.put("photoAnswer", null);
+                    
+                    // Also update DataModel
+                    dataModel.setPhotoAnswerUrl(downloadUrl);
+                    dataModel.setPhotoAnswerPath(storagePath);
+                    dataModel.setPhotoAnswer(null); // Clear base64
+                    
+                    // Save to Firestore
+                    saveToFirestoreWithBackup(table, progressData);
+                },
+                e -> {
+                    Log.e("PHOTO_ANSWER_UPLOAD", "Failed to upload photo answer: " + e.getMessage());
+                    Toast.makeText(this, "Gagal mengunggah foto jawaban: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    
+                    // Save without photoAnswer if upload fails
+                    progressData.put("photoAnswer", null);
+                    saveToFirestoreWithBackup(table, progressData);
+                },
+                null
+            );
+            
+        } catch (Exception e) {
+            Log.e("PHOTO_ANSWER_UPLOAD", "Error uploading photo answer: " + e.getMessage());
+            Toast.makeText(this, "Error mengunggah foto jawaban: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            
+            // Save without photoAnswer if error
+            progressData.put("photoAnswer", null);
+            saveToFirestoreWithBackup(table, progressData);
+        }
+    }
+
+    /**
+     * Save to Firestore (without backup)
      */
     private void saveToFirestoreWithBackup(String table, java.util.Map<String, Object> progressData) {
         // Don't override status - use the one already set in progressData
         // The status should already be correctly set based on context in the calling methods
 
-        FirestoreUtil.addOrUpdateDocumentWithBackup(
-            table,
-            "backup_" + table,
-            dataModel.getId(),
+        // Get documentId from progressData (more reliable than dataModel.getId())
+        String documentId = (String) progressData.get("id");
+        if (documentId == null || documentId.isEmpty()) {
+            // Fallback to dataModel.getId() if not in progressData
+            documentId = dataModel.getId();
+            if (documentId == null || documentId.isEmpty()) {
+                documentId = String.valueOf(System.currentTimeMillis());
+                progressData.put("id", documentId);
+                dataModel.setId(documentId);
+            }
+        } else {
+            // Ensure dataModel.getId() matches progressData
+            dataModel.setId(documentId);
+        }
+
+        // Make final for use in lambda
+        final String finalTable = table;
+        final String finalDocumentId = documentId;
+
+        // Log for debugging
+        Log.d("SAVE_TO_FIRESTORE", "Saving to collection: " + finalTable + ", documentId: " + finalDocumentId);
+        Log.d("SAVE_TO_FIRESTORE", "ProgressData keys: " + progressData.keySet());
+        Log.d("SAVE_TO_FIRESTORE", "ProgressData id: " + progressData.get("id"));
+        Log.d("SAVE_TO_FIRESTORE", "ProgressData question: " + progressData.get("question"));
+        Log.d("SAVE_TO_FIRESTORE", "ProgressData customerName: " + progressData.get("customerName"));
+
+        // Save to Firestore without backup collection
+        FirestoreUtil.addOrUpdateDocument(
+            finalTable,
+            finalDocumentId,
             progressData,
             () -> {
                 // Success callback
+                Log.d("SAVE_TO_FIRESTORE", "Successfully saved to " + finalTable + " with documentId: " + finalDocumentId);
                 Toast.makeText(this, "Progress saved successfully!", Toast.LENGTH_SHORT).show();
 
                 // Navigate based on context
-                if (table.equals("questions")) {
+                if (finalTable.equals("questions")) {
                     // For custom questions, go to home
                     try {
                         Intent homeIntent = new Intent(GeneratesActivity.this, MainActivity.class);

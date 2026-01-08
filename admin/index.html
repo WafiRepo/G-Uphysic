@@ -84,13 +84,13 @@
     <script>
         // Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyAZL5oSEVbDLrN2hbZeDXSchr8wDWAW4ok",
-            authDomain: "phyphox-34aed.firebaseapp.com",
-            projectId: "phyphox-34aed",
-            storageBucket: "phyphox-34aed.firebasestorage.app",
-            messagingSenderId: "602030706614",
-            appId: "1:602030706614:web:f0d8a44a4c4012749b3b17",
-            measurementId: "G-M7SKB5YS91"
+            apiKey: "AIzaSyBF1Oy7vcWztqtcMAQoG_zx2eqQwevXvRg",
+            authDomain: "gphysolve.firebaseapp.com",
+            projectId: "gphysolve",
+            storageBucket: "gphysolve.firebasestorage.app",
+            messagingSenderId: "794871328792",
+            appId: "1:794871328792:web:2a37ca02c792fc6b83536d",
+            measurementId: "G-MNGEX8W1X4"
         };
 
         // Initialize Firebase
@@ -138,9 +138,9 @@
                     throw new Error('Access denied. Admin privileges required.');
                 }
 
-                // Success - redirect to dashboard
+                // Success - redirect to users page
                 console.log('Login successful, redirecting...');
-                window.location.href = 'dashboard.html';
+                window.location.href = 'users.html';
 
             } catch (error) {
                 console.error('Login error:', error);
@@ -183,7 +183,7 @@
                     .get()
                     .then((doc) => {
                         if (doc.exists && doc.data().role === 'admin') {
-                            window.location.href = 'dashboard.html';
+                            window.location.href = 'users.html';
                         } else {
                             // Sign out non-admin users
                             firebase.auth().signOut();

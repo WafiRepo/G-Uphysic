@@ -1,15 +1,36 @@
-/* Admin Portal Common Styles */
+/* Admin Portal Common Styles - Simplified & Consistent */
+
+:root {
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --light-bg: #f8f9fa;
+    --white: #ffffff;
+    --text-dark: #333333;
+    --text-muted: #6c757d;
+    --border-color: #dee2e6;
+    --shadow: 0 2px 4px rgba(0,0,0,.1);
+    --shadow-hover: 0 4px 8px rgba(0,0,0,.15);
+}
+
+body {
+    background-color: var(--light-bg);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
 
 /* Sidebar Styles */
 .sidebar {
     position: fixed;
-    top: 0;
+    top: 56px;
     bottom: 0;
     left: 0;
     z-index: 100;
-    padding: 48px 0 0;
-    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
-    background: #f8f9fa;
+    padding: 20px 0;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, .1);
+    background: var(--white);
     width: 240px;
 }
 
@@ -24,29 +45,35 @@
 
 /* Navbar Styles */
 .navbar {
-    box-shadow: 0 2px 4px rgba(0,0,0,.1);
-    z-index: 1030; /* Ensure navbar is above other elements */
-    background: white !important;
+    box-shadow: var(--shadow);
+    z-index: 1030;
+    background: var(--white) !important;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
 }
 
 .navbar-brand {
-    font-weight: bold;
+    font-weight: 700;
     font-size: 1.5rem;
-    color: #333 !important;
+    color: var(--primary-color) !important;
     text-decoration: none;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .navbar-brand:hover {
-    color: #007bff !important;
+    opacity: 0.8;
 }
 
 /* Main Content Styles */
 main {
     margin-left: 240px;
-    padding: 20px;
-    padding-top: 80px; /* Add padding to prevent navbar overlap */
+    padding: 30px;
+    padding-top: 90px;
     min-height: 100vh;
-    background: #f8f9fa;
+    background: var(--light-bg);
 }
 
 /* Navigation Links */
@@ -60,12 +87,13 @@ main {
 
 .nav-link:hover {
     background-color: #e9ecef;
-    color: #007bff;
+    color: var(--primary-color);
 }
 
 .nav-link.active {
-    background-color: #007bff;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white !important;
+    font-weight: 600;
 }
 
 .nav-link i {
@@ -77,13 +105,24 @@ main {
 /* Card Styles */
 .card {
     border: none;
-    border-radius: 0.5rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    transition: box-shadow 0.15s ease-in-out;
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow);
+    transition: all 0.2s ease-in-out;
+    background: var(--white);
+    margin-bottom: 1.5rem;
 }
 
 .card:hover {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+    font-weight: 600;
+    border-radius: 0.75rem 0.75rem 0 0 !important;
+    padding: 1rem 1.5rem;
 }
 
 /* Button Styles */

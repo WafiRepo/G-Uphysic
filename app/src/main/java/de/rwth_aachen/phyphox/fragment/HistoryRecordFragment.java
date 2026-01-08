@@ -421,6 +421,12 @@ public class HistoryRecordFragment extends Fragment {
     }
     
     private void createBackupIfNeeded() {
+        // DISABLED: Backup collections are no longer used
+        // Collection backup_questions and backup_record have been removed
+        // This method is kept for compatibility but does nothing
+        return;
+        
+        /* DISABLED CODE - Backup collections removed
         if (allData == null || allData.isEmpty()) {
             return;
         }
@@ -440,6 +446,7 @@ public class HistoryRecordFragment extends Fragment {
         }
         
         android.util.Log.d("BACKUP", "Created backup collection: " + backupCollectionName + " with " + allData.size() + " items");
+        */
     }
     
     private void restoreFromBackup() {

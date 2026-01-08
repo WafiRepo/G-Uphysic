@@ -4,8 +4,8 @@
     <domain-config cleartextTrafficPermitted="true">
         <!-- Ganti 'api.example.com' dengan IP atau domain server yang digunakan oleh perangkat fisik -->
         <domain includeSubdomains="true">api.example.com</domain>
-        <!-- Tambahkan IP host jika menggunakan IP lokal, misalnya untuk komputer dalam jaringan yang sama -->
-        <domain includeSubdomains="true">192.168.1.5</domain> <!-- Ganti dengan IP dari komputer Anda -->
+        <!-- IP lokal untuk perangkat fisik di jaringan yang sama -->
+        <domain includeSubdomains="true">192.168.1.4</domain> <!-- IP komputer lokal -->
     </domain-config>
 
     <!-- Konfigurasi untuk akses dari emulator Android -->
