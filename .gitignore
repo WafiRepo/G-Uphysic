@@ -7,3 +7,6 @@ build/
 /*/.externalNativeBuild/
 /*/.cxx
 /admin
+
+# Nested repo (repo terpisah dengan remote fastapi-gpt)
+fastapi-gpt/
