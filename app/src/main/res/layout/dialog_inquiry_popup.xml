@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="8dp"
+        android:text="💡"
+        android:textSize="36sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="16dp"
+        android:text="Pertanyaan untuk Eksperimenmu"
+        android:textColor="@color/phyphox_purple"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_inquiry_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/phyphox_white_90"
+        android:padding="16dp"
+        android:textColor="@color/phyphox_black_80"
+        android:textSize="16sp"
+        android:lineSpacingExtra="4dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:id="@+id/inquiry_meta">
+
+        <TextView
+            android:id="@+id/tv_inquiry_stage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/phyphox_black_70"
+            android:textSize="12sp" />
+        <TextView
+            android:id="@+id/tv_inquiry_band"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/phyphox_black_70"
+            android:textSize="12sp" />
+        <TextView
+            android:id="@+id/tv_inquiry_object"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/phyphox_black_70"
+            android:textSize="12sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

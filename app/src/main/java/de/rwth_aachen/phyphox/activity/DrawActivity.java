@@ -18,6 +18,8 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,18 +29,28 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageException;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.Locale;
+import java.util.UUID;
 
 import de.rwth_aachen.phyphox.App;
 import de.rwth_aachen.phyphox.Helper.DrawingView;
+import de.rwth_aachen.phyphox.Helper.InquiryLogHelper;
 import de.rwth_aachen.phyphox.Helper.SessionManager;
+import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
+import de.rwth_aachen.phyphox.NetworkConnection.RetrofitClient;
+import de.rwth_aachen.phyphox.NetworkConnection.SubmitResponseRequest;
 import de.rwth_aachen.phyphox.R;
 import de.rwth_aachen.phyphox.model.DataModel;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class DrawActivity extends AppCompatActivity {
 
@@ -47,6 +59,30 @@ public class DrawActivity extends AppCompatActivity {
     private LinearLayout colorPickerOverlay;
     private View currentColorIndicator;
     private boolean isColorPickerVisible = false;
+    private TextView tvCanvasHeaderTitle;
+    private TextView tvCanvasHeaderSubtitle;
+    private TextView tvInquiryFeedbackResult;
+    private ScrollView svInquiryFeedbackResult;
+    private final StringBuilder feedbackHistoryBuilder = new StringBuilder();
+    private int feedbackTurn = 0;
+    private String stage2SessionId;
+    private String stage2GraphContext = "Screenshot phyphox + canvas: baca label sumbu dari gambar (contoh umum: ω vs t).";
+    private String cachedGraphImageBase64;
+
+    private static String stripQuestionFieldFromFeedback(String feedback) {
+        if (feedback == null) return "";
+        String out = feedback;
+        out = out.replaceAll("(?im)^\\s*pertanyaan\\s*:\\s*.*(?:\\r?\\n)?", "");
+        out = out.replaceAll("(?im)^\\s*pertanyaan\\s*-\\s*.*(?:\\r?\\n)?", "");
+        out = out.replaceAll("(?im)^\\s*pertanyaan\\s+.*(?:\\r?\\n)?", "");
+        out = out.replaceAll("(?im)^\\s*question\\s*:\\s*.*(?:\\r?\\n)?", "");
+        out = out.replaceAll("(?im)^\\s*question\\s*-\\s*.*(?:\\r?\\n)?", "");
+        out = out.replaceAll("(?im)^\\s*question\\s+.*(?:\\r?\\n)?", "");
+        out = out.replaceAll("(?im)^\\s*inquiry\\s*:\\s*.*(?:\\r?\\n)?", "");
+        out = out.replaceAll("(?im)^\\s*inquiry\\s*#?\\d*\\s*:\\s*.*(?:\\r?\\n)?", "");
+        out = out.replaceAll("(?im)^\\s*type\\s*:\\s*.*(?:\\r?\\n)?", "");
+        return out.trim();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +116,8 @@ public class DrawActivity extends AppCompatActivity {
         // Initialize color picker elements
         colorPickerOverlay = findViewById(R.id.color_picker_overlay);
         currentColorIndicator = findViewById(R.id.current_color_indicator);
+        tvCanvasHeaderTitle = findViewById(R.id.tv_canvas_header_title);
+        tvCanvasHeaderSubtitle = findViewById(R.id.tv_canvas_header_subtitle);
 
         // Set click listeners for buttons
         btnUndo.setOnClickListener(v -> mDrawingView.undo());
@@ -95,10 +133,18 @@ public class DrawActivity extends AppCompatActivity {
             startActivity(calculatorIntent);
         });
 
-        // Navigate to the next activity on Next button click
+        // Tombol next: kompres JPEG (sama seperti API) lalu unggah ke Firebase Storage
         btnNext.setOnClickListener(v -> {
-            // Upload the drawing and proceed to questions
-            uploadImageToFirestore(convertBitmapToBytes(getViewAsBitmap(imageScreenshot)), "question_image_" + System.currentTimeMillis());
+            Bitmap bmp = getViewAsBitmap(imageScreenshot);
+            byte[] data = compressBitmapToJpeg(bmp, 2048, 85);
+            if (bmp != null && !bmp.isRecycled()) {
+                bmp.recycle();
+            }
+            if (data.length == 0) {
+                Toast.makeText(this, "Gagal menyiapkan gambar untuk diunggah.", Toast.LENGTH_LONG).show();
+                return;
+            }
+            uploadImageToFirestore(data, "question_image_" + System.currentTimeMillis());
         });
 
         // Tambahkan logic untuk icon info (introduction)
@@ -107,6 +153,7 @@ public class DrawActivity extends AppCompatActivity {
         
         // Setup color selection buttons
         setupColorButtons();
+        setupInquiryInputSubmission(imageScreenshot);
     }
 
     private void showIntroductionDialog() {
@@ -154,11 +201,192 @@ public class DrawActivity extends AppCompatActivity {
         return baos.toByteArray();
     }
 
+    /**
+     * Kompres bitmap ke JPEG dengan batas sisi terpanjang; mengecilkan ukuran payload base64 untuk API.
+     */
+    private static byte[] compressBitmapToJpeg(Bitmap source, int maxSide, int quality) {
+        int w = source.getWidth();
+        int h = source.getHeight();
+        float maxDim = Math.max(w, h);
+        Bitmap toCompress = source;
+        if (maxDim > maxSide) {
+            float scale = maxSide / maxDim;
+            int nw = Math.max(1, Math.round(w * scale));
+            int nh = Math.max(1, Math.round(h * scale));
+            toCompress = Bitmap.createScaledBitmap(source, nw, nh, true);
+        }
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        toCompress.compress(Bitmap.CompressFormat.JPEG, quality, baos);
+        if (toCompress != source) {
+            toCompress.recycle();
+        }
+        return baos.toByteArray();
+    }
+
+    private void setupInquiryInputSubmission(LinearLayout imageScreenshot) {
+        android.widget.EditText etInquiryInput = findViewById(R.id.et_inquiry_input);
+        android.widget.Button btnSubmitInquiry = findViewById(R.id.btn_submit_inquiry_feedback);
+        tvInquiryFeedbackResult = findViewById(R.id.tv_inquiry_feedback_result);
+        svInquiryFeedbackResult = findViewById(R.id.sv_inquiry_feedback_result);
+        stage2SessionId = UUID.randomUUID().toString();
+
+        btnSubmitInquiry.setOnClickListener(v -> {
+            String userInquiry = etInquiryInput.getText() != null ? etInquiryInput.getText().toString().trim() : "";
+            if (userInquiry.isEmpty()) {
+                Toast.makeText(this, "Silakan isi inquiry terlebih dahulu.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            submitInquiryForFeedback(imageScreenshot, userInquiry);
+        });
+    }
+
+    private String ensureGraphImageBase64(LinearLayout imageScreenshot) {
+        if (cachedGraphImageBase64 != null && !cachedGraphImageBase64.isEmpty()) {
+            return cachedGraphImageBase64;
+        }
+        ProgressDialog progress = new ProgressDialog(this);
+        Bitmap bmp = getViewAsBitmap(imageScreenshot);
+        byte[] jpeg = compressBitmapToJpeg(bmp, 1280, 80);
+        if (jpeg.length > 900_000) {
+            jpeg = compressBitmapToJpeg(bmp, 960, 70);
+        }
+        if (jpeg.length > 900_000) {
+            jpeg = compressBitmapToJpeg(bmp, 800, 60);
+        }
+        bmp.recycle();
+        cachedGraphImageBase64 = android.util.Base64.encodeToString(jpeg, android.util.Base64.NO_WRAP);
+        return cachedGraphImageBase64;
+    }
+
+    private void submitInquiryForFeedback(LinearLayout imageScreenshot, String userInquiry) {
+        ProgressDialog progress = new ProgressDialog(this);
+        progress.setTitle("Mengirim inquiry");
+        progress.setMessage("Menunggu feedback LLM...");
+        progress.setCancelable(false);
+        progress.show();
+
+        String b64 = ensureGraphImageBase64(imageScreenshot);
+        String uid = SessionManager.getId(this);
+        if (uid == null || uid.isEmpty()) uid = "default";
+
+        SubmitResponseRequest req = new SubmitResponseRequest(
+                uid,
+                userInquiry,
+                "id",
+                stage2SessionId,
+                stage2GraphContext,
+                b64
+        );
+        ApiService api = RetrofitClient.getRetrofitInstance().create(ApiService.class);
+        api.submitResponseProblemExploringStage2(req).enqueue(new Callback<de.rwth_aachen.phyphox.NetworkConnection.SubmitResponseResponse>() {
+            @Override
+            public void onResponse(Call<de.rwth_aachen.phyphox.NetworkConnection.SubmitResponseResponse> call, Response<de.rwth_aachen.phyphox.NetworkConnection.SubmitResponseResponse> response) {
+                progress.dismiss();
+                if (response.isSuccessful() && response.body() != null) {
+                    String feedback = response.body().getFeedback();
+                    String nextStep = response.body().getNextStep();
+                    if (feedback == null || feedback.trim().isEmpty()) {
+                        feedback = "none";
+                    }
+                    feedback = stripQuestionFieldFromFeedback(feedback);
+                    nextStep = stripQuestionFieldFromFeedback(nextStep);
+                    StringBuilder entry = new StringBuilder();
+                    feedbackTurn++;
+                    entry.append("Feedback #").append(feedbackTurn).append(":\n").append(feedback);
+                    if (nextStep != null && !nextStep.trim().isEmpty()) {
+                        entry.append("\n\nNext step: ").append(nextStep.trim());
+                    }
+                    if (feedbackHistoryBuilder.length() > 0) {
+                        feedbackHistoryBuilder.append("\n\n----------------\n\n");
+                    }
+                    feedbackHistoryBuilder.append(entry);
+                    String fbSummary = entry.toString();
+                    byte[] graphJpeg = null;
+                    try {
+                        graphJpeg = android.util.Base64.decode(b64, android.util.Base64.NO_WRAP);
+                    } catch (Exception ignored) {
+                    }
+                    InquiryLogHelper.logExploringStage2WithCanvasUpload(
+                            DrawActivity.this,
+                            stage2GraphContext != null ? stage2GraphContext : "Canvas / graph inquiry",
+                            userInquiry,
+                            fbSummary,
+                            stage2SessionId,
+                            graphJpeg
+                    );
+                    tvInquiryFeedbackResult.setText(feedbackHistoryBuilder.toString());
+                    svInquiryFeedbackResult.setVisibility(View.VISIBLE);
+                    tvCanvasHeaderTitle.setText("🧠 Buat Inquiry");
+                    tvCanvasHeaderSubtitle.setText("Anda bisa edit inquiry lalu submit lagi untuk feedback baru.");
+                    svInquiryFeedbackResult.post(() -> svInquiryFeedbackResult.fullScroll(View.FOCUS_DOWN));
+                } else {
+                    Toast.makeText(DrawActivity.this,
+                            "Gagal mendapatkan feedback dari server.",
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<de.rwth_aachen.phyphox.NetworkConnection.SubmitResponseResponse> call, Throwable t) {
+                progress.dismiss();
+                Toast.makeText(DrawActivity.this,
+                        "Koneksi gagal: " + (t.getMessage() != null ? t.getMessage() : "unknown"),
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    /**
+     * Pesan error Firebase Storage yang lebih jelas (bukan hanya "unknown error").
+     */
+    private String formatFirebaseStorageError(Throwable e) {
+        Throwable cur = e;
+        for (int i = 0; i < 4 && cur != null; i++) {
+            if (cur instanceof StorageException) {
+                StorageException se = (StorageException) cur;
+                int code = se.getErrorCode();
+                if (code == StorageException.ERROR_NOT_AUTHORIZED) {
+                    return "Akses ditolak oleh Firebase Storage. Periksa rules Storage dan autentikasi di aplikasi.";
+                }
+                if (code == StorageException.ERROR_NOT_AUTHENTICATED) {
+                    return "Belum login ke Firebase. Pastikan pengguna sudah masuk jika rules meminta auth.";
+                }
+                if (code == StorageException.ERROR_QUOTA_EXCEEDED) {
+                    return "Kuota penyimpanan Firebase tercapai.";
+                }
+                if (code == StorageException.ERROR_RETRY_LIMIT_EXCEEDED) {
+                    return "Unggah gagal setelah beberapa percobaan. Coba lagi atau periksa jaringan.";
+                }
+                if (code == StorageException.ERROR_OBJECT_NOT_FOUND
+                        || code == StorageException.ERROR_BUCKET_NOT_FOUND
+                        || code == StorageException.ERROR_PROJECT_NOT_FOUND) {
+                    return "Konfigurasi bucket/proyek Firebase tidak cocok. Periksa google-services.json.";
+                }
+                String msg = se.getMessage();
+                if (msg != null && !msg.trim().isEmpty()) {
+                    return msg;
+                }
+                return "Gagal unggah (kode Storage: " + code + ").";
+            }
+            cur = cur.getCause();
+        }
+        String msg = e != null ? e.getMessage() : null;
+        if (msg != null && !msg.trim().isEmpty()) {
+            return msg;
+        }
+        return "Terjadi kesalahan saat mengunggah gambar.";
+    }
+
     public void uploadImageToFirestore(byte[] imageData, String fileName) {
+        if (imageData == null || imageData.length == 0) {
+            Toast.makeText(this, "Data gambar kosong.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         // Create and configure ProgressDialog
         ProgressDialog progressDialog = new ProgressDialog(this); // Replace 'this' with 'requireContext()' if inside a Fragment
-        progressDialog.setTitle("Uploading Image");
-        progressDialog.setMessage("Please wait while the image is being uploaded...");
+        progressDialog.setTitle("Mengunggah gambar");
+        progressDialog.setMessage("Mohon tunggu...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 
@@ -173,40 +401,45 @@ public class DrawActivity extends AppCompatActivity {
         UploadTask uploadTask = imageRef.putBytes(imageData);
         uploadTask
                 .addOnProgressListener(snapshot -> {
-                    // Update the ProgressDialog with the upload progress
-                    double progress = (100.0 * snapshot.getBytesTransferred()) / snapshot.getTotalByteCount();
-                    progressDialog.setMessage("Uploaded: " + (int) progress + "%");
+                    long total = snapshot.getTotalByteCount();
+                    if (total <= 0) {
+                        return;
+                    }
+                    double progress = (100.0 * snapshot.getBytesTransferred()) / total;
+                    progressDialog.setMessage("Terunggah: " + (int) progress + "%");
                 })
                 .addOnSuccessListener(taskSnapshot -> {
-                    // Get the download URL
-                    imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                        String downloadUrl = uri.toString();
+                    // Get the download URL (wajib ada failure listener — tanpa ini error URL tidak tertangani)
+                    imageRef.getDownloadUrl()
+                            .addOnSuccessListener(uri -> {
+                                String downloadUrl = uri.toString();
 
-                        // Save the download URL to DataModel
-                        App app = (App) getApplication();
-                        DataModel dataModel = app.getDataModel();
-                        dataModel.setPhotoAcceleration(downloadUrl);
-                        dataModel.setValueAcceleration(""); // No input value needed anymore
-                        app.setDataModel(dataModel);
-                        startActivity(new Intent(this, QuestionActivity.class));
-                        // Enable the save button
+                                // Save the download URL to DataModel
+                                App app = (App) getApplication();
+                                DataModel dataModel = app.getDataModel();
+                                dataModel.setPhotoAcceleration(downloadUrl);
+                                dataModel.setValueAcceleration(""); // No input value needed anymore
+                                app.setDataModel(dataModel);
+                                startActivity(new Intent(this, QuestionActivity.class));
 
-                        // Log success
-                        Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
+                                Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
 
-                        // Dismiss the progress dialog
-                        progressDialog.dismiss();
-                    });
+                                progressDialog.dismiss();
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("Firebase", "getDownloadUrl failed", e);
+                                progressDialog.dismiss();
+                                Toast.makeText(this,
+                                        "Gagal mendapatkan URL gambar: " + formatFirebaseStorageError(e),
+                                        Toast.LENGTH_LONG).show();
+                            });
                 })
                 .addOnFailureListener(e -> {
-                    // Handle upload failure
                     Log.e("Firebase", "Image upload failed", e);
-
-                    // Dismiss the progress dialog
                     progressDialog.dismiss();
-
-                    // Notify the user of the error
-                    Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this,
+                            "Unggah gambar gagal: " + formatFirebaseStorageError(e),
+                            Toast.LENGTH_LONG).show();
                 });
     }
     public void updateTotalVisitingIntroduction(long visitStartTimeMillis) {

@@ -1,0 +1,70 @@
+rules_version = '2';
+// Firestore Security Rules — G-Uphysic / Phyphox
+// Deploy: Firebase Console → Firestore → Rules (salin seluruh isi) ATAU:
+//   cd admin && firebase deploy --only firestore:rules
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----- Admin: sama dengan admin panel (user_questions.html): user/{uid}.role == 'admin'
+    // Opsional: custom claim request.auth.token.admin (jika kamu set dari Admin SDK)
+    function isAdminPanelUser() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/user/$(request.auth.uid))
+        && get(/databases/$(database)/documents/user/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isAuthTokenAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    function isElevatedAdmin() {
+      return isAdminPanelUser() || isAuthTokenAdmin();
+    }
+
+    // ----- user: dokumen per user (id = Firebase Auth UID)
+    match /user/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ----- record & v2_record
+    match /record/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /v2_record/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ----- questions
+    match /questions/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ----- review_required (DataRecoveryService)
+    match /review_required/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ----- inquiry_logs (satu blok saja; hapus duplikat match /inquiry_logs)
+    // create: app Android set idCustomer = pengguna login
+    // read/list: pemilik data ATAU admin panel (baca log user lain di admin)
+    // delete: admin panel (Hapus log) ATAU pemilik
+    match /inquiry_logs/{docId} {
+      allow read: if request.auth != null
+        && (resource.data.idCustomer == request.auth.uid || isElevatedAdmin());
+      allow create: if request.auth != null
+        && request.resource.data.idCustomer == request.auth.uid;
+      allow update: if request.auth != null
+        && (resource.data.idCustomer == request.auth.uid || isElevatedAdmin());
+      allow delete: if request.auth != null
+        && (resource.data.idCustomer == request.auth.uid || isElevatedAdmin());
+    }
+
+    // Koleksi lain: default deny (letakkan di paling bawah)
+    match /{collection}/{docId} {
+      allow read, write: if false;
+    }
+  }
+}

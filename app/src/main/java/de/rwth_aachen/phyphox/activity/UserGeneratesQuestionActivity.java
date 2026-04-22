@@ -45,6 +45,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
@@ -54,8 +55,8 @@ import de.rwth_aachen.phyphox.Helper.AdvancedQuestionHelper;
 import de.rwth_aachen.phyphox.Helper.EasyQuestionHelper;
 import de.rwth_aachen.phyphox.Helper.FirestoreUtil;
 import de.rwth_aachen.phyphox.Helper.IntermediateQuestionHelper;
+import de.rwth_aachen.phyphox.Helper.QuestionImageFirestoreSync;
 import de.rwth_aachen.phyphox.Helper.SessionManager;
-import de.rwth_aachen.phyphox.Helper.StorageUtil;
 import de.rwth_aachen.phyphox.Helper.StorageUtil;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiRequest;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiResponse;
@@ -214,8 +215,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
             if (dataModel.getPhotoAnswer() != null && !dataModel.getPhotoAnswer().isEmpty()) {
                 uploadPhotoAnswerToStorage(dataModel, progressDialog, userId, userName);
             } else {
-                // No photoAnswer, save directly
-                saveDataModelToFirestore(dataModel, progressDialog, userId, userName);
+                saveQuestionsWithUploadedAssets(dataModel, progressDialog, userId, userName);
             }
         });
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -255,8 +255,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                         if (dataModel.getPhotoAnswer() != null && !dataModel.getPhotoAnswer().isEmpty()) {
                             uploadPhotoAnswerToStorage(dataModel, null, userId, userName);
                         } else {
-                            // No photoAnswer, save directly
-                            saveDataModelToFirestore(dataModel, null, userId, userName);
+                            saveQuestionsWithUploadedAssets(dataModel, null, userId, userName);
                         }
                     } else {
                         finish();
@@ -595,10 +594,15 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
             "Buat Pertanyaan Sendiri", // Source metadata
             userName, // User name metadata
             (downloadUrl, storagePath) -> {
-                // Save the download URL to DataModel
+                // Simpan URL jawaban canvas ke photoDraw (jangan timpa base64 grafik soal)
                 App app = (App) getApplication();
                 DataModel dataModel = app.getDataModel();
-                dataModel.setBase64(downloadUrl);
+                ArrayList<String> photoDraws = dataModel.getPhotoDraw();
+                if (photoDraws == null) {
+                    photoDraws = new ArrayList<>();
+                    dataModel.setPhotoDraw(photoDraws);
+                }
+                photoDraws.add(downloadUrl);
                 app.setDataModel(dataModel);
 
                 // Enable the save button
@@ -1019,14 +1023,46 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
     }
 
     /**
+     * Unggah gambar soal (grafik/tabel) dari base64 ke Storage, isi questionImageUrl*, lalu simpan dokumen questions.
+     */
+    private void saveQuestionsWithUploadedAssets(DataModel dataModel, ProgressDialog progressDialog, String userId, String userName) {
+        String docId = dataModel.getId();
+        if (docId == null || docId.isEmpty()) {
+            docId = String.valueOf(System.currentTimeMillis());
+            dataModel.setId(docId);
+        }
+        App app = (App) getApplication();
+        app.setDataModel(dataModel);
+        QuestionImageFirestoreSync.uploadQuestionImagesFromDataModel(
+                this,
+                dataModel,
+                docId,
+                false,
+                new QuestionImageFirestoreSync.BatchCallback() {
+                    @Override
+                    public void onComplete() {
+                        app.setDataModel(dataModel);
+                        saveDataModelToFirestore(dataModel, progressDialog, userId, userName);
+                    }
+
+                    @Override
+                    public void onFailure(String message) {
+                        Toast.makeText(UserGeneratesQuestionActivity.this, message, Toast.LENGTH_LONG).show();
+                        if (progressDialog != null) {
+                            progressDialog.dismiss();
+                        }
+                    }
+                });
+    }
+
+    /**
      * Upload photoAnswer to Firebase Storage for custom questions
      */
     private void uploadPhotoAnswerToStorage(DataModel dataModel, ProgressDialog progressDialog, String userId, String userName) {
         try {
             String photoAnswerBase64 = dataModel.getPhotoAnswer();
             if (photoAnswerBase64 == null || photoAnswerBase64.isEmpty()) {
-                // No photoAnswer to upload, save directly
-                saveDataModelToFirestore(dataModel, progressDialog, userId, userName);
+                saveQuestionsWithUploadedAssets(dataModel, progressDialog, userId, userName);
                 return;
             }
             
@@ -1057,8 +1093,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                     dataModel.setPhotoAnswerPath(storagePath);
                     dataModel.setPhotoAnswer(null); // Clear base64
                     
-                    // Save to Firestore
-                    saveDataModelToFirestore(dataModel, progressDialog, userId, userName);
+                    saveQuestionsWithUploadedAssets(dataModel, progressDialog, userId, userName);
                 },
                 e -> {
                     Log.e("PHOTO_ANSWER_UPLOAD", "Failed to upload photo answer: " + e.getMessage());
@@ -1066,7 +1101,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                     
                     // Save without photoAnswer if upload fails
                     dataModel.setPhotoAnswer(null);
-                    saveDataModelToFirestore(dataModel, progressDialog, userId, userName);
+                    saveQuestionsWithUploadedAssets(dataModel, progressDialog, userId, userName);
                 },
                 null
             );
@@ -1077,7 +1112,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
             
             // Save without photoAnswer if error
             dataModel.setPhotoAnswer(null);
-            saveDataModelToFirestore(dataModel, progressDialog, userId, userName);
+            saveQuestionsWithUploadedAssets(dataModel, progressDialog, userId, userName);
         }
     }
 

@@ -36,21 +36,25 @@
                 android:gravity="center">
 
                 <TextView
+                    android:id="@+id/tv_canvas_header_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="✏️ Canvas Menggambar"
+                    android:text="🧠 Buat Inquiry"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/phyphox_purple" />
 
                 <TextView
+                    android:id="@+id/tv_canvas_header_subtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Gambar analisis fisika Anda"
+                    android:text="Tulis inquiry Anda, lalu submit untuk mendapatkan feedback dari LLM."
                     android:textSize="11sp"
                     android:textColor="@color/phyphox_black_60"
-                    android:gravity="center" />
+                    android:gravity="center"
+                    android:maxLines="4"
+                    android:ellipsize="end" />
 
             </LinearLayout>
 
@@ -69,6 +73,71 @@
 
     </androidx.cardview.widget.CardView>
 
+    <androidx.cardview.widget.CardView
+        android:id="@+id/inquiry_input_card"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="2dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="@color/phyphox_white_100"
+        app:layout_constraintTop_toBottomOf="@id/top_toolbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <EditText
+                android:id="@+id/et_inquiry_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:gravity="top"
+                android:hint="Contoh: Berdasarkan grafik ini, apakah hubungan a dan ω linear atau kuadrat?"
+                android:inputType="textMultiLine|textCapSentences"
+                android:background="@drawable/custom_edittext_background"
+                android:padding="10dp"
+                android:textColor="@color/phyphox_black_80"
+                android:textColorHint="@color/phyphox_black_60"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btn_submit_inquiry_feedback"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/button_purple"
+                android:text="Submit Inquiry"
+                android:textAllCaps="false"
+                android:textColor="@color/phyphox_white_100"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <ScrollView
+                android:id="@+id/sv_inquiry_feedback_result"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:layout_marginTop="8dp"
+                android:background="#EEF3FF"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tv_inquiry_feedback_result"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="10dp"
+                    android:textColor="@color/phyphox_black_80"
+                    android:textSize="12sp" />
+            </ScrollView>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
     <!-- Large Drawing Area Container -->
     <androidx.cardview.widget.CardView
         android:id="@+id/drawing_container"
@@ -78,7 +147,7 @@
         app:cardCornerRadius="16dp"
         app:cardElevation="8dp"
         app:cardBackgroundColor="@color/phyphox_white_100"
-        app:layout_constraintTop_toBottomOf="@id/top_toolbar"
+        app:layout_constraintTop_toBottomOf="@id/inquiry_input_card"
         app:layout_constraintBottom_toTopOf="@id/bottom_toolbar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -208,17 +277,17 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|start"
-            android:layout_margin="16dp"
+            android:layout_margin="8dp"
             android:background="@drawable/bg_button_group"
             android:orientation="horizontal"
-            android:padding="8dp">
+            android:padding="4dp">
 
             <!-- Color Picker Toggle -->
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fab_color_picker"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="4dp"
                 app:backgroundTint="@color/phyphox_magenta"
                 android:src="@drawable/ic_palette"
                 app:fabSize="mini" />
@@ -226,18 +295,18 @@
             <!-- Current Color Indicator -->
             <View
                 android:id="@+id/current_color_indicator"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:layout_gravity="center_vertical"
                 android:background="@drawable/color_indicator_black"
-                android:layout_marginEnd="8dp" />
+                android:layout_marginEnd="4dp" />
 
             <!-- Undo -->
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fab_undo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="4dp"
                 app:backgroundTint="@color/phyphox_purple"
                 android:src="@drawable/ic_undo"
                 app:fabSize="mini" />
@@ -260,7 +329,10 @@
         android:id="@+id/bottom_toolbar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
         app:cardBackgroundColor="@color/phyphox_white_100"
@@ -272,7 +344,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="12dp"
+            android:paddingStart="8dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="6dp"
             android:gravity="center_vertical">
 
             <!-- Clear Button -->
@@ -294,9 +369,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="2dp"
                     android:text="Hapus"
-                    android:textSize="10sp"
+                    android:textSize="9sp"
                     android:textColor="@color/phyphox_black_60" />
 
             </LinearLayout>
@@ -320,9 +395,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="2dp"
                     android:text="Kalkulator"
-                    android:textSize="10sp"
+                    android:textSize="9sp"
                     android:textColor="@color/phyphox_black_60" />
 
             </LinearLayout>
@@ -331,11 +406,11 @@
             <Button
                 android:id="@+id/fab_next"
                 android:layout_width="0dp"
-                android:layout_height="48dp"
+                android:layout_height="42dp"
                 android:layout_weight="3"
-                android:layout_marginStart="16dp"
-                android:text="📝 Lanjut ke Pertanyaan"
-                android:textSize="14sp"
+                android:layout_marginStart="10dp"
+                android:text="Next"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:textAllCaps="false"
                 android:background="@drawable/btn_next_selector"

@@ -81,6 +81,49 @@
             android:scaleType="centerCrop"
             android:visibility="gone" />
 
+        <!-- Area pertanyaan + instruksi kamera (lebih menonjol dan user-friendly) -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/inquiry_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:visibility="visible"
+            app:cardBackgroundColor="#F8F7FC"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Pertanyaan (What can you find...) - lebih besar dan warna ungu -->
+                <TextView
+                    android:id="@+id/tv_inquiry_overlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/phyphox_purple"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:lineSpacingExtra="4dp"
+                    android:gravity="center"
+                    android:visibility="gone" />
+
+                <!-- Instruksi kamera (Point the camera...) - lebih kecil, warna abu -->
+                <TextView
+                    android:id="@+id/tv_instruction_below_inquiry"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="2dp"
+                    android:text="Point the camera at the object until a green circle automatically appears along with its variables."
+                    android:textColor="#6B6B7B"
+                    android:textSize="13sp"
+                    android:gravity="center" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
     </FrameLayout>
 
     <!-- Capture Button for Taking Photos -->
@@ -88,11 +131,12 @@
         android:id="@+id/captureButton"
         android:layout_width="72dp"
         android:layout_height="72dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="20dp"
         android:background="@drawable/btn_capture_selector"
         android:src="@drawable/ic_camera"
         android:padding="16dp"
         android:elevation="8dp"
+        android:contentDescription="Ambil foto"
         app:layout_constraintBottom_toTopOf="@id/btn_save"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -189,7 +233,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginBottom="16dp"
         android:backgroundTint="@color/phyphox_purple"
-                            android:text="💾 Simpan"
+        android:text="💾 Simpan"
         android:textColor="@color/phyphox_white_100"
         app:layout_constraintBottom_toBottomOf="@id/sheet"
         app:layout_constraintStart_toStartOf="@id/sheet" />
@@ -203,7 +247,7 @@
         android:layout_marginBottom="16dp"
         android:background="@drawable/btn_next_selector"
         android:enabled="false"
-                            android:text="➡️ Selanjutnya"
+        android:text="➡️ Selanjutnya"
         android:textColor="@color/btn_next_text_selector"
         app:layout_constraintBottom_toBottomOf="@id/sheet"
         app:layout_constraintEnd_toEndOf="@id/sheet" />

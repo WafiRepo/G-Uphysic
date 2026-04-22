@@ -50,5 +50,34 @@ public interface ApiService {
             @Query("user_id") String userId,
             @Query("new_radius") float radius
     );
+
+    @Headers("Content-Type: application/json")
+    @POST("/save-experiment-location/")
+    Call<ResponseBody> saveExperimentLocation(@Body SaveExperimentLocationRequest request);
+
+    @Headers("Content-Type: application/json")
+    @POST("/inquiry/generate/problem-finding")
+    Call<InquiryGenerateResponse> generateInquiryProblemFinding(@Body InquiryGenerateRequest request);
+
+    @Headers("Content-Type: application/json")
+    @POST("/inquiry/generate/problem-exploring-stage-1")
+    Call<InquiryGenerateResponse> generateInquiryProblemExploring(@Body InquiryGenerateProblemExploringRequest request);
+
+    @Headers("Content-Type: application/json")
+    @POST("/inquiry/generate/problem-exploring-stage-1/submit-response")
+    Call<SubmitResponseResponse> submitResponseProblemExploring(@Body SubmitResponseRequest request);
+
+    @Headers("Content-Type: application/json")
+    @POST("/inquiry/generate/problem-exploring-stage-2")
+    Call<InquiryGenerateResponse> generateInquiryProblemExploringStage2(
+            @Body InquiryGenerateProblemExploringStage2Request request);
+
+    @Headers("Content-Type: application/json")
+    @POST("/inquiry/generate/problem-exploring-stage-2/submit-response")
+    Call<SubmitResponseResponse> submitResponseProblemExploringStage2(@Body SubmitResponseRequest request);
+
+    @Headers("Content-Type: application/json")
+    @POST("/validate-object-centripetal/")
+    Call<ValidateObjectResponse> validateObjectCentripetal(@Body ValidateObjectRequest request);
 }
 

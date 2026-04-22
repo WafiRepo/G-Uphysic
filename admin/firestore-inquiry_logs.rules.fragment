@@ -1,0 +1,2 @@
+// Fragmen inquiry_logs sudah digabung ke file lengkap: admin/firestore.rules
+// Salin seluruh isi firestore.rules ke Firebase Console → Firestore → Rules, lalu Publish.

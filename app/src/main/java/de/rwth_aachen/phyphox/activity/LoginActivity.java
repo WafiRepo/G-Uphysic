@@ -18,6 +18,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.nio.file.FileVisitResult;
 
@@ -131,17 +132,47 @@ public class LoginActivity extends AppCompatActivity {
         FirestoreUtil.getDocument("user", id, UserModel.class, new FirestoreUtil.OnSuccessWithDataCallback<UserModel>() {
             @Override
             public void onSuccess(UserModel data) {
+                progressDialog.dismiss();
+                if (data == null) {
+                    // Auth ada, dokumen Firestore belum ada → buat stub agar muncul di admin & konsisten dengan pengguna lain
+                    FirebaseUser fu = auth.getCurrentUser();
+                    String email = fu != null && fu.getEmail() != null ? fu.getEmail() : "";
+                    String display = fu != null && fu.getDisplayName() != null && !fu.getDisplayName().isEmpty()
+                            ? fu.getDisplayName()
+                            : (email.contains("@") ? email.substring(0, email.indexOf('@')) : "User");
+                    UserModel stub = new UserModel(id, display, email);
+                    FirestoreUtil.addOrUpdateDocument("user", id, stub, () -> {
+                        Toast.makeText(LoginActivity.this, "Profil awal disimpan. Silakan lengkapi di pengaturan bila perlu.", Toast.LENGTH_LONG).show();
+                        SessionManager.setCustData(LoginActivity.this, display, id, email, 0L, 0L);
+                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
+                    }, exception -> {
+                        Log.e("LoginActivity", "Gagal membuat dokumen user di Firestore", exception);
+                        Toast.makeText(LoginActivity.this, "Profil belum tersimpan ke cloud; coba lagi nanti.", Toast.LENGTH_LONG).show();
+                        SessionManager.setCustData(LoginActivity.this, display, id, email, 0L, 0L);
+                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
+                    });
+                    return;
+                }
                 Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
                 Log.d("getUser","--> "+data.getId());
                 Log.d("getUser","--> "+data.getName());
                 Log.d("getUser","--> "+data.getEmail());
                 SessionManager.setCustData(LoginActivity.this,data.getName(),data.getId(), data.getEmail(), data.getTotalVisitingIntroduction(), data.getTotalVisitDurationMillis());
-                startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                progressDialog.dismiss();
+                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
             }
         }, new FirestoreUtil.OnFailureCallback() {
             @Override
             public void onFailure(Exception e) {
+                progressDialog.dismiss();
                 Toast.makeText(LoginActivity.this, "Login Failed! Please try again", Toast.LENGTH_SHORT).show();
             }
         });

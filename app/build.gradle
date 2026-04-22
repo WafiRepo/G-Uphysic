@@ -31,6 +31,13 @@ android {
         multiDexEnabled true
 
         vectorDrawables.useSupportLibrary = true
+
+        // Default: backend FastAPI yang di-deploy (override dev: -PLOCAL_API_BASE_URL=http://10.0.2.2:8000/)
+        def localApiBaseUrl = project.hasProperty("LOCAL_API_BASE_URL") ? project.property("LOCAL_API_BASE_URL").toString() : "http://140.115.126.90:8000/"
+        if (!localApiBaseUrl.endsWith("/")) {
+            localApiBaseUrl = localApiBaseUrl + "/"
+        }
+        buildConfigField "String", "LOCAL_API_BASE_URL", "\"${localApiBaseUrl}\""
     }
 
     buildTypes {

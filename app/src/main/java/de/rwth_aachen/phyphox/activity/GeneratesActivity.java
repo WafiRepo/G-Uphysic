@@ -63,6 +63,7 @@ import java.util.UUID;
 
 import de.rwth_aachen.phyphox.App;
 import de.rwth_aachen.phyphox.Helper.FirestoreUtil;
+import de.rwth_aachen.phyphox.Helper.QuestionImageFirestoreSync;
 import de.rwth_aachen.phyphox.Helper.SessionManager;
 import de.rwth_aachen.phyphox.Helper.StorageUtil;
 import de.rwth_aachen.phyphox.Helper.VersionHelper;
@@ -1743,22 +1744,26 @@ public class GeneratesActivity extends AppCompatActivity {
                     progressData.put("photo", dataModel.getPhoto());
                 }
                 
-                if ("questions".equals(table)) {
+                final ProgressDialog finalSaveDialog = saveProgressDialog;
+                final String tableForSave = table;
+                final java.util.Map<String, Object> progressDataForSave = progressData;
+                uploadGeneratedQuestionImagesThenContinue(finalSaveDialog, tableForSave, progressDataForSave, () -> {
+                if ("questions".equals(tableForSave)) {
                     try {
-                        if (dataModel.getBase64() != null && !dataModel.getBase64().isEmpty()) progressData.put("base64", compressBase64ForFirestore(dataModel.getBase64()));
-                        if (dataModel.getBase64_2() != null && !dataModel.getBase64_2().isEmpty()) progressData.put("base64_2", compressBase64ForFirestore(dataModel.getBase64_2()));
-                        if (dataModel.getBase64_3() != null && !dataModel.getBase64_3().isEmpty()) progressData.put("base64_3", compressBase64ForFirestore(dataModel.getBase64_3()));
-                        if (dataModel.getBase64_4() != null && !dataModel.getBase64_4().isEmpty()) progressData.put("base64_4", compressBase64ForFirestore(dataModel.getBase64_4()));
-                        if (dataModel.getBase64_5() != null && !dataModel.getBase64_5().isEmpty()) progressData.put("base64_5", compressBase64ForFirestore(dataModel.getBase64_5()));
+                        if (dataModel.getBase64() != null && !dataModel.getBase64().isEmpty()) progressDataForSave.put("base64", compressBase64ForFirestore(dataModel.getBase64()));
+                        if (dataModel.getBase64_2() != null && !dataModel.getBase64_2().isEmpty()) progressDataForSave.put("base64_2", compressBase64ForFirestore(dataModel.getBase64_2()));
+                        if (dataModel.getBase64_3() != null && !dataModel.getBase64_3().isEmpty()) progressDataForSave.put("base64_3", compressBase64ForFirestore(dataModel.getBase64_3()));
+                        if (dataModel.getBase64_4() != null && !dataModel.getBase64_4().isEmpty()) progressDataForSave.put("base64_4", compressBase64ForFirestore(dataModel.getBase64_4()));
+                        if (dataModel.getBase64_5() != null && !dataModel.getBase64_5().isEmpty()) progressDataForSave.put("base64_5", compressBase64ForFirestore(dataModel.getBase64_5()));
                         
                         // For custom questions: upload photoAnswer to Storage and use URL/path instead of base64
                         if (dataModel.getPhotoAnswer() != null && !dataModel.getPhotoAnswer().isEmpty()) {
                             // Upload photoAnswer to Firebase Storage for all questions (custom and non-custom)
-                            uploadPhotoAnswerToStorage(dataModel, table, progressData);
+                            uploadPhotoAnswerToStorage(dataModel, tableForSave, progressDataForSave);
                             return; // Exit early, save will be called after upload
                         }
                         
-                        if (dataModel.getPhotoAcceleration() != null && !dataModel.getPhotoAcceleration().isEmpty()) progressData.put("photoAcceleration", compressBase64ForFirestore(dataModel.getPhotoAcceleration()));
+                        if (dataModel.getPhotoAcceleration() != null && !dataModel.getPhotoAcceleration().isEmpty()) progressDataForSave.put("photoAcceleration", compressBase64ForFirestore(dataModel.getPhotoAcceleration()));
                     } catch (Exception ignore) {}
                 }
 
@@ -1772,16 +1777,17 @@ public class GeneratesActivity extends AppCompatActivity {
                     // We have local photo data to upload
                     if (localPhotoPath != null && !localPhotoPath.isEmpty()) {
                         Log.d("PHOTO_UPLOAD", "Uploading local photo file: " + localPhotoPath);
-                        uploadPhotoBeforeSave(dataModel, table, progressData);
+                        uploadPhotoBeforeSave(dataModel, tableForSave, progressDataForSave);
                     } else if (localPhotoBase64 != null && !localPhotoBase64.isEmpty()) {
                         Log.d("PHOTO_UPLOAD", "Uploading base64 photo data");
-                        uploadBase64PhotoBeforeSave(dataModel, table, progressData);
+                        uploadBase64PhotoBeforeSave(dataModel, tableForSave, progressDataForSave);
                     }
                 } else {
                     // No local photo to upload, save directly
                     Log.d("PHOTO_UPLOAD", "No local photo to upload, saving directly");
-                    saveToFirestoreWithBackup(table, progressData);
+                    saveToFirestoreWithBackup(tableForSave, progressDataForSave);
                 }
+                });
             },
             e -> {
                 // Handle upload failure
@@ -1832,8 +1838,7 @@ public class GeneratesActivity extends AppCompatActivity {
                         try {
                         String originalBase64 = apiResponse.getGraphImages().get(0);
                             if (originalBase64 != null && !originalBase64.trim().isEmpty()) {
-                        // Legacy: No longer save to base64* fields - should upload to Storage and save URL to questionImageUrl1
-                        // TODO: Upload image to Storage and set questionImageUrl1 instead
+                        dataModel.setBase64(compressBase64ForFirestore(originalBase64));
                         Log.d("IMAGE_LOAD", "Loading GraphImage to iv: " + originalBase64.substring(0, Math.min(50, originalBase64.length())));
 
                                 BitmapDrawable drawable = base64ToDrawable(originalBase64, GeneratesActivity.this);
@@ -1851,8 +1856,7 @@ public class GeneratesActivity extends AppCompatActivity {
                     // Handle Image (image1_base64 -> iv2)
                     if (apiResponse.getImage1_base64() != null && !apiResponse.getImage1_base64().isEmpty()) {
                         String originalBase64_2 = apiResponse.getImage1_base64();
-                        // Legacy: No longer save to base64* fields - should upload to Storage and save URL to questionImageUrl2
-                        // TODO: Upload image to Storage and set questionImageUrl2 instead
+                        dataModel.setBase64_2(compressBase64ForFirestore(originalBase64_2));
                         Log.d("IMAGE_LOAD", "Loading Image1 to iv2: " + originalBase64_2.substring(0, Math.min(50, originalBase64_2.length())));
                         loadImageWithGlide(base64ToDrawable(originalBase64_2, GeneratesActivity.this), binding.iv2);
                         binding.iv2.setVisibility(View.VISIBLE);
@@ -1865,12 +1869,11 @@ public class GeneratesActivity extends AppCompatActivity {
                         try {
                         String originalBase64_3 = apiResponse.getTable_img_base64_1();
                             if (originalBase64_3 != null && !originalBase64_3.trim().isEmpty()) {
+                                dataModel.setBase64_3(compressBase64ForFirestore(originalBase64_3));
                                 // Log base64 length for debugging
                                 Log.d("TABLE_IMAGE_DEBUG", "Table 1 base64 length: " + originalBase64_3.length());
                                 Log.d("TABLE_IMAGE_DEBUG", "Table 1 base64 preview: " + originalBase64_3.substring(0, Math.min(100, originalBase64_3.length())));
 
-                        // Legacy: No longer save to base64* fields - should upload to Storage and save URL to questionImageUrl3
-                        // TODO: Upload image to Storage and set questionImageUrl3 instead
                         Log.d("getTable_img_base64_1 --&> ", "" + originalBase64_3.substring(0, Math.min(50, originalBase64_3.length())));
 
                                 // Try to convert base64 to drawable with better error handling
@@ -1920,12 +1923,11 @@ public class GeneratesActivity extends AppCompatActivity {
                         try {
                         String originalBase64_4 = apiResponse.getTable_img_base64_2();
                             if (originalBase64_4 != null && !originalBase64_4.trim().isEmpty()) {
+                                dataModel.setBase64_4(compressBase64ForFirestore(originalBase64_4));
                                 // Log base64 length for debugging
                                 Log.d("TABLE_IMAGE_DEBUG", "Table 2 base64 length: " + originalBase64_4.length());
                                 Log.d("TABLE_IMAGE_DEBUG", "Table 2 base64 preview: " + originalBase64_4.substring(0, Math.min(100, originalBase64_4.length())));
 
-                        // Legacy: No longer save to base64* fields - should upload to Storage and save URL to questionImageUrl4
-                        // TODO: Upload image to Storage and set questionImageUrl4 instead
                         Log.d("getTable_img_base64_2 --&> ", "" + originalBase64_4.substring(0, Math.min(50, originalBase64_4.length())));
 
                                 // Try to convert base64 to drawable with better error handling
@@ -1975,8 +1977,7 @@ public class GeneratesActivity extends AppCompatActivity {
                         && apiResponse.getTable_img_base64() != null && !apiResponse.getTable_img_base64().isEmpty()) {
                         try {
                         String originalFallback3 = apiResponse.getTable_img_base64();
-                        // Legacy: No longer save to base64* fields - should upload to Storage and save URL to questionImageUrl3
-                        // TODO: Upload image to Storage and set questionImageUrl3 instead
+                        dataModel.setBase64_3(compressBase64ForFirestore(originalFallback3));
                             Log.d("TABLE_FALLBACK_DEBUG", "Using fallback table image for iv3");
                         Log.d("getTable_img_base64 fallback --&> ", "" + originalFallback3.substring(0, Math.min(50, originalFallback3.length())));
 
@@ -2016,8 +2017,7 @@ public class GeneratesActivity extends AppCompatActivity {
                     if ((apiResponse.getImage1_base64() == null || apiResponse.getImage1_base64().isEmpty())
                         && apiResponse.getLocal_image_base64() != null && !apiResponse.getLocal_image_base64().isEmpty()) {
                         String originalFallback2 = apiResponse.getLocal_image_base64();
-                        // Legacy: No longer save to base64* fields - should upload to Storage and save URL to questionImageUrl2
-                        // TODO: Upload image to Storage and set questionImageUrl2 instead
+                        dataModel.setBase64_2(compressBase64ForFirestore(originalFallback2));
                         Log.d("getLocal_image_base64 fallback --&> ", "" + originalFallback2.substring(0, Math.min(50, originalFallback2.length())));
                         loadImageWithGlide(base64ToDrawable(originalFallback2, GeneratesActivity.this), binding.iv2);
                         binding.iv2.setVisibility(View.VISIBLE);
@@ -2026,8 +2026,7 @@ public class GeneratesActivity extends AppCompatActivity {
                     // Handle image2_base64 (baru) -> iv5
                     if (apiResponse.getImage2_base64() != null && !apiResponse.getImage2_base64().isEmpty()) {
                         String originalBase64_5 = apiResponse.getImage2_base64();
-                        // Legacy: No longer save to base64_5 field - should upload to Storage and save URL to questionImageUrl5
-                        // TODO: Upload image to Storage and set questionImageUrl5 instead
+                        dataModel.setBase64_5(compressBase64ForFirestore(originalBase64_5));
                         Log.d("getImage2_base64 --&> ", "" + originalBase64_5.substring(0, Math.min(50, originalBase64_5.length())));
                         loadImageWithGlide(base64ToDrawable(originalBase64_5, GeneratesActivity.this), binding.iv5);
                         binding.iv5.setVisibility(View.VISIBLE);
@@ -2497,6 +2496,59 @@ public class GeneratesActivity extends AppCompatActivity {
     private void saveProgress() {
         // Method ini dihapus karena duplikat dengan logic save yang sudah ada
         // Photo documentation akan diintegrasikan ke method save yang existing
+    }
+
+    /**
+     * Upload grafik/tabel generate (base64 di DataModel) ke Storage, isi questionImageUrl/Path, lalu lanjut simpan.
+     */
+    private void uploadGeneratedQuestionImagesThenContinue(
+            final ProgressDialog saveProgressDialog,
+            final String table,
+            final java.util.Map<String, Object> progressData,
+            final Runnable next) {
+        final String documentId = dataModel.getId();
+        if (documentId == null || documentId.isEmpty()) {
+            App app = (App) getApplication();
+            QuestionImageFirestoreSync.mergeQuestionImageFieldsIntoMap(dataModel, progressData);
+            app.setDataModel(dataModel);
+            next.run();
+            return;
+        }
+        final boolean useRecordsPath = "record".equals(table);
+        QuestionImageFirestoreSync.uploadQuestionImagesFromDataModel(
+                this,
+                dataModel,
+                documentId,
+                useRecordsPath,
+                new QuestionImageFirestoreSync.BatchCallback() {
+                    @Override
+                    public void onComplete() {
+                        App app = (App) getApplication();
+                        app.setDataModel(dataModel);
+                        QuestionImageFirestoreSync.mergeQuestionImageFieldsIntoMap(dataModel, progressData);
+                        if (saveProgressDialog != null && saveProgressDialog.isShowing()) {
+                            saveProgressDialog.dismiss();
+                        }
+                        next.run();
+                    }
+
+                    @Override
+                    public void onFailure(String message) {
+                        if (saveProgressDialog != null && saveProgressDialog.isShowing()) {
+                            saveProgressDialog.dismiss();
+                        }
+                        Toast.makeText(GeneratesActivity.this,
+                                "Gagal mengunggah gambar soal: " + message,
+                                Toast.LENGTH_LONG).show();
+                        if (binding.btnSave != null) {
+                            binding.btnSave.setEnabled(true);
+                            binding.btnSave.setAlpha(1f);
+                        }
+                        if (binding.btnUpload != null) {
+                            binding.btnUpload.setEnabled(true);
+                        }
+                    }
+                });
     }
 
     /**

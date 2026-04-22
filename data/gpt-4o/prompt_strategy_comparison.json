@@ -1,0 +1,12 @@
+{
+  "few_shot": {
+    "bleu1_mean": 43.444070065564176,
+    "bleu4_mean": 11.224558779250309,
+    "rouge1_mean": 0.4031517041583246,
+    "rouge2_mean": 0.16963913589846583,
+    "rougeL_mean": 0.3031143578649349,
+    "bertscore_f1_mean": 0.8938031792640686,
+    "geval_overall_mean": 4.256,
+    "count": 25
+  }
+}

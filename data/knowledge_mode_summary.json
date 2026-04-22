@@ -1,0 +1,24 @@
+{
+  "gpt-4o": {
+    "none": {
+      "bleu1_mean": 44.09502911147316,
+      "bleu1_norm": 0.4409502911147316,
+      "rougeL_mean": 0.3221944114025149,
+      "bertscore_f1_mean": 0.8966842770576477,
+      "geval_overall_mean": 4.16,
+      "geval_overall_norm_mean": 0.8320000000000001,
+      "composite_score": 0.6229572448937235,
+      "item_count": 25.0
+    },
+    "kg": {
+      "bleu1_mean": 41.85918352206535,
+      "bleu1_norm": 0.4185918352206535,
+      "rougeL_mean": 0.31037826983469596,
+      "bertscore_f1_mean": 0.8996027278900146,
+      "geval_overall_mean": 4.192,
+      "geval_overall_norm_mean": 0.8384,
+      "composite_score": 0.616743208236341,
+      "item_count": 25.0
+    }
+  }
+}

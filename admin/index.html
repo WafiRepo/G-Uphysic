@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-MAGIC Physics Admin</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .app-logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+        }
+        #errorMessage {
+            display: none;
+            color: #dc3545;
+            margin-bottom: 15px;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #ffe6e6;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="login-card">
+                    <div class="text-center mb-4">
+                        <h2 class="mb-4">P-MAGIC Physics</h2>
+                        <h4 class="text-muted mb-4">Admin Portal</h4>
+                    </div>
+                    <div id="errorMessage"></div>
+                    <form id="loginForm" onsubmit="handleLogin(event)">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" id="loginButton">Login</button>
+                        <div class="loading" id="loadingIndicator">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <div class="mt-2">Logging in...</div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <!-- Add Firebase products that you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBF1Oy7vcWztqtcMAQoG_zx2eqQwevXvRg",
+            authDomain: "gphysolve.firebaseapp.com",
+            projectId: "gphysolve",
+            storageBucket: "gphysolve.firebasestorage.app",
+            messagingSenderId: "794871328792",
+            appId: "1:794871328792:web:2a37ca02c792fc6b83536d",
+            measurementId: "G-MNGEX8W1X4"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Get elements
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const errorMessage = document.getElementById('errorMessage');
+        const loginButton = document.getElementById('loginButton');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        // Handle login
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            // Show loading, hide error, disable button
+            loadingIndicator.style.display = 'block';
+            errorMessage.style.display = 'none';
+            loginButton.disabled = true;
+            
+            try {
+                // Sign in
+                const userCredential = await firebase.auth().signInWithEmailAndPassword(
+                    emailInput.value,
+                    passwordInput.value
+                );
+
+                // Get user data from Firestore
+                const userDoc = await firebase.firestore()
+                    .collection('user')  // Changed from 'users' to 'user'
+                    .doc(userCredential.user.uid)
+                    .get();
+
+                if (!userDoc.exists) {
+                    throw new Error('User data not found');
+                }
+
+                const userData = userDoc.data();
+                
+                // Check if user is admin
+                if (userData.role !== 'admin') {
+                    await firebase.auth().signOut(); // Sign out non-admin users
+                    throw new Error('Access denied. Admin privileges required.');
+                }
+
+                // Success - redirect to users page
+                console.log('Login successful, redirecting...');
+                window.location.href = 'users.html';
+
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                // Show appropriate error message
+                let message = 'Login failed. ';
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        message += 'Email not registered.';
+                        break;
+                    case 'auth/wrong-password':
+                        message += 'Incorrect password.';
+                        break;
+                    case 'auth/invalid-email':
+                        message += 'Invalid email format.';
+                        break;
+                    case 'auth/too-many-requests':
+                        message += 'Too many attempts. Please try again later.';
+                        break;
+                    default:
+                        message += error.message;
+                }
+                
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+            } finally {
+                // Hide loading, enable button
+                loadingIndicator.style.display = 'none';
+                loginButton.disabled = false;
+            }
+        }
+
+        // Check if user is already logged in
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                // Check if user is admin
+                firebase.firestore()
+                    .collection('user')  // Changed from 'users' to 'user'
+                    .doc(user.uid)
+                    .get()
+                    .then((doc) => {
+                        if (doc.exists && doc.data().role === 'admin') {
+                            window.location.href = 'users.html';
+                        } else {
+                            // Sign out non-admin users
+                            firebase.auth().signOut();
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error checking admin status:', error);
+                        // Sign out on error
+                        firebase.auth().signOut();
+                    });
+            }
+        });
+    </script>
+</body>
+</html> 

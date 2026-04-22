@@ -63,11 +63,16 @@ import java.util.concurrent.ExecutionException;
 
 import de.rwth_aachen.phyphox.App;
 import de.rwth_aachen.phyphox.ExperimentList;
+import de.rwth_aachen.phyphox.R;
+import de.rwth_aachen.phyphox.Helper.InquiryLogHelper;
 import de.rwth_aachen.phyphox.Helper.SessionManager;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiResponse;
-import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
 import de.rwth_aachen.phyphox.NetworkConnection.RetrofitClient;
+import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
+import de.rwth_aachen.phyphox.NetworkConnection.InquiryGenerateRequest;
+import de.rwth_aachen.phyphox.NetworkConnection.InquiryGenerateResponse;
 import de.rwth_aachen.phyphox.activity.CameraDetectionActivity;
+import de.rwth_aachen.phyphox.activity.InquiryFeedbackActivity;
 import de.rwth_aachen.phyphox.databinding.ActivityCameraDetectionBinding;
 import de.rwth_aachen.phyphox.databinding.FragmentShareLocationBinding;
 import de.rwth_aachen.phyphox.model.DataModel;
@@ -79,11 +84,14 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 import de.rwth_aachen.phyphox.NetworkConnection.OverwriteLabelRequest;
+import de.rwth_aachen.phyphox.NetworkConnection.ValidateObjectRequest;
+import de.rwth_aachen.phyphox.NetworkConnection.ValidateObjectResponse;
 
 
 public class CameraDetectionFragment extends Fragment implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String TAG = "ShareLocationFragment";
+
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
     private ActivityCameraDetectionBinding binding;
     String downloadUrl = "";
@@ -106,6 +114,13 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
         }
     };
     private String serverImagePath = null;
+    private boolean inquiryPopupShown = false;
+    /** Cegah duplikat: log problem finding hanya setelah ada URL gambar + teks inquiry. */
+    private boolean inquiryProblemFindingLogged = false;
+    /** Teks inquiry yang ditampilkan (dikirim ke halaman feedback). */
+    private String currentInquiryText = "";
+    /** Lokasi eksperimen untuk inquiry_logs (sama seperti request API). */
+    private String lastExperimentLocationForLog = null;
 
     @Override
     public void onResume() {
@@ -128,13 +143,22 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
         super.onViewCreated(view, savedInstanceState);
         progressDialog = new ProgressDialog(requireContext());
         binding.btnSave.setOnClickListener(v -> {
-            App app = (App) requireActivity().getApplication();
-            DataModel dataModel = app.getDataModel();
-//            if (!dataModel.getPhoto().isEmpty()) {
-                startActivity(new Intent(getActivity(), ExperimentList.class));
-//            } else {
-//                Toast.makeText(getActivity(), "Upload Photo First", Toast.LENGTH_LONG).show();
-//            }
+            if (serverImagePath == null || serverImagePath.isEmpty()) {
+                Toast.makeText(requireContext(), "Simpan gambar terlebih dahulu.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String responseText = binding.tvLabel.getText().toString().trim();
+            if (responseText.isEmpty()) {
+                Toast.makeText(requireContext(), "Isi atau konfirmasi label objek terlebih dahulu.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String userId = SessionManager.getId(requireContext());
+            if (userId == null || userId.isEmpty()) userId = "default";
+            Intent intent = new Intent(requireContext(), InquiryFeedbackActivity.class);
+            intent.putExtra(InquiryFeedbackActivity.EXTRA_OBJECT_NAME, responseText);
+            intent.putExtra(InquiryFeedbackActivity.EXTRA_USER_ID, userId);
+            intent.putExtra(InquiryFeedbackActivity.EXTRA_SERVER_IMAGE_PATH, serverImagePath);
+            startActivity(intent);
         });
         binding.btnUpload.setOnClickListener(v -> {
             progressDialog.setTitle("Uploading Image");
@@ -182,36 +206,41 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
         binding.tvOkay.setOnClickListener(v -> {
             binding.tvLabel.setEnabled(false);
             binding.tvOkay.setEnabled(false);
-            // Ambil data yang diperlukan
             String userId = SessionManager.getId(requireContext());
+            if (userId == null || userId.isEmpty()) userId = "default";
             if (serverImagePath == null || serverImagePath.isEmpty()) {
                 Toast.makeText(requireContext(), "Gambar belum diupload!", Toast.LENGTH_SHORT).show();
+                binding.tvLabel.setEnabled(true);
+                binding.tvOkay.setEnabled(true);
                 return;
             }
-            String newLabel = binding.tvLabel.getText().toString();
-
-            // Siapkan request
-            OverwriteLabelRequest request = new OverwriteLabelRequest(userId, serverImagePath, newLabel);
+            String responseText = binding.tvLabel.getText().toString().trim();
+            if (responseText.isEmpty()) {
+                Toast.makeText(requireContext(), "Label objek kosong!", Toast.LENGTH_SHORT).show();
+                binding.tvLabel.setEnabled(true);
+                binding.tvOkay.setEnabled(true);
+                return;
+            }
+            OverwriteLabelRequest overwriteRequest = new OverwriteLabelRequest(userId, serverImagePath, responseText);
             ApiService apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
-            ProgressDialog dialog = new ProgressDialog(requireContext());
-            dialog.setTitle("Update Label");
-            dialog.setMessage("Mengirim data ke server...");
-            dialog.setCancelable(false);
-            dialog.show();
-            apiService.overwriteLabel(request).enqueue(new retrofit2.Callback<de.rwth_aachen.phyphox.NetworkConnection.ApiResponse>() {
+            apiService.overwriteLabel(overwriteRequest).enqueue(new Callback<ApiResponse>() {
                 @Override
-                public void onResponse(retrofit2.Call<de.rwth_aachen.phyphox.NetworkConnection.ApiResponse> call, retrofit2.Response<de.rwth_aachen.phyphox.NetworkConnection.ApiResponse> response) {
-                    dialog.dismiss();
+                public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                     if (response.isSuccessful() && response.body() != null) {
-                        Toast.makeText(requireContext(), "Label berhasil diupdate!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Label disimpan.", Toast.LENGTH_SHORT).show();
+                        // Validasi ulang: hanya enable Selanjutnya jika objek centripetal
+                        validateObjectAndEnableNext(responseText);
                     } else {
-                        Toast.makeText(requireContext(), "Gagal update label!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Gagal menyimpan label.", Toast.LENGTH_SHORT).show();
                     }
+                    binding.tvLabel.setEnabled(true);
+                    binding.tvOkay.setEnabled(true);
                 }
                 @Override
-                public void onFailure(retrofit2.Call<de.rwth_aachen.phyphox.NetworkConnection.ApiResponse> call, Throwable t) {
-                    dialog.dismiss();
+                public void onFailure(Call<ApiResponse> call, Throwable t) {
                     Toast.makeText(requireContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    binding.tvLabel.setEnabled(true);
+                    binding.tvOkay.setEnabled(true);
                 }
             });
         });
@@ -227,7 +256,173 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
         } else {
             requestCameraPermission();
         }
+
+        fetchAndShowInquiryPopup();
     }
+
+    /**
+     * Kembali ke halaman kamera awal agar user bisa ambil foto ulang.
+     */
+    private void resetToCameraState() {
+        if (!isAdded() || getActivity() == null || binding == null) return;
+        binding.cardResult.setVisibility(View.GONE);
+        binding.captureButton.setVisibility(View.VISIBLE);
+        binding.cameraview.setVisibility(View.VISIBLE);
+        binding.capturedImageView.setVisibility(View.GONE);
+        serverImagePath = null;
+        inquiryProblemFindingLogged = false;
+        binding.tvLabel.setText("Label");
+        binding.tvLabel.setEnabled(false);
+        binding.tvOkay.setEnabled(false);
+        binding.btnSave.setEnabled(false);
+        // Restart kamera: disable dulu lalu enable agar preview hidup lagi
+        if (OpenCVLoader.initDebug()) {
+            binding.cameraview.disableView();
+            binding.cameraview.postDelayed(() -> {
+                if (isAdded() && binding != null) {
+                    binding.cameraview.enableView();
+                }
+            }, 150);
+        }
+    }
+
+    /**
+     * Validasi apakah objek terkait centripetal. Jika valid, enable tombol Selanjutnya.
+     * Jika tidak valid, tampilkan feedback dari GPT-4o.
+     */
+    private void validateObjectAndEnableNext(String label) {
+        if (label == null || label.trim().isEmpty()) {
+            binding.btnSave.setEnabled(false);
+            return;
+        }
+        ApiService api = RetrofitClient.getRetrofitInstance().create(ApiService.class);
+        api.validateObjectCentripetal(new ValidateObjectRequest(label.trim())).enqueue(new Callback<ValidateObjectResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<ValidateObjectResponse> call, @NonNull Response<ValidateObjectResponse> response) {
+                if (getActivity() == null || !isAdded()) return;
+                ValidateObjectResponse body = response.body();
+                getActivity().runOnUiThread(() -> {
+                    if (body != null && body.isValid()) {
+                        binding.btnSave.setEnabled(true);
+                        Toast.makeText(requireContext(), "Objek valid. Anda dapat melanjutkan.", Toast.LENGTH_SHORT).show();
+                    } else {
+                        binding.btnSave.setEnabled(false);
+                        String feedback = (body != null && body.getFeedback() != null) ? body.getFeedback() :
+                                "Objek ini tidak terkait percepatan sentripetal. Silakan ambil foto objek yang berputar atau bergerak melingkar.";
+                        new AlertDialog.Builder(requireContext())
+                                .setTitle("Objek Tidak Sesuai")
+                                .setMessage(feedback)
+                                .setPositiveButton("OK", (d, w) -> {
+                                    d.dismiss();
+                                    // Defer reset sampai dialog benar-benar tertutup
+                                    if (binding != null) {
+                                        binding.getRoot().post(() -> resetToCameraState());
+                                    }
+                                })
+                                .show();
+                    }
+                });
+            }
+            @Override
+            public void onFailure(@NonNull Call<ValidateObjectResponse> call, @NonNull Throwable t) {
+                if (getActivity() == null || !isAdded()) return;
+                getActivity().runOnUiThread(() -> {
+                    binding.btnSave.setEnabled(false);
+                    Toast.makeText(requireContext(), "Gagal validasi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
+    private void fetchAndShowInquiryPopup() {
+        if (inquiryPopupShown || getActivity() == null) return;
+        String loc = "";
+        try {
+            if (getActivity().getIntent() != null) {
+                String x = getActivity().getIntent().getStringExtra("experiment_location");
+                if (x != null) {
+                    loc = x;
+                }
+            }
+        } catch (Exception ignored) { }
+        final String locationForFirestoreLog = loc.trim().isEmpty() ? null : loc.trim();
+        lastExperimentLocationForLog = locationForFirestoreLog;
+        String userId = SessionManager.getId(requireContext());
+        if (userId == null || userId.isEmpty()) userId = "default";
+
+        InquiryGenerateRequest request = new InquiryGenerateRequest(
+                userId,
+                "centripetal acceleration",
+                loc.trim().isEmpty() ? "Lokasi tidak diisi" : loc.trim(),
+                "id"
+        );
+        ApiService api = RetrofitClient.getRetrofitInstance().create(ApiService.class);
+        api.generateInquiryProblemFinding(request).enqueue(new Callback<InquiryGenerateResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<InquiryGenerateResponse> call, @NonNull Response<InquiryGenerateResponse> response) {
+                if (getActivity() == null || inquiryPopupShown) return;
+                InquiryGenerateResponse body = response.body();
+                if (body != null && body.getInquiry() != null && !body.getInquiry().isEmpty()) {
+                    getActivity().runOnUiThread(() -> showInquiryPopup(body));
+                }
+            }
+            @Override
+            public void onFailure(@NonNull Call<InquiryGenerateResponse> call, @NonNull Throwable t) {
+                Log.e(TAG, "Inquiry generate failed", t);
+            }
+        });
+    }
+
+    private void showInquiryPopup(InquiryGenerateResponse r) {
+        if (inquiryPopupShown || getContext() == null || r.getInquiry() == null) return;
+        inquiryPopupShown = true;
+        View overlay = binding.getRoot().findViewById(R.id.inquiry_overlay);
+        android.widget.TextView tvInquiry = binding.getRoot().findViewById(R.id.tv_inquiry_overlay);
+        if (overlay != null && tvInquiry != null) {
+            currentInquiryText = r.getInquiry() != null ? r.getInquiry() : "";
+            tvInquiry.setText(currentInquiryText);
+            tvInquiry.setVisibility(View.VISIBLE);
+            overlay.setVisibility(View.VISIBLE);
+        }
+        // URL gambar baru ada setelah upload; log ditulis dari sini atau dari callback upload
+        tryLogProblemFindingIfReady();
+    }
+
+    /**
+     * Menulis inquiry_logs problem_finding sekali ketika popup inquiry sudah tampil dan URL foto tersedia.
+     */
+    private void tryLogProblemFindingIfReady() {
+        if (!isAdded() || getContext() == null || inquiryProblemFindingLogged) return;
+        if (!inquiryPopupShown) return;
+        if (currentInquiryText == null || currentInquiryText.trim().isEmpty()) return;
+        String url = resolveProblemFindingImageUrl();
+        if (url == null || url.trim().isEmpty()) return;
+        inquiryProblemFindingLogged = true;
+        InquiryLogHelper.log(
+                requireContext(),
+                InquiryLogHelper.KIND_PROBLEM_FINDING,
+                currentInquiryText,
+                null,
+                null,
+                null,
+                null,
+                lastExperimentLocationForLog,
+                url.trim(),
+                null
+        );
+    }
+
+    @Nullable
+    private String resolveProblemFindingImageUrl() {
+        if (downloadUrl != null && !downloadUrl.trim().isEmpty()) {
+            return downloadUrl.trim();
+        }
+        if (serverImagePath != null && !serverImagePath.trim().isEmpty()) {
+            return RetrofitClient.resolveMediaUrl(serverImagePath.trim());
+        }
+        return null;
+    }
+
     private void startCamera() {
         if (getActivity() == null || !isAdded()) return;
 
@@ -344,12 +539,39 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
                 Log.d("dataModel", "Image uploaded  " + SessionManager.getId(requireActivity()));
                 uploadImage(photoFile);
                 Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(this::tryLogProblemFindingIfReady);
+                }
             });
         }).addOnFailureListener(e -> {
-            // Handle upload failure
-            progressDialog.dismiss();
-            Log.e("Firebase", "Image upload failed", e);
-            Toast.makeText(requireContext(), "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            // Fallback: jika Firebase Storage 403 (permission), tetap kirim ke FastAPI dan lanjut
+            Log.e("Firebase", "Image upload failed (e.g. Storage 403)", e);
+            if (getActivity() == null) return;
+            getActivity().runOnUiThread(() -> {
+                Toast.makeText(requireContext(), "Penyimpanan cloud terbatas. Mengirim ke server eksperimen...", Toast.LENGTH_SHORT).show();
+                App app = (App) requireActivity().getApplication();
+                DataModel dataModel = app.getDataModel();
+                dataModel.setIdCustomer(SessionManager.getId(requireActivity()));
+                dataModel.setPhoto("");
+                File fileToUpload = (photoFile != null && photoFile.exists()) ? photoFile : null;
+                if (fileToUpload == null && currentDisplayBitmap != null && !currentDisplayBitmap.isRecycled()) {
+                    try {
+                        File dir = requireContext().getExternalFilesDir(null);
+                        File f = new File(dir, "capture_fallback_" + System.currentTimeMillis() + ".jpg");
+                        try (FileOutputStream out = new FileOutputStream(f)) {
+                            currentDisplayBitmap.compress(Bitmap.CompressFormat.JPEG, 85, out);
+                            fileToUpload = f;
+                        }
+                    } catch (IOException ignored) { }
+                }
+                if (fileToUpload != null) {
+                    uploadImage(fileToUpload);
+                } else {
+                    progressDialog.dismiss();
+                    binding.btnSave.setEnabled(true);
+                    Toast.makeText(requireContext(), "Gagal upload. Coba lagi.", Toast.LENGTH_SHORT).show();
+                }
+            });
         });
     }
     private void uploadImage(File file) {
@@ -371,11 +593,15 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
                     binding.cardResult.setVisibility(View.VISIBLE);
 
                     ApiResponse apiResponse = response.body();
-                    binding.tvLabel.setText(apiResponse.getLabel());
+                    String label = apiResponse.getLabel();
+                    binding.tvLabel.setText(label);
                     // Simpan image_path dari server untuk overwrite-label
                     serverImagePath = apiResponse.getImage_path();
                     Log.d(TAG, "Upload successful: " + apiResponse.getMessage());
                     Toast.makeText(requireContext(), "Upload successful: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    tryLogProblemFindingIfReady();
+                    // Validasi objek centripetal: hanya enable Selanjutnya jika valid
+                    validateObjectAndEnableNext(label);
                 } else {
                     try {
                         // Ambil error body dan parse jadi JSON
@@ -390,7 +616,6 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
                         Toast.makeText(requireContext(), "Upload failed: Unknown error", Toast.LENGTH_LONG).show();
                     }
                 }
-                binding.btnSave.setEnabled(true);
                 progressDialog.dismiss();
             }
             @Override

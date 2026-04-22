@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Recovery - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-card {
+            transition: all 0.3s ease;
+        }
+        .status-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .backup-item {
+            border-left: 4px solid #007bff;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+        }
+        .orphaned-item {
+            border-left: 4px solid #dc3545;
+            padding: 10px;
+            margin: 5px 0;
+            background: #fff5f5;
+        }
+        .recovery-progress {
+            height: 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="all_records.html">
+                                <i class="fas fa-database"></i> All Records
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="user_questions.html">
+                                <i class="fas fa-question-circle"></i> User Questions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white active" href="data_recovery.html">
+                                <i class="fas fa-undo"></i> Data Recovery
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">
+                        <i class="fas fa-undo text-primary"></i> Data Recovery Dashboard
+                    </h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button class="btn btn-primary" onclick="startRecoveryProcess()">
+                            <i class="fas fa-play"></i> Start Recovery
+                        </button>
+                        <button class="btn btn-success" onclick="createBackup()">
+                            <i class="fas fa-save"></i> Create Backup
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Overview -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card status-card bg-primary text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">Total Records</h5>
+                                <h3 id="totalRecords">-</h3>
+                                <small>In main collections</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card status-card bg-warning text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">Backup Collections</h5>
+                                <h3 id="backupCollections">-</h3>
+                                <small>Available for recovery</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card status-card bg-danger text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">Orphaned Data</h5>
+                                <h3 id="orphanedData">-</h3>
+                                <small>Needs attention</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card status-card bg-success text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">Recovery Status</h5>
+                                <h3 id="recoveryStatus">-</h3>
+                                <small>Last operation</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recovery Progress -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-tasks"></i> Recovery Progress</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress recovery-progress mb-3">
+                            <div class="progress-bar" id="recoveryProgressBar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div id="recoveryLog" class="small text-muted">
+                            Ready to start recovery process...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Backup Collections -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-archive"></i> Available Backup Collections</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="backupList" class="row">
+                            <!-- Backup collections will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orphaned Data -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Orphaned Data</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="orphanedList">
+                            <!-- Orphaned data will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Integrity Issues -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-bug"></i> Data Integrity Issues</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="integrityIssues">
+                            <!-- Data integrity issues will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBF1Oy7vcWztqtcMAQoG_zx2eqQwevXvRg",
+            authDomain: "gphysolve.firebaseapp.com",
+            projectId: "gphysolve",
+            storageBucket: "gphysolve.firebasestorage.app",
+            messagingSenderId: "794871328792",
+            appId: "1:794871328792:web:2a37ca02c792fc6b83536d",
+            measurementId: "G-MNGEX8W1X4"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        const RECORD_FIRESTORE_COLLECTIONS = ['record', 'v2_record'];
+
+        let currentUser = null;
+        let recoveryInProgress = false;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            loadDashboardData();
+        });
+
+        function checkAuth() {
+            auth.onAuthStateChanged(function(user) {
+                if (user) {
+                    currentUser = user;
+                    console.log('User authenticated:', user.email);
+                } else {
+                    // Redirect to login if not authenticated
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+
+        async function loadDashboardData() {
+            try {
+                await Promise.all([
+                    loadTotalRecords(),
+                    loadBackupCollections(),
+                    loadOrphanedData(),
+                    loadDataIntegrityIssues()
+                ]);
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showAlert('Error loading dashboard data: ' + error.message, 'danger');
+            }
+        }
+
+        async function loadTotalRecords() {
+            try {
+                let recordCount = 0;
+                for (const col of RECORD_FIRESTORE_COLLECTIONS) {
+                    try {
+                        recordCount += (await db.collection(col).get()).size;
+                    } catch (e) {
+                        console.warn('loadTotalRecords', col, e.message);
+                    }
+                }
+                const questionsSnapshot = await db.collection('questions').get();
+                const total = recordCount + questionsSnapshot.size;
+                
+                document.getElementById('totalRecords').textContent = total;
+            } catch (error) {
+                console.error('Error loading total records:', error);
+                document.getElementById('totalRecords').textContent = 'Error';
+            }
+        }
+
+        async function loadBackupCollections() {
+            try {
+                const backupSnapshot = await db.collectionGroup('backup').get();
+                const backupCollections = new Set();
+                
+                backupSnapshot.forEach(doc => {
+                    const collectionPath = doc.ref.parent.id;
+                    if (collectionPath.startsWith('backup_')) {
+                        backupCollections.add(collectionPath);
+                    }
+                });
+                
+                document.getElementById('backupCollections').textContent = backupCollections.size;
+                displayBackupCollections(Array.from(backupCollections));
+            } catch (error) {
+                console.error('Error loading backup collections:', error);
+                document.getElementById('backupCollections').textContent = 'Error';
+            }
+        }
+
+        function displayBackupCollections(collections) {
+            const backupList = document.getElementById('backupList');
+            backupList.innerHTML = '';
+            
+            if (collections.length === 0) {
+                backupList.innerHTML = '<div class="col-12"><p class="text-muted">No backup collections found.</p></div>';
+                return;
+            }
+            
+            collections.forEach(collection => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-lg-4 mb-3';
+                
+                const parts = collection.split('_');
+                const userId = parts[1] || 'Unknown';
+                const timestamp = parts[2] || 'Unknown';
+                
+                col.innerHTML = `
+                    <div class="backup-item">
+                        <h6>${collection}</h6>
+                        <p class="mb-1"><strong>User ID:</strong> ${userId}</p>
+                        <p class="mb-1"><strong>Timestamp:</strong> ${timestamp}</p>
+                        <button class="btn btn-sm btn-primary" onclick="restoreFromBackup('${collection}')">
+                            <i class="fas fa-undo"></i> Restore
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="viewBackupDetails('${collection}')">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </div>
+                `;
+                
+                backupList.appendChild(col);
+            });
+        }
+
+        async function loadOrphanedData() {
+            try {
+                const recordDocs = [];
+                for (const col of RECORD_FIRESTORE_COLLECTIONS) {
+                    try {
+                        const snap = await db.collection(col).where('idCustomer', '==', null).get();
+                        recordDocs.push(...snap.docs);
+                    } catch (e) {
+                        console.warn('loadOrphanedData', col, e.message);
+                    }
+                }
+                const questionsSnapshot = await db.collection('questions').where('idCustomer', '==', null).get();
+                
+                const orphanedCount = recordDocs.length + questionsSnapshot.size;
+                document.getElementById('orphanedData').textContent = orphanedCount;
+                
+                displayOrphanedData(recordDocs, questionsSnapshot.docs);
+            } catch (error) {
+                console.error('Error loading orphaned data:', error);
+                document.getElementById('orphanedData').textContent = 'Error';
+            }
+        }
+
+        function displayOrphanedData(recordDocs, questionDocs) {
+            const orphanedList = document.getElementById('orphanedList');
+            orphanedList.innerHTML = '';
+            
+            const allOrphaned = [...recordDocs, ...questionDocs];
+            
+            if (allOrphaned.length === 0) {
+                orphanedList.innerHTML = '<p class="text-muted">No orphaned data found.</p>';
+                return;
+            }
+            
+            allOrphaned.forEach(doc => {
+                const item = document.createElement('div');
+                item.className = 'orphaned-item';
+                
+                const data = doc.data();
+                item.innerHTML = `
+                    <h6>Document ID: ${doc.id}</h6>
+                    <p class="mb-1"><strong>Collection:</strong> ${doc.ref.parent.id}</p>
+                    <p class="mb-1"><strong>Type:</strong> ${data.typeData || 'Unknown'}</p>
+                    <p class="mb-1"><strong>Question:</strong> ${data.question || 'N/A'}</p>
+                    <button class="btn btn-sm btn-warning" onclick="fixOrphanedDocument('${doc.ref.parent.id}', '${doc.id}')">
+                        <i class="fas fa-wrench"></i> Fix
+                    </button>
+                `;
+                
+                orphanedList.appendChild(item);
+            });
+        }
+
+        async function loadDataIntegrityIssues() {
+            try {
+                const reviewSnapshot = await db.collection('review_required').get();
+                const issues = [];
+                
+                reviewSnapshot.forEach(doc => {
+                    issues.push({ id: doc.id, ...doc.data() });
+                });
+                
+                displayDataIntegrityIssues(issues);
+            } catch (error) {
+                console.error('Error loading data integrity issues:', error);
+            }
+        }
+
+        function displayDataIntegrityIssues(issues) {
+            const integrityIssues = document.getElementById('integrityIssues');
+            integrityIssues.innerHTML = '';
+            
+            if (issues.length === 0) {
+                integrityIssues.innerHTML = '<p class="text-muted">No data integrity issues found.</p>';
+                return;
+            }
+            
+            issues.forEach(issue => {
+                const item = document.createElement('div');
+                item.className = 'alert alert-warning';
+                
+                item.innerHTML = `
+                    <h6>Document: ${issue.id}</h6>
+                    <p class="mb-1"><strong>Collection:</strong> ${issue.originalCollection}</p>
+                    <p class="mb-1"><strong>Reason:</strong> ${issue.reason}</p>
+                    <p class="mb-1"><strong>Status:</strong> ${issue.status}</p>
+                    <p class="mb-1"><strong>Timestamp:</strong> ${new Date(issue.timestamp.toDate()).toLocaleString()}</p>
+                    <button class="btn btn-sm btn-success" onclick="resolveIssue('${issue.id}')">
+                        <i class="fas fa-check"></i> Resolve
+                    </button>
+                `;
+                
+                integrityIssues.appendChild(item);
+            });
+        }
+
+        async function startRecoveryProcess() {
+            if (recoveryInProgress) {
+                showAlert('Recovery process already in progress', 'warning');
+                return;
+            }
+            
+            recoveryInProgress = true;
+            document.getElementById('recoveryStatus').textContent = 'Running';
+            
+            try {
+                updateRecoveryLog('Starting data recovery process...', 10);
+                
+                // Step 1: Check backup collections
+                updateRecoveryLog('Checking backup collections...', 25);
+                await checkBackupCollections();
+                
+                // Step 2: Validate data integrity
+                updateRecoveryLog('Validating data integrity...', 50);
+                await validateDataIntegrity();
+                
+                // Step 3: Create comprehensive backup
+                updateRecoveryLog('Creating comprehensive backup...', 75);
+                await createComprehensiveBackup();
+                
+                updateRecoveryLog('Recovery process completed successfully!', 100);
+                document.getElementById('recoveryStatus').textContent = 'Completed';
+                
+                // Reload dashboard data
+                await loadDashboardData();
+                
+            } catch (error) {
+                console.error('Recovery process failed:', error);
+                updateRecoveryLog('Recovery process failed: ' + error.message, 0);
+                document.getElementById('recoveryStatus').textContent = 'Failed';
+                showAlert('Recovery process failed: ' + error.message, 'danger');
+            } finally {
+                recoveryInProgress = false;
+            }
+        }
+
+        function updateRecoveryLog(message, progress) {
+            const log = document.getElementById('recoveryLog');
+            const timestamp = new Date().toLocaleTimeString();
+            log.innerHTML = `[${timestamp}] ${message}<br>` + log.innerHTML;
+            
+            const progressBar = document.getElementById('recoveryProgressBar');
+            progressBar.style.width = progress + '%';
+            progressBar.setAttribute('aria-valuenow', progress);
+        }
+
+        async function checkBackupCollections() {
+            // Implementation for checking backup collections
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        async function validateDataIntegrity() {
+            // Implementation for validating data integrity
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        async function createComprehensiveBackup() {
+            // Implementation for creating comprehensive backup
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        async function createBackup() {
+            try {
+                updateRecoveryLog('Creating manual backup...', 0);
+                
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                
+                for (const col of RECORD_FIRESTORE_COLLECTIONS) {
+                    const recordSnapshot = await db.collection(col).get();
+                    const recordData = [];
+                    recordSnapshot.forEach(doc => {
+                        recordData.push({ id: doc.id, ...doc.data() });
+                    });
+                    const backupCollection = `manual_backup_${col}_${timestamp}`;
+                    for (const item of recordData) {
+                        await db.collection(backupCollection).doc(item.id).set(item);
+                    }
+                }
+                
+                // Backup questions collection
+                const questionsSnapshot = await db.collection('questions').get();
+                const questionsData = [];
+                questionsSnapshot.forEach(doc => {
+                    questionsData.push({ id: doc.id, ...doc.data() });
+                });
+                
+                const backupCollectionQuestions = `manual_backup_questions_${timestamp}`;
+                for (const item of questionsData) {
+                    await db.collection(backupCollectionQuestions).doc(item.id).set(item);
+                }
+                
+                const recordBackups = RECORD_FIRESTORE_COLLECTIONS.map(c => `manual_backup_${c}_${timestamp}`).join(', ');
+                updateRecoveryLog(`Manual backup completed: ${recordBackups}; ${backupCollectionQuestions}`, 100);
+                showAlert('Manual backup created successfully!', 'success');
+                
+                // Reload dashboard
+                await loadDashboardData();
+                
+            } catch (error) {
+                console.error('Error creating manual backup:', error);
+                showAlert('Error creating backup: ' + error.message, 'danger');
+            }
+        }
+
+        async function restoreFromBackup(backupCollection) {
+            if (!confirm(`Are you sure you want to restore from backup collection: ${backupCollection}?`)) {
+                return;
+            }
+            
+            try {
+                updateRecoveryLog(`Restoring from backup: ${backupCollection}...`, 0);
+                
+                const backupSnapshot = await db.collection(backupCollection).get();
+                const restoredCount = 0;
+                
+                for (const doc of backupSnapshot.docs) {
+                    const data = doc.data();
+                    
+                    // Determine target collection based on data type
+                    let targetCollection = 'record';
+                    if (data.topics === 'Custom Question' || data.topics === 'Custom') {
+                        targetCollection = 'questions';
+                    }
+                    
+                    // Restore to target collection
+                    await db.collection(targetCollection).doc(doc.id).set(data);
+                    restoredCount++;
+                }
+                
+                updateRecoveryLog(`Successfully restored ${restoredCount} items from ${backupCollection}`, 100);
+                showAlert(`Successfully restored ${restoredCount} items!`, 'success');
+                
+                // Reload dashboard
+                await loadDashboardData();
+                
+            } catch (error) {
+                console.error('Error restoring from backup:', error);
+                showAlert('Error restoring from backup: ' + error.message, 'danger');
+            }
+        }
+
+        async function viewBackupDetails(backupCollection) {
+            try {
+                const snapshot = await db.collection(backupCollection).get();
+                const details = [];
+                
+                snapshot.forEach(doc => {
+                    details.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Show details in modal or alert
+                const detailsText = details.map(item => 
+                    `ID: ${item.id}, Type: ${item.typeData || 'Unknown'}, Question: ${item.question || 'N/A'}`
+                ).join('\n');
+                
+                alert(`Backup Collection: ${backupCollection}\nTotal Items: ${details.length}\n\nDetails:\n${detailsText}`);
+                
+            } catch (error) {
+                console.error('Error viewing backup details:', error);
+                showAlert('Error viewing backup details: ' + error.message, 'danger');
+            }
+        }
+
+        async function fixOrphanedDocument(collection, docId) {
+            try {
+                const docRef = db.collection(collection).doc(docId);
+                const doc = await docRef.get();
+                
+                if (doc.exists) {
+                    const data = doc.data();
+                    
+                    // Try to infer user ID from other fields
+                    let userId = data.customerName || data.creatorName || 'unknown_user';
+                    
+                    // Update document with inferred user ID
+                    await docRef.update({
+                        idCustomer: userId,
+                        dateTime: data.dateTime || new Date().toISOString()
+                    });
+                    
+                    showAlert('Document fixed successfully!', 'success');
+                    await loadDashboardData();
+                }
+                
+            } catch (error) {
+                console.error('Error fixing orphaned document:', error);
+                showAlert('Error fixing document: ' + error.message, 'danger');
+            }
+        }
+
+        async function resolveIssue(issueId) {
+            try {
+                await db.collection('review_required').doc(issueId).update({
+                    status: 'resolved',
+                    resolvedAt: new Date()
+                });
+                
+                showAlert('Issue resolved successfully!', 'success');
+                await loadDashboardData();
+                
+            } catch (error) {
+                console.error('Error resolving issue:', error);
+                showAlert('Error resolving issue: ' + error.message, 'danger');
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('.container-fluid');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

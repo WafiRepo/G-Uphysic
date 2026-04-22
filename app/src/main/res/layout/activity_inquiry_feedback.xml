@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ScrollView
+        android:id="@+id/scroll_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:background="@color/phyphox_purple">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Top bar: back -->
+            <ImageView
+                android:id="@+id/btn_back_inquiry_feedback"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginBottom="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Kembali"
+                android:padding="6dp"
+                android:src="@drawable/ic_arrow_back" />
+
+            <!-- Nyawa / kesempatan (game) -->
+            <LinearLayout
+                android:id="@+id/layout_lives"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="10dp"
+                    android:text="Kesempatan"
+                    android:textColor="@color/phyphox_white_100"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/layout_hearts"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tv_heart_1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="4dp"
+                        android:text="❤"
+                        android:textColor="#FF5252"
+                        android:textSize="26sp" />
+
+                    <TextView
+                        android:id="@+id/tv_heart_2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="4dp"
+                        android:text="❤"
+                        android:textColor="#FF5252"
+                        android:textSize="26sp" />
+
+                    <TextView
+                        android:id="@+id/tv_heart_3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="4dp"
+                        android:text="❤"
+                        android:textColor="#FF5252"
+                        android:textSize="26sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Header dengan ikon -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginBottom="8dp"
+                android:text="💡"
+                android:textSize="36sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginBottom="24dp"
+                android:text="Feedback Inquiry"
+                android:textColor="@color/phyphox_white_100"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <!-- Block 1: Pertanyaan (card hijau muda) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Pertanyaan"
+                android:textColor="@color/phyphox_white_100"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                app:cardBackgroundColor="#D4EDDA"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="6dp">
+                <TextView
+                    android:id="@+id/tv_inquiry_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="20dp"
+                    android:textColor="@color/phyphox_black_80"
+                    android:textSize="16sp"
+                    android:lineSpacingExtra="6dp" />
+            </androidx.cardview.widget.CardView>
+
+            <!-- Block 2: Jawaban Anda (card ungu muda) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Jawaban Anda"
+                android:textColor="@color/phyphox_white_100"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                app:cardBackgroundColor="#E8E4F3"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="6dp">
+                <EditText
+                    android:id="@+id/et_user_answer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minLines="3"
+                    android:minHeight="80dp"
+                    android:padding="18dp"
+                    android:background="@null"
+                    android:gravity="top"
+                    android:hint="Ketik jawaban Anda di sini..."
+                    android:textColor="@color/phyphox_black_80"
+                    android:textColorHint="@color/phyphox_black_50"
+                    android:textSize="15sp"
+                    android:inputType="textMultiLine|textCapSentences" />
+            </androidx.cardview.widget.CardView>
+
+            <!-- Block 3: Feedback (muncul setelah Get Feedback) -->
+            <TextView
+                android:id="@+id/label_feedback"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Feedback dari sistem"
+                android:textColor="@color/phyphox_white_100"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card_feedback"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                app:cardBackgroundColor="#D4EDDA"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="6dp"
+                android:visibility="gone">
+                <TextView
+                    android:id="@+id/tv_feedback_message"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="20dp"
+                    android:textColor="@color/phyphox_black_80"
+                    android:textSize="15sp"
+                    android:lineSpacingExtra="6dp" />
+            </androidx.cardview.widget.CardView>
+
+            <!-- Instruksi edit (saat miskonsepsi) -->
+            <TextView
+                android:id="@+id/tv_edit_instruction"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:padding="14dp"
+                android:background="#FFF3CD"
+                android:textColor="@color/phyphox_black_80"
+                android:textSize="14sp"
+                android:visibility="gone"
+                android:text="Silakan perbaiki jawaban Anda di atas, lalu tekan &quot;Get Feedback&quot; lagi." />
+
+            <!-- Button: Get Feedback (disabled sampai jawaban diisi) -->
+            <Button
+                android:id="@+id/btn_get_feedback"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="Get Feedback"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:enabled="false"
+                android:alpha="0.6"
+                android:background="@drawable/button_purple"
+                android:textColor="@color/phyphox_white_100" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Overlay ucapan selamat + terompet (jawaban benar) -->
+    <FrameLayout
+        android:id="@+id/overlay_congrats"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CC2E1A47"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="28dp"
+            app:cardBackgroundColor="#FFFDE7"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="28dp">
+
+                <TextView
+                    android:id="@+id/tv_congrats_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Selamat!"
+                    android:textColor="#4A148C"
+                    android:textSize="28sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="Jawaban Anda benar"
+                    android:textColor="@color/phyphox_black_80"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_trumpet"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="🎺"
+                    android:textSize="72sp" />
+
+                <Button
+                    android:id="@+id/btn_congrats_continue"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="24dp"
+                    android:background="@drawable/button_purple"
+                    android:text="Mulai eksperimen"
+                    android:textColor="@color/phyphox_white_100"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </FrameLayout>
+</FrameLayout>

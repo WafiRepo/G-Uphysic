@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Admin User</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            max-width: 500px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="card shadow-lg">
+        <div class="card-body p-5">
+            <h2 class="card-title text-center mb-4">Create Admin User</h2>
+            <div id="message" class="alert" style="display: none;"></div>
+            
+            <form id="createAdminForm">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" required minlength="6">
+                    <small class="form-text text-muted">Minimum 6 characters</small>
+                </div>
+                <button type="submit" class="btn btn-primary w-100" id="createButton">Create Admin User</button>
+            </form>
+            
+            <div class="mt-4 text-center">
+                <small class="text-muted">
+                    Note: This will create a user in Firebase Authentication and set their role to "admin" in Firestore.
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBF1Oy7vcWztqtcMAQoG_zx2eqQwevXvRg",
+            authDomain: "gphysolve.firebaseapp.com",
+            projectId: "gphysolve",
+            storageBucket: "gphysolve.firebasestorage.app",
+            messagingSenderId: "794871328792",
+            appId: "1:794871328792:web:2a37ca02c792fc6b83536d",
+            measurementId: "G-MNGEX8W1X4"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Handle form submission
+        document.getElementById('createAdminForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+            const createButton = document.getElementById('createButton');
+            
+            // Disable button and show loading
+            createButton.disabled = true;
+            createButton.textContent = 'Creating...';
+            messageDiv.style.display = 'none';
+            
+            try {
+                // Create user in Firebase Authentication
+                const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+                
+                // Add user to Firestore with admin role
+                await db.collection('user').doc(userCredential.user.uid).set({
+                    id: userCredential.user.uid,
+                    name: name,
+                    email: email,
+                    role: 'admin',
+                    active: true,
+                    totalVisitingIntroduction: 0,
+                    totalVisitDurationMillis: 0,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Sign out the created user (they'll need to login via admin portal)
+                await firebase.auth().signOut();
+                
+                // Show success message
+                messageDiv.className = 'alert alert-success';
+                messageDiv.textContent = `Admin user created successfully! Email: ${email}`;
+                messageDiv.style.display = 'block';
+                
+                // Reset form
+                document.getElementById('createAdminForm').reset();
+                
+            } catch (error) {
+                console.error('Error creating admin user:', error);
+                
+                // Show error message
+                messageDiv.className = 'alert alert-danger';
+                let errorMsg = 'Failed to create admin user. ';
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMsg += 'Email already exists.';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMsg += 'Password is too weak.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMsg += 'Invalid email format.';
+                } else {
+                    errorMsg += error.message;
+                }
+                
+                messageDiv.textContent = errorMsg;
+                messageDiv.style.display = 'block';
+            } finally {
+                // Re-enable button
+                createButton.disabled = false;
+                createButton.textContent = 'Create Admin User';
+            }
+        });
+    </script>
+</body>
+</html>
+

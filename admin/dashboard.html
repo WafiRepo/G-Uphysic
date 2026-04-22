@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-MAGIC Physics Admin</title>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBF1Oy7vcWztqtcMAQoG_zx2eqQwevXvRg",
+            authDomain: "gphysolve.firebaseapp.com",
+            projectId: "gphysolve",
+            storageBucket: "gphysolve.firebasestorage.app",
+            messagingSenderId: "794871328792",
+            appId: "1:794871328792:web:2a37ca02c792fc6b83536d",
+            measurementId: "G-MNGEX8W1X4"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Check authentication and redirect to users.html
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                // Check if user is admin
+                firebase.firestore()
+                    .collection('user')
+                    .doc(user.uid)
+                    .get()
+                    .then((doc) => {
+                        if (doc.exists && doc.data().role === 'admin') {
+                            window.location.href = 'users.html';
+                        } else {
+                            firebase.auth().signOut();
+                            window.location.href = 'index.html';
+                        }
+                    });
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</head>
+<body>
+    <div style="text-align: center; padding: 50px;">
+        <p>Redirecting...</p>
+    </div>
+</body>
+</html>

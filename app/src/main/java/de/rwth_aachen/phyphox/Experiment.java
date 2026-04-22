@@ -1120,7 +1120,8 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
             return true;
         }
 
-        //Pause button. Stop the measurement
+        //Pause button. Stop the measurement (tetap di layar eksperimen agar data grafik tetap terlihat).
+        //Halaman analisis inquiry (ExperimentInquiryActivity) tidak dibuka otomatis di sini — buka dari menu/flow lain jika diperlukan.
         if (id == R.id.action_pause) {
             stopMeasurement();
             return true;

@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Konfigurasi untuk domain tertentu atau alamat IP, ganti dengan domain atau IP server Anda -->
+    <!-- Development profile: izinkan cleartext trafik pada jaringan lokal -->
+    <base-config cleartextTrafficPermitted="true" />
+
+    <!-- Konfigurasi untuk domain tertentu atau alamat IP -->
     <domain-config cleartextTrafficPermitted="true">
-        <!-- Ganti 'api.example.com' dengan IP atau domain server yang digunakan oleh perangkat fisik -->
         <domain includeSubdomains="true">api.example.com</domain>
-        <!-- IP lokal untuk perangkat fisik di jaringan yang sama -->
-        <domain includeSubdomains="true">192.168.1.4</domain> <!-- IP komputer lokal -->
+        <domain includeSubdomains="true">192.168.1.7</domain>
+        <domain includeSubdomains="true">140.115.126.90</domain>
     </domain-config>
 
     <!-- Konfigurasi untuk akses dari emulator Android -->
