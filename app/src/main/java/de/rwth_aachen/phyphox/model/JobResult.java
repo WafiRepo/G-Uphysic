@@ -8,7 +8,7 @@ public class JobResult {
     public String jobId;
 
     @SerializedName("stats")
-    public Map<String, String> stats;
+    public Map<String, Object> stats;
 
     @SerializedName("files")
     public Files files;
