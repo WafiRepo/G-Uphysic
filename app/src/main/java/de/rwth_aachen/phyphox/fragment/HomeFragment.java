@@ -20,6 +20,7 @@ import de.rwth_aachen.phyphox.R;
 import de.rwth_aachen.phyphox.activity.IntroductionClassActivity;
 import de.rwth_aachen.phyphox.activity.LinearActivity;
 import de.rwth_aachen.phyphox.model.DataModel;
+import de.rwth_aachen.phyphox.activity.PiAnalysisActivity;
 
 public class HomeFragment extends Fragment {
 
@@ -36,6 +37,7 @@ public class HomeFragment extends Fragment {
         // Get references to the main activity cards
         RelativeLayout rlOutClass = view.findViewById(R.id.rlOutClass);
         RelativeLayout rlInClass = view.findViewById(R.id.rlInClass);
+        RelativeLayout rlPiAnalysis = view.findViewById(R.id.rlPiAnalysis);
         TextView tvName = view.findViewById(R.id.tvName);
         TextView tvGreeting = view.findViewById(R.id.tvGreeting);
 
@@ -70,6 +72,13 @@ public class HomeFragment extends Fragment {
                 dataModel.setTopics("In Class");
                 app.setDataModel(dataModel);
                 startActivity(new Intent(requireContext(), IntroductionClassActivity.class));
+            });
+        }
+
+        // Pi Analysis click handler
+        if (rlPiAnalysis != null) {
+            rlPiAnalysis.setOnClickListener(view1 -> {
+                startActivity(new Intent(requireContext(), PiAnalysisActivity.class));
             });
         }
     }
