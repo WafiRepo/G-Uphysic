@@ -2,6 +2,7 @@ package de.rwth_aachen.phyphox.activity;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -34,6 +35,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class PiAnalysisActivity extends AppCompatActivity {
+    private static final String TAG = "PiAnalysisActivity";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -84,33 +86,53 @@ public class PiAnalysisActivity extends AppCompatActivity {
     public void startAnalysis(Uri videoUri, SidecarJson sidecar) {
         String url = PiAnalysisSettings.getServerUrl(this);
         String key = PiAnalysisSettings.getApiKey(this);
+
+        Log.d(TAG, "=== Starting analysis ===");
+        Log.d(TAG, "Server URL: " + url);
+        Log.d(TAG, "API Key (masked): " + (key.length() > 4 ? key.substring(0, 4) + "..." : "***empty***"));
+        Log.d(TAG, "Video URI: " + videoUri);
+
         ApiService api = RetrofitClient.getRetrofitInstance(url).create(ApiService.class);
 
         java.io.File file = FileExtensions.uriToFile(this, videoUri);
-        if (file == null) {
+        if (file == null || !file.exists()) {
+            Log.e(TAG, "File not found or null after uriToFile conversion");
             Toast.makeText(this, "Failed to prepare video file", Toast.LENGTH_SHORT).show();
             return;
         }
+        Log.d(TAG, "File size: " + file.length() + " bytes");
 
-        RequestBody videoBody = RequestBody.create(MediaType.parse("video/mp4"), file);
+        String mimeType = getContentResolver().getType(videoUri);
+        if (mimeType == null) mimeType = "video/mp4";
+        Log.d(TAG, "MIME type: " + mimeType);
+
+        RequestBody videoBody = RequestBody.create(MediaType.parse(mimeType), file);
         MultipartBody.Part videoPart = MultipartBody.Part.createFormData("video", file.getName(), videoBody);
 
         String sidecarStr = new Gson().toJson(sidecar);
+        Log.d(TAG, "Sidecar JSON: " + sidecarStr);
         RequestBody sidecarBody = RequestBody.create(MediaType.parse("application/json"), sidecarStr);
 
         api.submitJob(key, videoPart, sidecarBody).enqueue(new Callback<SubmitResponse>() {
             @Override
             public void onResponse(Call<SubmitResponse> call, Response<SubmitResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
+                    Log.d(TAG, "Submit OK — job_id: " + response.body().jobId);
                     navigateToProgress(response.body().jobId);
                 } else {
-                    Toast.makeText(PiAnalysisActivity.this, "Submission failed", Toast.LENGTH_SHORT).show();
+                    String errorBody = "";
+                    try {
+                        if (response.errorBody() != null) errorBody = response.errorBody().string();
+                    } catch (Exception ignored) {}
+                    Log.e(TAG, "Submit failed — HTTP " + response.code() + " " + response.message() + " | body: " + errorBody);
+                    Toast.makeText(PiAnalysisActivity.this, "Submission failed (" + response.code() + ")", Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(Call<SubmitResponse> call, Throwable t) {
-                Toast.makeText(PiAnalysisActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Submit onFailure — " + t.getClass().getSimpleName() + ": " + t.getMessage(), t);
+                Toast.makeText(PiAnalysisActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }

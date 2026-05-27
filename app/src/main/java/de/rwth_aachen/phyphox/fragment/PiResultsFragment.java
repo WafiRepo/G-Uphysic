@@ -3,6 +3,7 @@ package de.rwth_aachen.phyphox.fragment;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,10 +34,11 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class PiResultsFragment extends Fragment {
-
+    private static final String TAG = "PiResultsFragment";
     private static final String ARG_JOB_ID = "job_id";
 
     private String jobId;
+    private String serverBaseUrl;
     private LinearLayout llStatsCards;
     private ImageView ivSummaryPanel;
     private PlayerView playerView;
@@ -69,6 +71,9 @@ public class PiResultsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        serverBaseUrl = PiAnalysisSettings.getServerUrl(requireContext());
+        if (serverBaseUrl.endsWith("/")) serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);
+
         llStatsCards = view.findViewById(R.id.llStatsCards);
         ivSummaryPanel = view.findViewById(R.id.ivSummaryPanel);
         playerView = view.findViewById(R.id.playerView);
@@ -92,41 +97,71 @@ public class PiResultsFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     displayResults(response.body());
                 } else {
-                    Toast.makeText(requireContext(), "Failed to load results", Toast.LENGTH_SHORT).show();
+                    String errorBody = "";
+                    try {
+                        if (response.errorBody() != null) errorBody = response.errorBody().string();
+                    } catch (Exception ignored) {}
+                    Log.e(TAG, "Load results failed — HTTP " + response.code() + " " + response.message() + " | " + errorBody);
+                    Toast.makeText(requireContext(), "Failed to load results (" + response.code() + ")", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<JobResult> call, Throwable t) {
+                Log.e(TAG, "Load results onFailure: " + t.getMessage(), t);
                 Toast.makeText(requireContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void displayResults(JobResult result) {
-        // Stats cards
         if (result.stats != null) {
-            for (Map.Entry<String, String> entry : result.stats.entrySet()) {
-                addStatCard(entry.getKey(), entry.getValue());
+            for (Map.Entry<String, Object> entry : result.stats.entrySet()) {
+                String label = formatStatLabel(entry.getKey());
+                String value = formatStatValue(entry.getValue());
+                if (value != null) {
+                    addStatCard(label, value);
+                }
             }
         }
 
-        // Summary panel
-        if (result.files != null && result.files.summaryPanel != null) {
-            String fullUrl = RetrofitClient.resolveMediaUrl(result.files.summaryPanel);
+        if (result.files == null) return;
+
+        if (result.files.summaryPanel != null) {
+            String fullUrl = resolveFileUrl(result.files.summaryPanel);
+            Log.d(TAG, "Loading summary panel: " + fullUrl);
             Glide.with(this).load(fullUrl).into(ivSummaryPanel);
         }
 
-        // PDFs
-        if (result.files != null) {
-            btnStudentPdf.setOnClickListener(v -> openUrl(result.files.studentPdf));
-            btnTeacherPdf.setOnClickListener(v -> openUrl(result.files.teacherPdf));
-        }
+        btnStudentPdf.setOnClickListener(v -> openUrl(result.files.studentPdf));
+        btnTeacherPdf.setOnClickListener(v -> openUrl(result.files.teacherPdf));
 
-        // Video
-        if (result.files != null && result.files.annotatedVideo != null) {
-            setupVideoPlayer(RetrofitClient.resolveMediaUrl(result.files.annotatedVideo));
+        if (result.files.annotatedVideo != null) {
+            setupVideoPlayer(resolveFileUrl(result.files.annotatedVideo));
         }
+    }
+
+    private String resolveFileUrl(String path) {
+        if (path == null) return null;
+        if (path.startsWith("http://") || path.startsWith("https://")) return path;
+        return serverBaseUrl + path;
+    }
+
+    private String formatStatLabel(String key) {
+        return key.replace("_", " ");
+    }
+
+    private String formatStatValue(Object value) {
+        if (value == null) return null;
+        if (value instanceof Map || value instanceof java.util.List) return null;
+        if (value instanceof Double) {
+            double d = (Double) value;
+            if (d == Math.floor(d) && !Double.isInfinite(d)) {
+                return String.valueOf((long) d);
+            }
+            return String.format("%.4g", d);
+        }
+        return value.toString();
     }
 
     private void addStatCard(String label, String value) {
@@ -150,16 +185,17 @@ public class PiResultsFragment extends Fragment {
 
     private void openUrl(String url) {
         if (url == null) return;
-        String fullUrl = RetrofitClient.resolveMediaUrl(url);
+        String fullUrl = resolveFileUrl(url);
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(fullUrl));
         startActivity(intent);
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
+    public void onDestroyView() {
+        super.onDestroyView();
         if (player != null) {
             player.release();
+            player = null;
         }
     }
 }

@@ -1,19 +1,21 @@
 package de.rwth_aachen.phyphox.fragment;
 
-import android.graphics.Bitmap;
 import android.graphics.PointF;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.media3.common.Player;
+import androidx.media3.common.VideoSize;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.ui.PlayerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -21,7 +23,6 @@ import com.google.android.material.textfield.TextInputEditText;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import de.rwth_aachen.phyphox.Helper.VideoUtils;
 import de.rwth_aachen.phyphox.R;
 import de.rwth_aachen.phyphox.activity.PiAnalysisActivity;
 import de.rwth_aachen.phyphox.model.SidecarJson;
@@ -35,7 +36,11 @@ public class PiSidecarFragment extends Fragment {
     private MarkerView markerView;
     private TextView tvInstruction;
     private TextInputEditText etObjectLabel, etRefLabel, etPhysicalSize;
+    private PlayerView playerView;
+    private ExoPlayer player;
     private boolean isMarkingObject = true;
+    private int videoWidth = 0, videoHeight = 0;
+    private MaterialButton btnAnalyze, btnReset;
 
     public static PiSidecarFragment newInstance(Uri videoUri) {
         PiSidecarFragment fragment = new PiSidecarFragment();
@@ -63,18 +68,18 @@ public class PiSidecarFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        ImageView ivFrame = view.findViewById(R.id.ivFrame);
+        playerView = view.findViewById(R.id.playerView);
         markerView = view.findViewById(R.id.markerView);
         tvInstruction = view.findViewById(R.id.tvInstruction);
         etObjectLabel = view.findViewById(R.id.etObjectLabel);
         etRefLabel = view.findViewById(R.id.etRefLabel);
         etPhysicalSize = view.findViewById(R.id.etPhysicalSize);
-        MaterialButton btnAnalyze = view.findViewById(R.id.btnAnalyze);
+        btnAnalyze = view.findViewById(R.id.btnAnalyze);
+        btnReset = view.findViewById(R.id.btnReset);
+        btnAnalyze.setEnabled(false);
+        btnReset.setVisibility(View.GONE);
 
-        Bitmap frame = VideoUtils.extractFirstFrame(requireContext(), videoUri);
-        if (frame != null) {
-            ivFrame.setImageBitmap(frame);
-        }
+        setupPlayer();
 
         markerView.setOnPointMarkedListener(new MarkerView.OnPointMarkedListener() {
             @Override
@@ -82,15 +87,58 @@ public class PiSidecarFragment extends Fragment {
                 isMarkingObject = false;
                 markerView.setMarkingObject(false);
                 tvInstruction.setText("Tap the rotation center");
+                btnReset.setVisibility(View.VISIBLE);
             }
 
             @Override
             public void onCenterMarked(float x, float y) {
-                // Done marking
+                tvInstruction.setText("Marking complete — tap Analyze");
+                btnAnalyze.setEnabled(videoWidth > 0 && videoHeight > 0);
             }
         });
 
+        btnReset.setOnClickListener(v -> {
+            markerView.reset();
+            isMarkingObject = true;
+            tvInstruction.setText("Tap the object to track");
+            btnReset.setVisibility(View.GONE);
+            btnAnalyze.setEnabled(false);
+        });
+
         btnAnalyze.setOnClickListener(v -> submitAnalysis());
+    }
+
+    private void setupPlayer() {
+        player = new ExoPlayer.Builder(requireContext()).build();
+        playerView.setPlayer(player);
+        player.setMediaItem(androidx.media3.common.MediaItem.fromUri(videoUri));
+        player.setPlayWhenReady(false);
+        player.prepare();
+
+        player.addListener(new Player.Listener() {
+            @Override
+            public void onVideoSizeChanged(VideoSize videoSize) {
+                videoWidth = videoSize.width;
+                videoHeight = videoSize.height;
+            }
+
+            @Override
+            public void onPlaybackStateChanged(int state) {
+                if (state == Player.STATE_READY) {
+                    // Make sure we are at frame 0
+                    player.seekTo(0);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (player != null) {
+            player.release();
+            player = null;
+        }
     }
 
     private void submitAnalysis() {
@@ -122,9 +170,8 @@ public class PiSidecarFragment extends Fragment {
         sidecar.referenceGeometry.physicalSize = physSize;
 
         // Note: we need to pass video dimensions and display dimensions for scaling
-        android.util.Pair<Integer, Integer> videoDims = VideoUtils.getVideoDimensions(requireContext(), videoUri);
-        sidecar.videoW = videoDims.first;
-        sidecar.videoH = videoDims.second;
+        sidecar.videoW = videoWidth;
+        sidecar.videoH = videoHeight;
         sidecar.displayW = markerView.getWidth();
         sidecar.displayH = markerView.getHeight();
 

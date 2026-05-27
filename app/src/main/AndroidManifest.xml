@@ -129,6 +129,12 @@
         android:theme="@style/Theme.Phyphox.DayNight"
         android:usesCleartextTraffic="true">
         <!-- Declare the CalculatorActivity -->
+        <activity
+            android:name=".activity.PiAnalysisActivity"
+            android:exported="false"
+            android:label="Pi Analysis"
+            android:theme="@style/Theme.Phyphox.PiAnalysis" />
+
         <activity android:name=".activity.CalculatorActivity"></activity>
         <activity
             android:name=".activity.ImageActivity"
@@ -317,7 +323,7 @@
                 android:name="autoStoreLocales"
                 android:value="true" />
         </service>
-        
+
         <!-- Data Recovery Service -->
         <service
             android:name=".service.DataRecoveryService"

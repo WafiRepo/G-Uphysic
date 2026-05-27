@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -36,17 +37,20 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnTestConnection"
-        style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="Test Connection" />
+        android:text="Test Connection"
+        android:textColor="@color/phyphox_white_100"
+        app:backgroundTint="@color/phyphox_purple" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSave"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Save Settings" />
+        android:text="Save Settings"
+        android:textColor="@color/phyphox_white_100"
+        app:backgroundTint="@color/phyphox_purple" />
 
 </LinearLayout>

@@ -19,6 +19,7 @@ import com.google.android.material.button.MaterialButton;
 
 import de.rwth_aachen.phyphox.Helper.PiAnalysisSettings;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
+import de.rwth_aachen.phyphox.NetworkConnection.DeleteResponse;
 import de.rwth_aachen.phyphox.NetworkConnection.RetrofitClient;
 import de.rwth_aachen.phyphox.R;
 import de.rwth_aachen.phyphox.activity.PiAnalysisActivity;
@@ -37,6 +38,7 @@ public class PiProgressFragment extends Fragment {
     private ImageView ivStepIcon;
     private Handler pollHandler = new Handler(Looper.getMainLooper());
     private Runnable pollRunnable;
+    private Handler timerHandler;
     private long startTime;
 
     public static PiProgressFragment newInstance(String jobId) {
@@ -79,7 +81,7 @@ public class PiProgressFragment extends Fragment {
     }
 
     private void startTimer() {
-        Handler timerHandler = new Handler(Looper.getMainLooper());
+        timerHandler = new Handler(Looper.getMainLooper());
         timerHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -99,7 +101,7 @@ public class PiProgressFragment extends Fragment {
             @Override
             public void run() {
                 checkStatus();
-                pollHandler.postDelayed(this, 3000);
+                pollHandler.postDelayed(this, 10000);
             }
         };
         pollHandler.post(pollRunnable);
@@ -127,12 +129,12 @@ public class PiProgressFragment extends Fragment {
 
     private void updateUI(JobStatus status) {
         tvStepName.setText(status.step);
-        progressBar.setProgress((int) status.progress);
+        progressBar.setProgress((int) status.progressPct);
 
         if ("done".equalsIgnoreCase(status.status)) {
             stopPolling();
             ((PiAnalysisActivity) requireActivity()).navigateToResults(jobId);
-        } else if ("failed".equalsIgnoreCase(status.status)) {
+        } else if ("error".equalsIgnoreCase(status.status) || "failed".equalsIgnoreCase(status.status)) {
             stopPolling();
             Toast.makeText(requireContext(), "Analysis failed: " + status.message, Toast.LENGTH_LONG).show();
             requireActivity().onBackPressed();
@@ -140,7 +142,20 @@ public class PiProgressFragment extends Fragment {
     }
 
     private void cancelJob() {
-        // Implementation for cancel call
+        String url = PiAnalysisSettings.getServerUrl(requireContext());
+        String key = PiAnalysisSettings.getApiKey(requireContext());
+        ApiService api = RetrofitClient.getRetrofitInstance(url).create(ApiService.class);
+        api.deleteJob(key, jobId).enqueue(new Callback<DeleteResponse>() {
+            @Override
+            public void onResponse(Call<DeleteResponse> call, Response<DeleteResponse> response) {
+                // Job cleaned up server-side
+            }
+
+            @Override
+            public void onFailure(Call<DeleteResponse> call, Throwable t) {
+                // Ignore — best effort cleanup
+            }
+        });
         requireActivity().onBackPressed();
     }
 
@@ -154,5 +169,9 @@ public class PiProgressFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         stopPolling();
+        if (timerHandler != null) {
+            timerHandler.removeCallbacksAndMessages(null);
+            timerHandler = null;
+        }
     }
 }

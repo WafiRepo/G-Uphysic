@@ -57,20 +57,22 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnStudentPdf"
-                style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
                 android:layout_weight="1"
-                android:text="Student PDF" />
+                android:text="Student PDF"
+                android:textColor="@color/phyphox_white_100"
+                app:backgroundTint="@color/phyphox_purple" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnTeacherPdf"
-                style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Teacher PDF" />
+                android:text="Teacher PDF"
+                android:textColor="@color/phyphox_white_100"
+                app:backgroundTint="@color/phyphox_purple" />
 
         </LinearLayout>
 
@@ -91,7 +93,9 @@
             android:id="@+id/btnNewAnalysis"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="New Analysis" />
+            android:text="New Analysis"
+            android:textColor="@color/phyphox_white_100"
+            app:backgroundTint="@color/phyphox_purple" />
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

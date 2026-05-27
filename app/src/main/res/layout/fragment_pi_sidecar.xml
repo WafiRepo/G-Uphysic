@@ -13,14 +13,16 @@
         app:cardCornerRadius="16dp">
 
         <FrameLayout
+            android:id="@+id/playerContainer"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <ImageView
-                android:id="@+id/ivFrame"
+            <androidx.media3.ui.PlayerView
+                android:id="@+id/playerView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scaleType="fitCenter" />
+                app:use_controller="false"
+                app:resize_mode="fit" />
 
             <de.rwth_aachen.phyphox.ui.MarkerView
                 android:id="@+id/markerView"
@@ -96,12 +98,34 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAnalyze"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Analyze" />
+                android:orientation="horizontal"
+                android:weightSum="2">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnReset"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:text="Reset"
+                    android:textColor="@color/phyphox_white_100"
+                    app:backgroundTint="@color/phyphox_purple" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAnalyze"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:text="Analyze"
+                    android:textColor="@color/phyphox_white_100"
+                    app:backgroundTint="@color/phyphox_purple" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
