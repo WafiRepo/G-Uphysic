@@ -332,7 +332,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Pi Analysis"
+                            android:text="Video Authentic Learning Material"
                             android:textColor="@color/phyphox_black_80"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -340,7 +340,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Analyze motion in videos"
+                            android:text="Upload and analyze learning videos"
                             android:textColor="@color/phyphox_black_60"
                             android:textSize="14sp" />
 

@@ -132,7 +132,7 @@
         <activity
             android:name=".activity.PiAnalysisActivity"
             android:exported="false"
-            android:label="Pi Analysis"
+            android:label="Video Authentic Learning Material"
             android:theme="@style/Theme.Phyphox.PiAnalysis" />
 
         <activity android:name=".activity.CalculatorActivity"></activity>

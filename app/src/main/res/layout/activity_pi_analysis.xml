@@ -19,7 +19,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent"
-            app:title="Pi Analysis"
+            app:title="Video Authentic Learning Material"
             app:titleTextColor="@color/phyphox_purple" />
 
     </androidx.cardview.widget.CardView>

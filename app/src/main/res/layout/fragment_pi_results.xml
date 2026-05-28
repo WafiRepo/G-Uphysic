@@ -93,7 +93,7 @@
             android:id="@+id/btnNewAnalysis"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="New Analysis"
+            android:text="New Video"
             android:textColor="@color/phyphox_white_100"
             app:backgroundTint="@color/phyphox_purple" />
 
