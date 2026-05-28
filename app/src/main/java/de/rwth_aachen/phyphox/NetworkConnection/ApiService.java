@@ -1,21 +1,63 @@
 package de.rwth_aachen.phyphox.NetworkConnection;
 
+import de.rwth_aachen.phyphox.model.JobResult;
+import de.rwth_aachen.phyphox.model.JobStatus;
+import de.rwth_aachen.phyphox.model.JobsListResponse;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
+import retrofit2.http.Header;
 import retrofit2.http.Headers;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
 import retrofit2.http.PUT;
+import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 public interface ApiService {
+    @Multipart
+    @POST("analyze")
+    Call<SubmitResponse> submitJob(
+            @Header("X-API-Key") String apiKey,
+            @Part MultipartBody.Part video,
+            @Part("sidecar") RequestBody sidecar
+    );
+
+    @GET("status/{jobId}")
+    Call<JobStatus> getStatus(
+            @Header("X-API-Key") String apiKey,
+            @Path("jobId") String jobId
+    );
+
+    @GET("result/{jobId}")
+    Call<JobResult> getResult(
+            @Header("X-API-Key") String apiKey,
+            @Path("jobId") String jobId
+    );
+
+    @DELETE("job/{jobId}")
+    Call<DeleteResponse> deleteJob(
+            @Header("X-API-Key") String apiKey,
+            @Path("jobId") String jobId
+    );
+
+    @GET("jobs")
+    Call<JobsListResponse> listJobs(
+            @Header("X-API-Key") String apiKey
+    );
+
+    @GET("status/ping")
+    Call<ResponseBody> ping(
+            @Header("X-API-Key") String apiKey
+    );
+
     @POST("/add_buffer_data/")
     Call<Void> addBufferData(@Body BufferData bufferData);
 

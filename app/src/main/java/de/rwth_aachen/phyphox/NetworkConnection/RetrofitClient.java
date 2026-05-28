@@ -48,25 +48,34 @@ public class RetrofitClient {
 
     public static Retrofit getRetrofitInstance() {
         if (retrofit == null) {
-            final String baseUrl = resolveBaseUrl();
-            HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);  // Log full request & response
-
-            // Create OkHttp client with logging
-            OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                    .addInterceptor(loggingInterceptor)  // Add logging
-                    .connectTimeout(90, TimeUnit.SECONDS)  // Set timeout
-                    .readTimeout(90, TimeUnit.SECONDS)
-                    .writeTimeout(90, TimeUnit.SECONDS)
-                    .build();
-
-            // Build Retrofit instance
-            retrofit = new Retrofit.Builder()
-                    .baseUrl(baseUrl)
-                    .client(okHttpClient)  // Use custom OkHttp client
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build();
+            retrofit = buildRetrofit(resolveBaseUrl());
         }
         return retrofit;
+    }
+
+    public static Retrofit getRetrofitInstance(@Nullable String customBaseUrl) {
+        if (customBaseUrl == null || customBaseUrl.trim().isEmpty()) {
+            return getRetrofitInstance();
+        }
+        String baseUrl = customBaseUrl.endsWith("/") ? customBaseUrl : customBaseUrl + "/";
+        return buildRetrofit(baseUrl);
+    }
+
+    private static Retrofit buildRetrofit(String baseUrl) {
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .addInterceptor(loggingInterceptor)
+                .connectTimeout(90, TimeUnit.SECONDS)
+                .readTimeout(90, TimeUnit.SECONDS)
+                .writeTimeout(90, TimeUnit.SECONDS)
+                .build();
+
+        return new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .client(okHttpClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
     }
 }

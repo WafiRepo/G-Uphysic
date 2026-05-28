@@ -37,11 +37,21 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         progressDialog = new ProgressDialog(this);
 
         auth = FirebaseAuth.getInstance();
+
+        // Auto-login if user is already authenticated and session is valid
+        if (auth.getCurrentUser() != null && SessionManager.getIsLogin(this)) {
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+            return;
+        }
 
         View.OnClickListener btnLoginClick = v -> startActivity(new Intent(LoginActivity.this, MainActivity.class));
 //        binding.btnLogin.setOnClickListener(btnLoginClick);
@@ -88,11 +98,11 @@ public class LoginActivity extends AppCompatActivity {
                     if (task.getException() != null) {
                         Exception exception = task.getException();
                         Log.e("LoginError", "Login failed: " + exception.getMessage());
-                        
+
                         if (exception instanceof FirebaseAuthException) {
                             FirebaseAuthException authException = (FirebaseAuthException) exception;
                             String errorCode = authException.getErrorCode();
-                            
+
                             switch (errorCode) {
                                 case "ERROR_INVALID_EMAIL":
                                     errorMessage = "Email tidak valid. Silakan periksa format email Anda.";
