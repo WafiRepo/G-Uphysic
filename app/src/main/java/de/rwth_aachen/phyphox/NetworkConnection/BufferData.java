@@ -18,12 +18,20 @@ public class BufferData {
     @SerializedName("user_id")
     private String userId;
 
+    @SerializedName("device_id")
+    private int deviceId;
+
     public BufferData(List<Double> acc, List<Double> gyr, List<Double> gyrSquared, List<Double> t, String userId) {
+        this(acc, gyr, gyrSquared, t, userId, 1);
+    }
+
+    public BufferData(List<Double> acc, List<Double> gyr, List<Double> gyrSquared, List<Double> t, String userId, int deviceId) {
         this.acc = acc;
         this.gyr = gyr;
         this.gyrSquared = gyrSquared;
         this.t = t;
         this.userId = userId;
+        this.deviceId = deviceId;
     }
 
     public String getUserId() {
@@ -34,5 +42,7 @@ public class BufferData {
         this.userId = userId;
     }
 
-    // Getters and setters if needed
+    public int getDeviceId() {
+        return deviceId;
+    }
 }

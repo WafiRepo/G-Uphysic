@@ -44,4 +44,9 @@
 
     <item android:id="@+id/action_saveState" android:title="@string/save_state"
         android:orderInCategory="400" app:showAsAction="never" />
+
+    <item android:id="@+id/action_connect_device2"
+        android:title="Hubungkan Device 2"
+        android:orderInCategory="500"
+        app:showAsAction="never" />
 </menu>

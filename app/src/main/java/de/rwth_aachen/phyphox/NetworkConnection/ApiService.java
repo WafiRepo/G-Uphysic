@@ -44,6 +44,12 @@ public interface ApiService {
 
     @GET("calculate-radius-auto")
     Call<RadiusResponse> calculateRadius(@Query("user_id") String userId);
+
+    @GET("calculate-radius-auto")
+    Call<RadiusResponse> calculateRadiusForDevice(
+            @Query("user_id") String userId,
+            @Query("device_id") int deviceId
+    );
     
     @PUT("replace-radius/")
     Call<RadiusResponse> replaceRadius(

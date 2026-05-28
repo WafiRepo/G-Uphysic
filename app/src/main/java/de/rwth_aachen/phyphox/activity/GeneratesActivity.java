@@ -1199,8 +1199,9 @@ public class GeneratesActivity extends AppCompatActivity {
         for (int i = 0; i < base64Fields.length; i++) {
             String base64Data = base64Fields[i];
             if (base64Data != null && base64Data.length() > FIRESTORE_LIMIT) {
-                Log.w("BASE64_VALIDATION", "Base64 field " + (i + 1) + " is too large: " + base64Data.length() + " bytes");
-                throw new Exception("Gambar " + (i + 1) + " terlalu besar. Silakan coba dengan gambar yang lebih kecil.");
+                // Image is large but Firebase Storage URLs may already be set as fallback.
+                // Log a warning and continue rather than blocking navigation.
+                Log.w("BASE64_VALIDATION", "Base64 field " + (i + 1) + " is too large: " + base64Data.length() + " bytes (will rely on Firebase Storage URL)");
             }
         }
 
@@ -1402,7 +1403,17 @@ public class GeneratesActivity extends AppCompatActivity {
                     base64Data = base64String.split(",")[1];
                 }
 
-                byte[] decodedBytes = Base64.decode(base64Data, Base64.NO_WRAP);
+                // Remove whitespace (API may return base64 with newlines)
+                base64Data = base64Data.replaceAll("\\s+", "").trim();
+                // Add padding if needed
+                int padMod = base64Data.length() % 4;
+                if (padMod != 0) {
+                    StringBuilder padSb = new StringBuilder(base64Data);
+                    for (int p = 0; p < 4 - padMod; p++) padSb.append('=');
+                    base64Data = padSb.toString();
+                }
+
+                byte[] decodedBytes = Base64.decode(base64Data, Base64.DEFAULT);
                 Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
 
                 if (bitmap != null) {
@@ -1475,9 +1486,10 @@ public class GeneratesActivity extends AppCompatActivity {
                 Log.e("FIRESTORE_COMPRESS", "Error compressing image: " + e.getMessage());
             }
 
-            // If compression fails, DO NOT truncate base64 (it will become invalid and cannot be decoded).
-            Log.e("FIRESTORE_COMPRESS", "Compression failed; returning empty to avoid invalid Base64");
-            return "";
+            // If compression fails, return original so the image can still be displayed.
+            // Firestore size enforcement in RecordPreviewActivity will handle trimming if needed.
+            Log.e("FIRESTORE_COMPRESS", "Compression failed; returning original base64 to preserve display");
+            return base64String;
         }
 
         return base64String;
@@ -1808,7 +1820,10 @@ public class GeneratesActivity extends AppCompatActivity {
         progressDialog.setMessage("Loading...");
         progressDialog.setCancelable(false);
         progressDialog.show();
-        ApiRequest request = new ApiRequest(language, de.rwth_aachen.phyphox.Helper.SessionManager.getId(this));
+        android.content.SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
+        String d1Label = prefs.getString("device1_label", "Experiment 1");
+        String d2Label = prefs.getString("device2_label", "Experiment 2");
+        ApiRequest request = new ApiRequest(language, de.rwth_aachen.phyphox.Helper.SessionManager.getId(this), d1Label, d2Label);
 
         Callback<ApiResponse> callback = new Callback<ApiResponse>() {
             @Override

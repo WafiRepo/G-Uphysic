@@ -92,9 +92,16 @@ public class ExperimentInquiryActivity extends AppCompatActivity {
 
     private void fetchExperimentInquiry() {
         ApiService api = RetrofitClient.getRetrofitInstance().create(ApiService.class);
+        String d1Label = androidx.preference.PreferenceManager
+                .getDefaultSharedPreferences(this).getString("device1_label", null);
+        String d2Label = androidx.preference.PreferenceManager
+                .getDefaultSharedPreferences(this).getString("device2_label", null);
         InquiryGenerateProblemExploringRequest req = new InquiryGenerateProblemExploringRequest(
                 userId,
-                "centripetal acceleration"
+                "centripetal acceleration",
+                "id",
+                d1Label,
+                d2Label
         );
         api.generateInquiryProblemExploring(req).enqueue(new Callback<InquiryGenerateResponse>() {
             @Override

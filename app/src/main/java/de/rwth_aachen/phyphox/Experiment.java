@@ -81,6 +81,8 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 
 import org.json.JSONObject;
 import org.json.JSONArray;
@@ -123,6 +125,7 @@ import de.rwth_aachen.phyphox.activity.DrawActivity;
 import de.rwth_aachen.phyphox.NetworkConnection.BufferData;
 import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
 import de.rwth_aachen.phyphox.NetworkConnection.RetrofitClient;
+import de.rwth_aachen.phyphox.NetworkConnection.RemoteDeviceFetcher;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -182,6 +185,14 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
     public boolean remoteInput = false; //Has there been an data input (inputViews for now) from the remote server that should be processed?
     public boolean shouldDefocus = false; //Should the current view loose focus? (Neccessary to remotely edit an input view, which has focus on this device)
     private String sessionID = "";
+
+    // Device 2 remote server IP (null = tidak terhubung)
+    private String device2Ip = null;
+    private static final String PREF_DEVICE2_IP = "device2_ip";
+    private String device1Label = "roda";
+    private String device2Label = "pedal";
+    private static final String PREF_DEVICE1_LABEL = "device1_label";
+    private static final String PREF_DEVICE2_LABEL = "device2_label";
 
     //Timed run status
     boolean timedRun = false; //Timed run enabled?
@@ -274,6 +285,12 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
 
         this.savedInstanceState = savedInstanceState; //Store savedInstanceState so it can be accessed after loading the experiment in a second thread
         setContentView(R.layout.activity_experiment); //Setup the views...
+
+        // Muat IP dan label Device 2 yang tersimpan (jika ada)
+        android.content.SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        device2Ip     = prefs.getString(PREF_DEVICE2_IP, null);
+        device1Label  = prefs.getString(PREF_DEVICE1_LABEL, "roda");
+        device2Label  = prefs.getString(PREF_DEVICE2_LABEL, "pedal");
 
         //Set our custom action bar
         Toolbar toolbar = (Toolbar) findViewById(R.id.customActionBar);
@@ -1701,6 +1718,12 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
 //            new PhyphoxFile.CopyXMLTask(intent, this).execute();
 //        }
 
+        // Hubungkan Device 2 via Phyphox Remote Server
+        if (id == R.id.action_connect_device2) {
+            showDevice2IpDialog();
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -1827,6 +1850,8 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
 
         //Set measurement state
         measuring = true;
+
+        controlDevice2("start");
 
         //No more turning off during the measurement
         setKeepScreenOn(true);
@@ -2021,7 +2046,11 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
                     Log.d("Experiment", "Data berhasil dikirim ke server");
-                    getRadius();
+                    if (device2Ip != null && !device2Ip.isEmpty()) {
+                        fetchDevice2ThenCalculateRadius();
+                    } else {
+                        getRadius();
+                    }
                 } else {
                     Log.e("Experiment", "Gagal mengirim data. Kode respons: " + response.code());
                     showErrorDialog("Gagal mengirim data ke server. Silakan coba lagi.");
@@ -2032,6 +2061,305 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
             public void onFailure(Call<Void> call, Throwable t) {
                 Log.e("Experiment", "Error: " + t.getMessage());
                 showErrorDialog("Koneksi ke server gagal. Periksa koneksi internet Anda.");
+            }
+        });
+    }
+
+    // Dialog untuk input IP Device 2
+    private void showDevice2IpDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Hubungkan Device 2");
+
+        int padding = (int) (16 * getResources().getDisplayMetrics().density);
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(padding, padding, padding, 0);
+
+        final EditText inputIp = new EditText(this);
+        inputIp.setHint("IP Device 2 (contoh: 192.168.1.5)");
+        inputIp.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+        if (device2Ip != null) inputIp.setText(device2Ip);
+
+        final EditText inputLabel1 = new EditText(this);
+        inputLabel1.setHint("Label Device ini / Device 1 (contoh: roda)");
+        inputLabel1.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+        inputLabel1.setText(device1Label);
+
+        final EditText inputLabel2 = new EditText(this);
+        inputLabel2.setHint("Label Device 2 (contoh: pedal)");
+        inputLabel2.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+        inputLabel2.setText(device2Label);
+
+        layout.addView(inputIp);
+        layout.addView(inputLabel1);
+        layout.addView(inputLabel2);
+        builder.setView(layout);
+
+        builder.setMessage("Masukkan IP dan label posisi masing-masing device.\nPastikan kedua device terhubung ke WiFi yang sama.");
+
+        builder.setPositiveButton("Hubungkan", (dialog, which) -> {
+            String ip = inputIp.getText().toString().trim();
+            if (ip.isEmpty()) {
+                Toast.makeText(this, "IP tidak boleh kosong", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String lbl1 = inputLabel1.getText().toString().trim();
+            String lbl2 = inputLabel2.getText().toString().trim();
+            device2Ip    = ip;
+            device1Label = lbl1.isEmpty() ? "roda"  : lbl1;
+            device2Label = lbl2.isEmpty() ? "pedal" : lbl2;
+            PreferenceManager.getDefaultSharedPreferences(this).edit()
+                    .putString(PREF_DEVICE2_IP, ip)
+                    .putString(PREF_DEVICE1_LABEL, device1Label)
+                    .putString(PREF_DEVICE2_LABEL, device2Label)
+                    .apply();
+            Toast.makeText(this, "Device 2 tersimpan: " + ip, Toast.LENGTH_SHORT).show();
+        });
+
+        builder.setNegativeButton("Putuskan", (dialog, which) -> {
+            device2Ip = null;
+            PreferenceManager.getDefaultSharedPreferences(this)
+                    .edit().remove(PREF_DEVICE2_IP).apply();
+            Toast.makeText(this, "Device 2 diputuskan", Toast.LENGTH_SHORT).show();
+        });
+
+        builder.setNeutralButton("Scan QR", (dialog, which) ->
+            new IntentIntegrator(this)
+                .setPrompt("Arahkan ke QR Code Phyphox Remote Server")
+                .setBeepEnabled(false)
+                .setOrientationLocked(false)
+                .initiateScan()
+        );
+        builder.show();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if (result != null) {
+            String contents = result.getContents();
+            if (contents != null) {
+                String ip = extractIpFromPhyphoxUrl(contents);
+                if (ip != null) {
+                    device2Ip = ip;
+                    PreferenceManager.getDefaultSharedPreferences(this)
+                            .edit().putString(PREF_DEVICE2_IP, ip).apply();
+                    Toast.makeText(this, "Device 2 tersambung: " + ip, Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "QR tidak valid. Format: http://<IP>:8080", Toast.LENGTH_LONG).show();
+                }
+            }
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private String extractIpFromPhyphoxUrl(String url) {
+        try {
+            java.net.URL parsed = new java.net.URL(url);
+            return parsed.getHost();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void controlDevice2(String cmd) {
+        if (device2Ip == null || device2Ip.isEmpty()) return;
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL(
+                        "http://" + device2Ip.trim() + ":8080/control?cmd=" + cmd);
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(3000);
+                conn.setReadTimeout(3000);
+                conn.setRequestMethod("GET");
+                int code = conn.getResponseCode();
+                conn.disconnect();
+                Log.d("Experiment", "Device 2 control cmd=" + cmd + " -> HTTP " + code);
+            } catch (Exception e) {
+                Log.w("Experiment", "Gagal kontrol Device 2 (" + cmd + "): " + e.getMessage());
+            }
+        }).start();
+    }
+
+    // Dipanggil dari stopMeasurement(): ambil data Device 2 dulu, baru stop
+    private void fetchDevice2DataAndStop() {
+        if (device2Ip == null || device2Ip.isEmpty()) {
+            // Tidak ada Device 2, tidak perlu apa-apa
+            return;
+        }
+        String userId = de.rwth_aachen.phyphox.Helper.SessionManager.getId(this);
+        Log.d("Experiment", "Fetching Device 2 data before stop: " + device2Ip);
+        runOnUiThread(() ->
+            Toast.makeText(this, "Menyimpan data Device 2...", Toast.LENGTH_SHORT).show());
+        RemoteDeviceFetcher.fetch(device2Ip, userId, new RemoteDeviceFetcher.Callback() {
+            @Override
+            public void onSuccess() {
+                controlDevice2("stop");
+                Log.d("Experiment", "Device 2 data saved, stop command sent");
+                runOnUiThread(() ->
+                    Toast.makeText(Experiment.this,
+                            "Data Device 2 berhasil disimpan", Toast.LENGTH_SHORT).show());
+            }
+            @Override
+            public void onError(String message) {
+                controlDevice2("stop");
+                Log.e("Experiment", "Device 2 fetch error on stop: " + message);
+                runOnUiThread(() ->
+                    Toast.makeText(Experiment.this,
+                            "Device 2 gagal: " + message, Toast.LENGTH_LONG).show());
+            }
+        });
+    }
+
+    /**
+     * Dipanggil setelah Device 1 data berhasil dikirim (dari sendBufferData onSuccess).
+     * Fetch data Device 2, lalu hitung radius untuk kedua device secara berurutan.
+     */
+    private void fetchDevice2ThenCalculateRadius() {
+        String userId = de.rwth_aachen.phyphox.Helper.SessionManager.getId(this);
+        Log.d("Experiment", "Fetching Device 2 data at pencil click: " + device2Ip);
+        runOnUiThread(() ->
+            Toast.makeText(this, "Mengambil data " + device2Label + "...", Toast.LENGTH_SHORT).show());
+
+        RemoteDeviceFetcher.fetch(device2Ip, userId, new RemoteDeviceFetcher.Callback() {
+            @Override
+            public void onSuccess() {
+                Log.d("Experiment", "Device 2 data saved at pencil click");
+                runOnUiThread(() -> {
+                    // Hitung radius Device 1 dulu, lalu Device 2
+                    getRadiusForDevice(1, device1Label, () ->
+                        getRadiusForDevice(2, device2Label, null));
+                });
+            }
+            @Override
+            public void onError(String message) {
+                Log.e("Experiment", "Device 2 fetch at pencil failed: " + message);
+                runOnUiThread(() -> {
+                    Toast.makeText(Experiment.this,
+                            device2Label + " gagal: " + message, Toast.LENGTH_LONG).show();
+                    // Tetap hitung radius Device 1
+                    getRadius();
+                });
+            }
+        });
+    }
+
+    /**
+     * Hitung radius untuk device tertentu, lalu tampilkan dialog.
+     * @param deviceId  1 atau 2
+     * @param label     nama device (device1Label / device2Label)
+     * @param onDone    dijalankan setelah dialog selesai; null → panggil takeScreenshotOnly()
+     */
+    private void getRadiusForDevice(int deviceId, String label, Runnable onDone) {
+        ApiService apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
+        String userId = de.rwth_aachen.phyphox.Helper.SessionManager.getId(this);
+
+        final android.app.ProgressDialog loadingDialog = new android.app.ProgressDialog(this);
+        loadingDialog.setMessage("Menghitung radius " + label + "...");
+        loadingDialog.setCancelable(false);
+        loadingDialog.show();
+
+        apiService.calculateRadiusForDevice(userId, deviceId)
+                .enqueue(new retrofit2.Callback<de.rwth_aachen.phyphox.NetworkConnection.RadiusResponse>() {
+            @Override
+            public void onResponse(retrofit2.Call<de.rwth_aachen.phyphox.NetworkConnection.RadiusResponse> call,
+                                   retrofit2.Response<de.rwth_aachen.phyphox.NetworkConnection.RadiusResponse> response) {
+                loadingDialog.dismiss();
+                if (response.isSuccessful() && response.body() != null) {
+                    float radius = response.body().getRadius();
+                    Log.d("Experiment", "Radius " + label + " (device " + deviceId + "): " + radius);
+                    showRadiusDialogForDevice(radius, userId, label, onDone);
+                } else {
+                    if (response.code() == 400) {
+                        showErrorDialog("Data " + label + " tidak cukup untuk menghitung radius.");
+                    } else {
+                        showErrorDialog("Gagal hitung radius " + label + ": " + response.message());
+                    }
+                }
+            }
+            @Override
+            public void onFailure(retrofit2.Call<de.rwth_aachen.phyphox.NetworkConnection.RadiusResponse> call,
+                                  Throwable t) {
+                loadingDialog.dismiss();
+                showErrorDialog("Koneksi gagal saat hitung radius " + label + ": " + t.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Tampilkan dialog radius untuk satu device.
+     * Setelah OK/konfirmasi, jalankan onDone (atau takeScreenshotOnly() jika onDone=null).
+     */
+    private void showRadiusDialogForDevice(float radius, String userId, String label, Runnable onDone) {
+        android.view.LayoutInflater inflater = getLayoutInflater();
+        android.view.View dialogView = inflater.inflate(R.layout.dialog_radius, null);
+        android.widget.EditText etRadius = dialogView.findViewById(R.id.et_radius);
+        etRadius.setText(String.valueOf(radius));
+        etRadius.setTextColor(android.graphics.Color.BLACK);
+
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("Radius: " + label)
+            .setView(dialogView)
+            .setPositiveButton("OK", (dialog, which) -> {
+                try {
+                    float newRadius = Float.parseFloat(etRadius.getText().toString());
+                    if (newRadius != radius) {
+                        updateRadiusThenContinue(userId, newRadius, onDone);
+                    } else {
+                        new android.app.AlertDialog.Builder(Experiment.this)
+                            .setTitle("Konfirmasi")
+                            .setMessage("Radius " + label + " tidak berubah, lanjutkan?")
+                            .setPositiveButton("OK", (d, w) -> {
+                                if (onDone != null) onDone.run();
+                                else takeScreenshotOnly();
+                            })
+                            .setNegativeButton("Batal", null)
+                            .show();
+                    }
+                } catch (NumberFormatException e) {
+                    showErrorDialog("Nilai radius tidak valid");
+                }
+            })
+            .setNegativeButton("Batal", null)
+            .show();
+    }
+
+    /**
+     * Update radius di server lalu lanjutkan ke onDone (atau takeScreenshotOnly jika null).
+     */
+    private void updateRadiusThenContinue(String userId, float newRadius, Runnable onDone) {
+        final android.app.ProgressDialog loadingDialog = new android.app.ProgressDialog(this);
+        loadingDialog.setMessage("Menyimpan radius...");
+        loadingDialog.setCancelable(false);
+        loadingDialog.show();
+
+        ApiService apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
+        apiService.replaceRadius(userId, newRadius)
+                .enqueue(new retrofit2.Callback<de.rwth_aachen.phyphox.NetworkConnection.RadiusResponse>() {
+            @Override
+            public void onResponse(retrofit2.Call<de.rwth_aachen.phyphox.NetworkConnection.RadiusResponse> call,
+                                   retrofit2.Response<de.rwth_aachen.phyphox.NetworkConnection.RadiusResponse> response) {
+                loadingDialog.dismiss();
+                if (response.isSuccessful()) {
+                    new android.app.AlertDialog.Builder(Experiment.this)
+                        .setTitle("Berhasil")
+                        .setMessage("Radius berhasil diperbarui")
+                        .setPositiveButton("OK", (d, w) -> {
+                            if (onDone != null) onDone.run();
+                            else takeScreenshotOnly();
+                        })
+                        .show();
+                } else {
+                    showErrorDialog("Gagal memperbarui radius: " + response.message());
+                }
+            }
+            @Override
+            public void onFailure(retrofit2.Call<de.rwth_aachen.phyphox.NetworkConnection.RadiusResponse> call,
+                                  Throwable t) {
+                loadingDialog.dismiss();
+                showErrorDialog("Koneksi gagal: " + t.getMessage());
             }
         });
     }
@@ -2104,6 +2432,11 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
 //    }
     public void stopMeasurement() {
         measuring = false;
+
+        // Hanya kirim stop command ke Device 2 — data akan diambil saat pencil diklik
+        if (device2Ip != null && !device2Ip.isEmpty()) {
+            controlDevice2("stop");
+        }
 
         // No buffer data collection or sendBufferData call here
 
@@ -2769,7 +3102,8 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
             }
         }
 
-        // Send buffer data to server (this will call getRadius() after successful send)
+        // Send buffer data to server — jika device2 terhubung, fetchDevice2ThenCalculateRadius()
+        // akan dipanggil dari dalam sendBufferData onSuccess
         sendBufferData(accData, gyrData, gyrSquaredData, tData);
     }
 }
