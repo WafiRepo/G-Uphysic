@@ -59,6 +59,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 import de.rwth_aachen.phyphox.App;
@@ -72,6 +73,7 @@ import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
 import de.rwth_aachen.phyphox.NetworkConnection.InquiryGenerateRequest;
 import de.rwth_aachen.phyphox.NetworkConnection.InquiryGenerateResponse;
 import de.rwth_aachen.phyphox.activity.CameraDetectionActivity;
+import de.rwth_aachen.phyphox.activity.FeedbackActivity;
 import de.rwth_aachen.phyphox.activity.InquiryFeedbackActivity;
 import de.rwth_aachen.phyphox.databinding.ActivityCameraDetectionBinding;
 import de.rwth_aachen.phyphox.databinding.FragmentShareLocationBinding;
@@ -83,7 +85,10 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import androidx.preference.PreferenceManager;
+
 import de.rwth_aachen.phyphox.NetworkConnection.OverwriteLabelRequest;
+import de.rwth_aachen.phyphox.NetworkConnection.PhotoAttemptRequest;
 import de.rwth_aachen.phyphox.NetworkConnection.ValidateObjectRequest;
 import de.rwth_aachen.phyphox.NetworkConnection.ValidateObjectResponse;
 
@@ -91,6 +96,8 @@ import de.rwth_aachen.phyphox.NetworkConnection.ValidateObjectResponse;
 public class CameraDetectionFragment extends Fragment implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String TAG = "ShareLocationFragment";
+    private static final String ARG_DEVICE_INDEX = "device_index";
+    private static final String ARG_DEVICE_COUNT = "device_count";
 
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
     private ActivityCameraDetectionBinding binding;
@@ -99,6 +106,18 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
     private Bitmap currentDisplayBitmap; // Untuk track bitmap yang sedang ditampilkan
     private File photoFile;
     private Mat latestPreviewFrame;
+
+    private int deviceIndex = 1;
+    private int deviceCount = 1;
+
+    public static CameraDetectionFragment newInstance(int deviceIndex, int deviceCount) {
+        CameraDetectionFragment fragment = new CameraDetectionFragment();
+        Bundle args = new Bundle();
+        args.putInt(ARG_DEVICE_INDEX, deviceIndex);
+        args.putInt(ARG_DEVICE_COUNT, deviceCount);
+        fragment.setArguments(args);
+        return fragment;
+    }
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(getActivity()) {
         @Override
         public void onManagerConnected(int status) {
@@ -115,6 +134,7 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
     };
     private String serverImagePath = null;
     private boolean inquiryPopupShown = false;
+    private int attemptCount = 0;
     /** Cegah duplikat: log problem finding hanya setelah ada URL gambar + teks inquiry. */
     private boolean inquiryProblemFindingLogged = false;
     /** Teks inquiry yang ditampilkan (dikirim ke halaman feedback). */
@@ -133,6 +153,15 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
     }
 
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            deviceIndex = getArguments().getInt(ARG_DEVICE_INDEX, 1);
+            deviceCount = getArguments().getInt(ARG_DEVICE_COUNT, 1);
+        }
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = ActivityCameraDetectionBinding.inflate(inflater, container, false);
         return binding.getRoot();
@@ -142,6 +171,14 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         progressDialog = new ProgressDialog(requireContext());
+
+        // Set judul halaman di header
+        if (deviceCount > 1) {
+            binding.tvDeviceTitle.setText("Object " + deviceIndex + " / " + deviceCount);
+        } else {
+            binding.tvDeviceTitle.setText("Ambil Foto Objek");
+        }
+
         binding.btnSave.setOnClickListener(v -> {
             if (serverImagePath == null || serverImagePath.isEmpty()) {
                 Toast.makeText(requireContext(), "Simpan gambar terlebih dahulu.", Toast.LENGTH_SHORT).show();
@@ -154,11 +191,41 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
             }
             String userId = SessionManager.getId(requireContext());
             if (userId == null || userId.isEmpty()) userId = "default";
-            Intent intent = new Intent(requireContext(), InquiryFeedbackActivity.class);
-            intent.putExtra(InquiryFeedbackActivity.EXTRA_OBJECT_NAME, responseText);
-            intent.putExtra(InquiryFeedbackActivity.EXTRA_USER_ID, userId);
-            intent.putExtra(InquiryFeedbackActivity.EXTRA_SERVER_IMAGE_PATH, serverImagePath);
-            startActivity(intent);
+
+            // Simpan Firebase URL foto deteksi device ini ke photoDraw
+            if (downloadUrl != null && !downloadUrl.isEmpty()) {
+                App appCtx = (App) requireActivity().getApplication();
+                DataModel dm = appCtx.getDataModel();
+                ArrayList<String> draws = dm.getPhotoDraw();
+                if (!draws.contains(downloadUrl)) {
+                    draws.add(downloadUrl);
+                    dm.setPhotoDraw(draws);
+                    appCtx.setDataModel(dm);
+                }
+            }
+
+            // Jika ini device 1 dari 2, lanjut ke kamera device 2
+            if (deviceIndex == 1 && deviceCount == 2) {
+                Toast.makeText(requireContext(), "✅ Device 1 tersimpan! Sekarang ambil foto objek Device 2.", Toast.LENGTH_LONG).show();
+                if (getActivity() instanceof FeedbackActivity) {
+                    ((FeedbackActivity) getActivity()).loadCameraForDevice(2);
+                }
+                return;
+            }
+
+            // Device tunggal atau device 2 selesai → cek mode
+            App appCtxNav = (App) requireActivity().getApplication();
+            String topics = appCtxNav.getDataModel() != null ? appCtxNav.getDataModel().getTopics() : "";
+            if ("Control Group".equals(topics)) {
+                // Control Group: langsung ke generate soal, skip inquiry stage
+                startActivity(new Intent(requireContext(), ExperimentList.class));
+            } else {
+                Intent intent = new Intent(requireContext(), InquiryFeedbackActivity.class);
+                intent.putExtra(InquiryFeedbackActivity.EXTRA_OBJECT_NAME, responseText);
+                intent.putExtra(InquiryFeedbackActivity.EXTRA_USER_ID, userId);
+                intent.putExtra(InquiryFeedbackActivity.EXTRA_SERVER_IMAGE_PATH, serverImagePath);
+                startActivity(intent);
+            }
         });
         binding.btnUpload.setOnClickListener(v -> {
             progressDialog.setTitle("Uploading Image");
@@ -221,13 +288,37 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
                 binding.tvOkay.setEnabled(true);
                 return;
             }
-            OverwriteLabelRequest overwriteRequest = new OverwriteLabelRequest(userId, serverImagePath, responseText);
+
+            // Baca radius gear jika gear container terlihat
+            Double gearFront = null;
+            Double gearRear = null;
+            if (binding.llGearContainer.getVisibility() == View.VISIBLE) {
+                try {
+                    String gf = binding.etGearFront.getText().toString().trim();
+                    if (!gf.isEmpty()) gearFront = Double.parseDouble(gf);
+                } catch (NumberFormatException ignored) {}
+                try {
+                    String gr = binding.etGearRear.getText().toString().trim();
+                    if (!gr.isEmpty()) gearRear = Double.parseDouble(gr);
+                } catch (NumberFormatException ignored) {}
+            }
+
+            final String finalUserId = userId;
+            OverwriteLabelRequest overwriteRequest = new OverwriteLabelRequest(
+                    userId, serverImagePath, responseText, null, gearFront, gearRear);
             ApiService apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
             apiService.overwriteLabel(overwriteRequest).enqueue(new Callback<ApiResponse>() {
                 @Override
                 public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                     if (response.isSuccessful() && response.body() != null) {
                         Toast.makeText(requireContext(), "Label disimpan.", Toast.LENGTH_SHORT).show();
+                        // Simpan label ke SharedPreferences agar Experiment.java bisa baca tanpa dialog
+                        String labelKey = (deviceIndex == 1) ? "device1_label" : "device2_label";
+                        PreferenceManager.getDefaultSharedPreferences(requireContext()).edit()
+                                .putString(labelKey, responseText)
+                                .apply();
+                        // Update gear fields visibility jika label berubah
+                        updateGearFieldsVisibility(responseText);
                         // Validasi ulang: hanya enable Selanjutnya jika objek centripetal
                         validateObjectAndEnableNext(responseText);
                     } else {
@@ -257,7 +348,23 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
             requestCameraPermission();
         }
 
-        fetchAndShowInquiryPopup();
+        App appCtxInit = (App) requireActivity().getApplication();
+        String topicsInit = appCtxInit.getDataModel() != null ? appCtxInit.getDataModel().getTopics() : "";
+        if ("Control Group".equals(topicsInit)) {
+            View overlay = binding.getRoot().findViewById(R.id.inquiry_overlay);
+            if (overlay != null) overlay.setVisibility(View.GONE);
+        } else {
+            fetchAndShowInquiryPopup();
+        }
+    }
+
+    /**
+     * Tampilkan/sembunyikan field gear berdasarkan apakah label mengandung kata "gir".
+     */
+    private void updateGearFieldsVisibility(String label) {
+        if (binding == null) return;
+        boolean isGear = label != null && label.toLowerCase().contains("gir");
+        binding.llGearContainer.setVisibility(isGear ? View.VISIBLE : View.GONE);
     }
 
     /**
@@ -295,14 +402,18 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
             binding.btnSave.setEnabled(false);
             return;
         }
+        final String capturedImagePath = serverImagePath;
         ApiService api = RetrofitClient.getRetrofitInstance().create(ApiService.class);
         api.validateObjectCentripetal(new ValidateObjectRequest(label.trim())).enqueue(new Callback<ValidateObjectResponse>() {
             @Override
             public void onResponse(@NonNull Call<ValidateObjectResponse> call, @NonNull Response<ValidateObjectResponse> response) {
                 if (getActivity() == null || !isAdded()) return;
                 ValidateObjectResponse body = response.body();
+                boolean valid = body != null && body.isValid();
+                attemptCount++;
+                logPhotoAttempt(label.trim(), valid, capturedImagePath, attemptCount);
                 getActivity().runOnUiThread(() -> {
-                    if (body != null && body.isValid()) {
+                    if (valid) {
                         binding.btnSave.setEnabled(true);
                         Toast.makeText(requireContext(), "Objek valid. Anda dapat melanjutkan.", Toast.LENGTH_SHORT).show();
                     } else {
@@ -314,7 +425,6 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
                                 .setMessage(feedback)
                                 .setPositiveButton("OK", (d, w) -> {
                                     d.dismiss();
-                                    // Defer reset sampai dialog benar-benar tertutup
                                     if (binding != null) {
                                         binding.getRoot().post(() -> resetToCameraState());
                                     }
@@ -334,7 +444,28 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
         });
     }
 
+    private void logPhotoAttempt(String label, boolean isValid, String imagePath, int attempt) {
+        String userId = SessionManager.getId(requireContext());
+        if (userId == null || userId.isEmpty()) userId = "default";
+        PhotoAttemptRequest req = new PhotoAttemptRequest(userId, deviceIndex, label, isValid, attempt, imagePath);
+        RetrofitClient.getRetrofitInstance().create(ApiService.class)
+                .logPhotoAttempt(req)
+                .enqueue(new Callback<okhttp3.ResponseBody>() {
+                    @Override
+                    public void onResponse(@NonNull Call<okhttp3.ResponseBody> call,
+                                           @NonNull Response<okhttp3.ResponseBody> response) {
+                        Log.d(TAG, "Photo attempt logged: attempt=" + attempt + " valid=" + isValid);
+                    }
+                    @Override
+                    public void onFailure(@NonNull Call<okhttp3.ResponseBody> call, @NonNull Throwable t) {
+                        Log.w(TAG, "Failed to log photo attempt: " + t.getMessage());
+                    }
+                });
+    }
+
     private void fetchAndShowInquiryPopup() {
+        // Device 2 tidak perlu inquiry popup baru — pertanyaan sudah ditampilkan di Device 1
+        if (deviceIndex > 1) return;
         if (inquiryPopupShown || getActivity() == null) return;
         String loc = "";
         try {
@@ -354,7 +485,8 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
                 userId,
                 "centripetal acceleration",
                 loc.trim().isEmpty() ? "Lokasi tidak diisi" : loc.trim(),
-                "id"
+                "id",
+                deviceCount
         );
         ApiService api = RetrofitClient.getRetrofitInstance().create(ApiService.class);
         api.generateInquiryProblemFinding(request).enqueue(new Callback<InquiryGenerateResponse>() {
@@ -575,18 +707,13 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
         });
     }
     private void uploadImage(File file) {
-        // Create RequestBody instance from file
         RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
-
-        // MultipartBody.Part is used to send also the actual file name
         MultipartBody.Part body = MultipartBody.Part.createFormData("file", file.getName(), requestFile);
-
-        // Initialize your API service using your Retrofit client
         ApiService apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
         RequestBody userIdBody = RequestBody.create(MediaType.parse("text/plain"), SessionManager.getId(requireContext()));
+        RequestBody deviceIdBody = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(deviceIndex));
 
-        // Enqueue the call asynchronously
-        apiService.uploadImage(body, userIdBody).enqueue(new Callback<ApiResponse>() {
+        apiService.uploadImageForDevice(body, userIdBody, deviceIdBody).enqueue(new Callback<ApiResponse>() {
             @Override
             public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -595,6 +722,10 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
                     ApiResponse apiResponse = response.body();
                     String label = apiResponse.getLabel();
                     binding.tvLabel.setText(label);
+                    // Aktifkan OK langsung — user cukup isi radius lalu tekan OK
+                    binding.tvOkay.setEnabled(true);
+                    // Tampilkan gear fields jika label mengandung "gir"
+                    updateGearFieldsVisibility(label);
                     // Simpan image_path dari server untuk overwrite-label
                     serverImagePath = apiResponse.getImage_path();
                     Log.d(TAG, "Upload successful: " + apiResponse.getMessage());

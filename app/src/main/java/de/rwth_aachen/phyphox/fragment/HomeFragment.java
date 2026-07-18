@@ -37,6 +37,7 @@ public class HomeFragment extends Fragment {
         // Get references to the main activity cards
         RelativeLayout rlOutClass = view.findViewById(R.id.rlOutClass);
         RelativeLayout rlInClass = view.findViewById(R.id.rlInClass);
+        RelativeLayout rlControlGroup = view.findViewById(R.id.rlControlGroup);
         RelativeLayout rlPiAnalysis = view.findViewById(R.id.rlPiAnalysis);
         TextView tvName = view.findViewById(R.id.tvName);
         TextView tvGreeting = view.findViewById(R.id.tvGreeting);
@@ -75,6 +76,18 @@ public class HomeFragment extends Fragment {
             });
         }
 
+        // Control Group click handler
+        if (rlControlGroup != null) {
+            rlControlGroup.setOnClickListener(view1 -> {
+                App app = (App) requireActivity().getApplication();
+                DataModel dataModel = new DataModel();
+                dataModel.setId(String.valueOf(System.currentTimeMillis()));
+                dataModel.setTopics("Control Group");
+                app.setDataModel(dataModel);
+                startActivity(new Intent(getActivity(), LinearActivity.class));
+            });
+        }
+
         // Pi Analysis click handler
         if (rlPiAnalysis != null) {
             rlPiAnalysis.setOnClickListener(view1 -> {
@@ -92,17 +105,13 @@ public class HomeFragment extends Fragment {
         int hourOfDay = calendar.get(Calendar.HOUR_OF_DAY);
 
         if (hourOfDay >= 5 && hourOfDay < 12) {
-            // Pagi: 05:00 - 11:59
-            return "🌅 Selamat Pagi!";
+            return "Good Morning";
         } else if (hourOfDay >= 12 && hourOfDay < 15) {
-            // Siang: 12:00 - 14:59
-            return "☀️ Selamat Siang!";
+            return "Good Afternoon";
         } else if (hourOfDay >= 15 && hourOfDay < 19) {
-            // Sore: 15:00 - 18:59
-            return "🌆 Selamat Sore!";
+            return "Good Evening";
         } else {
-            // Malam: 19:00 - 04:59
-            return "🌙 Selamat Malam!";
+            return "Good Night";
         }
     }
 }

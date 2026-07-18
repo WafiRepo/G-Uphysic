@@ -335,6 +335,7 @@
                     <div id="inquiryLogsStats" class="row mb-3"></div>
                     <div id="inquiryLogsVerify" class="mb-3"></div>
                     <div id="inquiryLogsList"></div>
+                    <div id="photoAttemptsInquiry" class="mt-3"></div>
                 </div>
             </div>
         </div>
@@ -475,6 +476,7 @@
          * Ubah jika server FastAPI dipindah; bisa override sebelum init: window.INQUIRY_MEDIA_API_BASE = 'https://.../';
          */
         window.INQUIRY_MEDIA_API_BASE = window.INQUIRY_MEDIA_API_BASE || 'http://140.115.126.90:8000/';
+        window.FASTAPI_SERVER = window.FASTAPI_SERVER || 'http://140.115.126.90:8000';
 
         /** Matches Android VersionHelper: record is versioned as v2_record when versionCode >= 2. */
         const RECORD_FIRESTORE_COLLECTIONS = ['record', 'v2_record'];
@@ -614,8 +616,7 @@
                 updateStats(questions);
                 displayQuestions(questions);
                 await loadInquiryLogs(userId);
-                // Removed addStorageUsersButton call
-                
+
                 showLoading(false);
 
             } catch (error) {
@@ -697,7 +698,8 @@
 
         function renderInquiryVerifyTable(userId, items) {
             const el = document.getElementById('inquiryLogsVerify');
-            if (!el) return;
+            if (el) el.innerHTML = '';
+            return; // Hidden: column removed per admin request
             lastInquiryVerifyJson = '';
             if (!items || items.length === 0) {
                 el.innerHTML = '';
@@ -857,6 +859,94 @@
                 const v = document.getElementById('inquiryLogsVerify');
                 if (v) v.innerHTML = '';
                 listEl.innerHTML = '<p class="text-danger">Gagal membaca inquiry_logs: ' + escapeHtml(e.message) + '</p><p class="small text-muted">Tambahkan izin read untuk admin pada koleksi <code>inquiry_logs</code> di Firestore Rules.</p>';
+            }
+
+            // Photo validity log — dari MySQL via FastAPI, ditampilkan di dalam section ini
+            const paEl = document.getElementById('photoAttemptsInquiry');
+            if (!paEl) return;
+            paEl.innerHTML = '<p class="text-muted small">Memuat data validitas foto...</p>';
+            try {
+                const apiBase = (window.FASTAPI_SERVER || 'http://localhost:8000').replace(/\/$/, '');
+                const paRes = await fetch(`${apiBase}/admin/photo-attempts/?user_id=${encodeURIComponent(userId)}&limit=500`);
+                if (!paRes.ok) throw new Error(`HTTP ${paRes.status}`);
+                const paData = await paRes.json();
+                const rows = paData.attempts || [];
+
+                if (rows.length === 0) {
+                    paEl.innerHTML = '';
+                    return;
+                }
+
+                const firstValidMap = {};
+                rows.forEach(r => {
+                    if (!r.is_valid) return;
+                    const key = `${r.user_id}|${r.device_id}`;
+                    if (firstValidMap[key] === undefined || r.attempt_number < firstValidMap[key]) {
+                        firstValidMap[key] = r.attempt_number;
+                    }
+                });
+
+                const totalValid = rows.filter(r => r.is_valid).length;
+                const fvValues = Object.values(firstValidMap);
+                const avgAttempt = fvValues.length
+                    ? (fvValues.reduce((a, b) => a + b, 0) / fvValues.length).toFixed(1) : '—';
+
+                const resolveImgUrl = (p) => {
+                    if (!p) return null;
+                    // already absolute URL
+                    if (p.startsWith('http://') || p.startsWith('https://')) return p;
+                    // relative path like ./image_result/... → serve via FastAPI static
+                    const clean = p.replace(/\\/g, '/').replace(/^\.\//, '');
+                    return `${apiBase}/${clean}`;
+                };
+
+                const tableRows = rows.map((r, i) => {
+                    const key = `${r.user_id}|${r.device_id}`;
+                    const isFirstValid = r.is_valid && firstValidMap[key] === r.attempt_number;
+                    const rowClass = r.is_valid ? 'table-success' : 'table-danger';
+                    const badge = r.is_valid
+                        ? '<span class="badge bg-success">✓ Valid</span>'
+                        : '<span class="badge bg-danger">✗ Tidak Valid</span>';
+                    const attemptLabel = isFirstValid
+                        ? `<span class="badge bg-success">🎯 #${r.attempt_number} pertama valid</span>`
+                        : `<span class="badge bg-secondary">#${r.attempt_number}</span>`;
+                    const imgUrl = resolveImgUrl(r.image_path);
+                    const imgCell = imgUrl
+                        ? `<a href="${escapeHtml(imgUrl)}" target="_blank"><img src="${escapeHtml(imgUrl)}" style="height:44px;width:44px;object-fit:cover;border-radius:4px" onerror="this.style.display='none'"></a>`
+                        : '<span class="text-muted">—</span>';
+                    const ts = r.created_at ? r.created_at.replace('T', ' ').split('.')[0] : '—';
+                    return `<tr class="${rowClass}">
+                        <td>${i + 1}</td>
+                        <td class="text-center"><span class="badge bg-secondary">D${r.device_id}</span></td>
+                        <td class="text-center">${attemptLabel}</td>
+                        <td>${escapeHtml(r.label || '—')}</td>
+                        <td class="text-center">${badge}</td>
+                        <td class="text-center">${imgCell}</td>
+                        <td class="text-muted small">${ts}</td>
+                    </tr>`;
+                }).join('');
+
+                paEl.innerHTML = `
+                    <hr class="my-3">
+                    <h6 class="mb-2"><i class="bi bi-camera-fill"></i> Riwayat Validitas Foto
+                        <span class="badge bg-primary ms-1">${rows.length} percobaan</span>
+                        <span class="badge bg-success ms-1">${totalValid} valid</span>
+                        <span class="badge bg-danger ms-1">${rows.length - totalValid} tidak valid</span>
+                        <span class="badge bg-secondary ms-1">rata-rata percobaan ke-${avgAttempt}</span>
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>#</th><th>Perangkat</th><th>Percobaan ke-</th>
+                                    <th>Label Objek</th><th>Status</th><th>Gambar</th><th>Waktu</th>
+                                </tr>
+                            </thead>
+                            <tbody>${tableRows}</tbody>
+                        </table>
+                    </div>`;
+            } catch (paErr) {
+                paEl.innerHTML = `<p class="text-warning small mt-2"><i class="bi bi-exclamation-triangle"></i> Data validitas foto tidak tersedia: ${escapeHtml(paErr.message)}. Pastikan server FastAPI berjalan.</p>`;
             }
         }
 
@@ -1939,6 +2029,8 @@
             document.getElementById('inquiryLogsSection').style.display = 'none';
             document.getElementById('questionsSection').style.display = 'none';
             document.getElementById('emptyState').style.display = 'none';
+            const pa = document.getElementById('photoAttemptsInquiry');
+            if (pa) pa.innerHTML = '';
         }
 
         function logout() {

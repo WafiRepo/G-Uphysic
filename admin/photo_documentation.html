@@ -36,6 +36,11 @@
                                 <i class="fas fa-camera"></i> Photo Documentation
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="photo_validity.html">
+                                <i class="fas fa-check-circle"></i> Photo Validity
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </nav>
@@ -116,6 +121,26 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Device Detection Photos -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-camera-retro text-primary"></i> Device Detection Photos</h5>
+                        <div class="d-flex gap-2 align-items-center">
+                            <input type="text" id="devicePhotoApiBase" class="form-control form-control-sm"
+                                style="width:260px" placeholder="http://140.115.126.90:8000/"
+                                value="http://140.115.126.90:8000/">
+                            <button class="btn btn-sm btn-primary" onclick="loadDevicePhotos()">
+                                <i class="fas fa-sync-alt"></i> Load
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="devicePhotoList">
+                            <p class="text-muted">Klik <strong>Load</strong> untuk menampilkan foto deteksi objek.</p>
+                        </div>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
@@ -164,6 +189,118 @@
                     window.location.href = 'login.html';
                 }
             });
+        }
+
+        // ----------------------------------------------------------------
+        // Device Detection Photos (from FastAPI MySQL)
+        // ----------------------------------------------------------------
+        async function loadDevicePhotos() {
+            const container = document.getElementById('devicePhotoList');
+            container.innerHTML = '<p class="text-muted"><i class="fas fa-spinner fa-spin"></i> Memuat foto...</p>';
+
+            let apiBase = (document.getElementById('devicePhotoApiBase').value || 'http://140.115.126.90:8000/').trim();
+            if (!apiBase.endsWith('/')) apiBase += '/';
+
+            try {
+                const res = await fetch(apiBase + 'admin/device-photos?limit=200');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const json = await res.json();
+                const photos = json.photos || [];
+
+                if (!photos.length) {
+                    container.innerHTML = '<p class="text-muted">Tidak ada data foto ditemukan.</p>';
+                    return;
+                }
+
+                // Group by user_id
+                const byUser = {};
+                photos.forEach(p => {
+                    if (!byUser[p.user_id]) byUser[p.user_id] = [];
+                    byUser[p.user_id].push(p);
+                });
+
+                let html = '';
+                for (const [userId, entries] of Object.entries(byUser)) {
+                    const d1 = entries.find(e => e.device_id === 1);
+                    const d2 = entries.find(e => e.device_id === 2);
+
+                    html += `
+                    <div class="card mb-3 border-0 bg-light">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong><i class="fas fa-user text-secondary"></i> User: <code>${userId}</code></strong>
+                                <small class="text-muted">${entries.length} foto</small>
+                            </div>
+                            <div class="row g-3">
+                                ${renderDeviceCard(d1, 1, apiBase)}
+                                ${renderDeviceCard(d2, 2, apiBase)}
+                            </div>
+                        </div>
+                    </div>`;
+                }
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = `<p class="text-danger"><i class="fas fa-exclamation-circle"></i> Gagal memuat: ${err.message}</p>`;
+                console.error('loadDevicePhotos error:', err);
+            }
+        }
+
+        function renderDeviceCard(entry, deviceNum, apiBase) {
+            if (!entry) {
+                return `
+                <div class="col-md-6">
+                    <div class="card h-100 border-dashed text-center text-muted p-4">
+                        <i class="fas fa-camera fa-2x mb-2 opacity-25"></i>
+                        <p class="mb-0">Device ${deviceNum}: tidak ada foto</p>
+                    </div>
+                </div>`;
+            }
+
+            const imgUrl = buildImageUrl(entry.image_path, apiBase);
+            const label = entry.label || '-';
+            const createdAt = entry.created_at || '';
+
+            let radiusInfo = '';
+            if (entry.gear_front_radius != null || entry.gear_rear_radius != null) {
+                if (entry.gear_front_radius != null)
+                    radiusInfo += `<span class="badge bg-info text-dark me-1">Gir Depan: ${entry.gear_front_radius} cm</span>`;
+                if (entry.gear_rear_radius != null)
+                    radiusInfo += `<span class="badge bg-info text-dark me-1">Gir Belakang: ${entry.gear_rear_radius} cm</span>`;
+            } else if (entry.physical_radius != null) {
+                radiusInfo = `<span class="badge bg-secondary">Radius: ${entry.physical_radius} cm</span>`;
+            }
+
+            return `
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">
+                            <i class="fas fa-mobile-alt ${deviceNum === 1 ? 'text-primary' : 'text-success'}"></i>
+                            Device ${deviceNum}
+                        </span>
+                        <span class="badge ${deviceNum === 1 ? 'bg-primary' : 'bg-success'}">${label}</span>
+                    </div>
+                    ${imgUrl
+                        ? `<img src="${imgUrl}" class="card-img-top" style="height:200px;object-fit:cover;"
+                                onerror="this.src='';this.parentElement.querySelector('.img-error').style.display='block';this.style.display='none'">
+                           <div class="img-error text-center text-muted py-3" style="display:none">
+                               <i class="fas fa-image fa-2x opacity-25"></i><br><small>Foto tidak tersedia</small>
+                           </div>`
+                        : `<div class="text-center text-muted py-3"><i class="fas fa-image fa-2x opacity-25"></i><br><small>Path tidak ada</small></div>`
+                    }
+                    <div class="card-body py-2">
+                        <div class="mb-1">${radiusInfo || '<span class="text-muted small">Radius tidak diisi</span>'}</div>
+                        <small class="text-muted">${createdAt.substring(0,19)}</small>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function buildImageUrl(imagePath, apiBase) {
+            if (!imagePath) return null;
+            // ./image_result/user/file.jpg → http://host:8000/image_result/user/file.jpg
+            const clean = imagePath.replace(/^\.\//, '').replace(/\\/g, '/');
+            return apiBase + clean;
         }
 
         async function loadDashboardData() {

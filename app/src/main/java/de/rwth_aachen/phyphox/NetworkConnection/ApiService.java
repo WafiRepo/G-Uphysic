@@ -84,6 +84,14 @@ public interface ApiService {
             @Part("user_id") RequestBody userId
     );
 
+    @Multipart
+    @POST("/process-image/")
+    Call<ApiResponse> uploadImageForDevice(
+            @Part MultipartBody.Part file,
+            @Part("user_id") RequestBody userId,
+            @Part("device_id") RequestBody deviceId
+    );
+
     @GET("calculate-radius-auto")
     Call<RadiusResponse> calculateRadius(@Query("user_id") String userId);
 
@@ -127,5 +135,12 @@ public interface ApiService {
     @Headers("Content-Type: application/json")
     @POST("/validate-object-centripetal/")
     Call<ValidateObjectResponse> validateObjectCentripetal(@Body ValidateObjectRequest request);
+
+    @DELETE("/delete-buffer-data/")
+    Call<Void> deleteBufferData(@Query("user_id") String userId);
+
+    @Headers("Content-Type: application/json")
+    @POST("/log-photo-attempt/")
+    Call<ResponseBody> logPhotoAttempt(@Body PhotoAttemptRequest request);
 }
 
