@@ -320,6 +320,44 @@
                 android:src="@drawable/ic_redo"
                 app:fabSize="mini" />
 
+            <!-- Tulis (Text Input) -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_tulis"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                app:backgroundTint="@color/phyphox_orange"
+                android:src="@drawable/ic_keyboard"
+                app:fabSize="mini"
+                android:contentDescription="Tulis" />
+
+        </LinearLayout>
+
+        <!-- Text Note Overlay (shown when fab_tulis is clicked) -->
+        <LinearLayout
+            android:id="@+id/tulis_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="#F0FFFFFF"
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:visibility="gone">
+
+            <EditText
+                android:id="@+id/et_tulis"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/custom_edittext_background_2"
+                android:hint="Tulis catatan atau deskripsi analisis Anda..."
+                android:inputType="textMultiLine|textCapSentences"
+                android:maxLines="3"
+                android:minLines="2"
+                android:padding="10dp"
+                android:textColor="@color/phyphox_black_100"
+                android:textColorHint="@color/phyphox_black_60"
+                android:textSize="13sp" />
+
         </LinearLayout>
 
     </androidx.cardview.widget.CardView>

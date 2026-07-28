@@ -1,6 +1,7 @@
 package de.rwth_aachen.phyphox.activity;
 
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -24,6 +25,9 @@ public class HistoryRecordActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityHistoryRecordBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         adapter = new HistoryRecordAdapter(this, getApplication());
         binding.rvData.setLayoutManager(new LinearLayoutManager(this));
         binding.rvData.setAdapter(adapter);
@@ -36,5 +40,14 @@ public class HistoryRecordActivity extends AppCompatActivity {
                 Toast.makeText(HistoryRecordActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

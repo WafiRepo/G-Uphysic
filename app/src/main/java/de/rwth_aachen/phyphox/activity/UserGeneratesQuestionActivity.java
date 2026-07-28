@@ -170,7 +170,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                     }
                 } catch (Exception e) {
                     Log.e("UPLOAD_ERROR", "Error during upload: " + e.getMessage());
-                    Toast.makeText(UserGeneratesQuestionActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(UserGeneratesQuestionActivity.this, "Terjadi kesalahan: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     binding.btnNext.setEnabled(true);
                 }
             }
@@ -204,8 +204,8 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
             
             Log.d("btnsave","--> "+new Gson().toJson(dataModel));
             ProgressDialog progressDialog = new ProgressDialog(this);
-            progressDialog.setTitle("Save data to Server");
-            progressDialog.setMessage("Please wait...");
+            progressDialog.setTitle("Menyimpan Data");
+            progressDialog.setMessage("Mohon tunggu...");
             progressDialog.setCancelable(false);
             progressDialog.show();
             
@@ -275,7 +275,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 dispatchTakePictureIntent();
             } else {
-                Toast.makeText(this, "Camera permission is required", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Izin kamera diperlukan", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -292,7 +292,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
             photoFile = createImageFile();
         } catch (IOException ex) {
             ex.printStackTrace();
-            Toast.makeText(this, "Failed to create image file", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Gagal membuat file gambar", Toast.LENGTH_SHORT).show();
         }
 
         if (photoFile != null) {
@@ -374,8 +374,8 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
     public void uploadImageCameraToFirestore(byte[] imageData, String fileName) {
         // Create and configure ProgressDialog
         ProgressDialog progressDialog = new ProgressDialog(this);
-        progressDialog.setTitle("Uploading Image Camera");
-        progressDialog.setMessage("Please wait while the image is being uploaded...");
+        progressDialog.setTitle("Mengunggah Gambar");
+        progressDialog.setMessage("Mohon tunggu, gambar sedang diunggah...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 
@@ -410,11 +410,11 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                 // Handle upload failure
                 Log.e("Firebase", "Image upload failed", e);
                 progressDialog.dismiss();
-                Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Gagal mengunggah gambar: " + e.getMessage(), Toast.LENGTH_LONG).show();
             },
             progress -> {
                 // Update progress
-                progressDialog.setMessage("Uploaded: " + (int) progress + "%");
+                progressDialog.setMessage("Terunggah: " + (int) progress + "%");
             }
         );
     }
@@ -571,8 +571,8 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
     public void uploadImageToFirestore(byte[] imageData, String fileName) {
         // Create and configure ProgressDialog
         ProgressDialog progressDialog = new ProgressDialog(this);
-        progressDialog.setTitle("Uploading Image");
-        progressDialog.setMessage("Please wait while the image is being uploaded...");
+        progressDialog.setTitle("Mengunggah Gambar");
+        progressDialog.setMessage("Mohon tunggu, gambar sedang diunggah...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 
@@ -620,11 +620,11 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
                 // Handle upload failure
                 Log.e("Firebase", "Image upload failed", e);
                 progressDialog.dismiss();
-                Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Gagal mengunggah gambar: " + e.getMessage(), Toast.LENGTH_LONG).show();
             },
             progress -> {
                 // Update progress
-                progressDialog.setMessage("Uploaded: " + (int) progress + "%");
+                progressDialog.setMessage("Terunggah: " + (int) progress + "%");
             }
         );
     }
@@ -632,7 +632,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
     private void fetchAdvancedQuestion(String language, String type) {
         ProgressDialog progressDialog = new ProgressDialog(this); // Replace 'this' with 'requireContext()' if inside a Fragment
         progressDialog.setTitle("");
-        progressDialog.setMessage("Loading...");
+        progressDialog.setMessage("Memuat...");
         progressDialog.setCancelable(false);
         progressDialog.show();
         ApiRequest request = new ApiRequest(language, de.rwth_aachen.phyphox.Helper.SessionManager.getId(this));
@@ -788,7 +788,7 @@ public class UserGeneratesQuestionActivity extends AppCompatActivity {
             public void onFailure(Call<ApiResponse> call, Throwable t) {
                 Log.e("Retrofit", "Error: " + t.getMessage());
                 progressDialog.dismiss();
-                Toast.makeText(UserGeneratesQuestionActivity.this, "Failed to connect", Toast.LENGTH_SHORT).show();
+                Toast.makeText(UserGeneratesQuestionActivity.this, "Gagal terhubung", Toast.LENGTH_SHORT).show();
             }
         };
         if (type.equals("Easy")) {

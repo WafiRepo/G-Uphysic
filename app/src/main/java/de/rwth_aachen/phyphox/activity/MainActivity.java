@@ -12,7 +12,9 @@ import com.google.android.material.textfield.TextInputLayout;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
+import androidx.cardview.widget.CardView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -31,6 +33,7 @@ import de.rwth_aachen.phyphox.fragment.ListUserQuestionsFragment;
 import de.rwth_aachen.phyphox.fragment.SearchFragment;
 import de.rwth_aachen.phyphox.fragment.ShareLocationFragment;
 import de.rwth_aachen.phyphox.Helper.SessionManager;
+import de.rwth_aachen.phyphox.Helper.VersionHelper;
 import de.rwth_aachen.phyphox.activity.ArtifactSliderAdapter;
 
 import java.util.ArrayList;
@@ -56,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -75,6 +79,23 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_NO) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        }
+        if (autoScrollRunnable != null && allArtifacts.size() > 0) {
+            autoScrollHandler.postDelayed(autoScrollRunnable, 3000);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        autoScrollHandler.removeCallbacksAndMessages(null);
+    }
+
     HomeFragment homeFragment = new HomeFragment();
     ListUserQuestionsFragment listUserQuestionsFragment = new ListUserQuestionsFragment();
     ShareLocationFragment searchFragment = new ShareLocationFragment();
@@ -84,35 +105,31 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     public boolean
     onNavigationItemSelected(@NonNull MenuItem item) {
         Toolbar toolbar = findViewById(R.id.toolbar);
-        ViewPager2 artifactSlider = findViewById(R.id.artifactSlider);
-        ConstraintLayout clBanner = findViewById(R.id.clBanner);
+        CardView cvBanner = findViewById(R.id.cvBanner);
         switch (item.getItemId()) {
             case R.id.home:
                 getSupportFragmentManager()
                         .beginTransaction()
                         .replace(R.id.flFragment, homeFragment)
                         .commit();
-                // Tampilkan toolbar dan slider
                 toolbar.setVisibility(View.VISIBLE);
-                clBanner.setVisibility(View.VISIBLE);
+                if (cvBanner != null) cvBanner.setVisibility(View.GONE);
                 return true;
             case R.id.search:
                 getSupportFragmentManager()
                         .beginTransaction()
                         .replace(R.id.flFragment, listUserQuestionsFragment)
                         .commit();
-                // Tampilkan toolbar dan slider
                 toolbar.setVisibility(View.GONE);
-                clBanner.setVisibility(View.GONE);
+                if (cvBanner != null) cvBanner.setVisibility(View.GONE);
                 return true;
             case R.id.leaderboard:
                 getSupportFragmentManager()
                         .beginTransaction()
                         .replace(R.id.flFragment, historyRecordFragment)
                         .commit();
-                // Sembunyikan toolbar dan slider
                 toolbar.setVisibility(View.GONE);
-                clBanner.setVisibility(View.GONE);
+                if (cvBanner != null) cvBanner.setVisibility(View.GONE);
                 return true;
         }
         return false;
@@ -186,40 +203,36 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     }
 
     private void loadAllArtifacts() {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
         allArtifacts.clear();
-        ViewPager2 artifactSlider = findViewById(R.id.artifactSlider);
+        autoScrollHandler.removeCallbacksAndMessages(null);
 
+        ViewPager2 artifactSlider = binding.artifactSlider;
         if (adapter == null) {
             adapter = new ArtifactSliderAdapter(this, allArtifacts);
             artifactSlider.setAdapter(adapter);
+            binding.dotsIndicator.setViewPager2(artifactSlider);
         } else {
             adapter.notifyDataSetChanged();
         }
-        com.tbuonomo.viewpagerdotsindicator.DotsIndicator dotsIndicator = findViewById(R.id.dotsIndicator);
-        dotsIndicator.setViewPager2(binding.artifactSlider);
 
-// Auto-scroll setiap 3 detik
         autoScrollRunnable = new Runnable() {
             @Override
             public void run() {
                 if (adapter != null && adapter.getItemCount() > 0) {
-                    int nextItem = (binding.artifactSlider.getCurrentItem() + 1) % adapter.getItemCount();
-                    binding.artifactSlider.setCurrentItem(nextItem, true);
+                    int nextItem = (artifactSlider.getCurrentItem() + 1) % adapter.getItemCount();
+                    artifactSlider.setCurrentItem(nextItem, true);
                 }
                 autoScrollHandler.postDelayed(this, 3000);
             }
         };
 
-
-        // Load artifacts from both "record" and "questions" collections
         loadArtifactsFromRecord();
     }
     
     private void loadArtifactsFromRecord() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         
-        db.collection("record")
+        db.collection(VersionHelper.getCollectionName("record"))
                 .orderBy("id", Query.Direction.DESCENDING)
                 .limit(5)
                 .get()
@@ -351,7 +364,14 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     }
     
     private void startAutoScroll() {
-        if (allArtifacts.size() > 0) {
+        if (allArtifacts.size() > 0 && autoScrollRunnable != null) {
+            // Show banner now that we have data (only if we're on the home tab)
+            CardView cvBanner = findViewById(R.id.cvBanner);
+            BottomNavigationView nav = binding.bottomNavigationView;
+            if (cvBanner != null) {
+                cvBanner.setVisibility(View.GONE);
+            }
+            autoScrollHandler.removeCallbacksAndMessages(null);
             autoScrollHandler.postDelayed(autoScrollRunnable, 3000);
         }
     }

@@ -29,10 +29,16 @@
             android:padding="4dp"
             android:contentDescription="Kembali" />
 
-        <View
+        <TextView
+            android:id="@+id/tv_device_title"
             android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textColor="@color/phyphox_white_100"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:text="" />
 
         <ImageView
             android:id="@+id/iv_setting"
@@ -154,44 +160,74 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/camera_container">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Judul di atas kolom label -->
             <TextView
                 android:id="@+id/tvLabelTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
                 android:text="Objek yang Terdeteksi"
                 android:textStyle="bold"
                 android:textColor="@color/phyphox_purple"
                 android:textSize="18sp"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                android:layout_marginBottom="12dp"/>
+                android:layout_marginBottom="12dp" />
 
             <EditText
-                android:textAlignment="center"
-                android:padding="16dp"
-                android:background="@drawable/background_white_border_primary_8"
                 android:id="@+id/tvLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:textAlignment="center"
+                android:padding="16dp"
+                android:background="@drawable/background_white_border_primary_8"
                 android:text="Label"
                 android:textColor="@color/phyphox_black_100"
                 android:textSize="16sp"
                 android:enabled="false"
-                app:layout_constraintTop_toBottomOf="@id/tvLabelTitle" />
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:id="@+id/llGearContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <EditText
+                    android:id="@+id/etGearFront"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Radius gir depan (cm)"
+                    android:inputType="numberDecimal"
+                    android:textColor="@color/phyphox_black_100"
+                    android:textColorHint="#888888"
+                    android:padding="12dp"
+                    android:background="@drawable/background_white_border_primary_8"
+                    android:layout_marginBottom="8dp" />
+
+                <EditText
+                    android:id="@+id/etGearRear"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Radius gir belakang (cm)"
+                    android:inputType="numberDecimal"
+                    android:textColor="@color/phyphox_black_100"
+                    android:textColorHint="#888888"
+                    android:padding="12dp"
+                    android:background="@drawable/background_white_border_primary_8"
+                    android:layout_marginBottom="8dp" />
+
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="16dp"
-                app:layout_constraintTop_toBottomOf="@id/tvLabel">
+                android:layout_marginTop="8dp">
 
                 <Button
                     android:id="@+id/tvEdit"
@@ -199,7 +235,7 @@
                     android:layout_height="48dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
-                    android:text="✏️ Edit"
+                    android:text="Edit"
                     android:textAllCaps="false"
                     android:textSize="14sp"
                     android:textStyle="bold"
@@ -212,7 +248,7 @@
                     android:layout_height="48dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    android:text="✅ OK"
+                    android:text="OK"
                     android:textAllCaps="false"
                     android:textSize="14sp"
                     android:textStyle="bold"
@@ -221,7 +257,8 @@
                     android:enabled="false" />
 
             </LinearLayout>
-        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </LinearLayout>
 
     </androidx.cardview.widget.CardView>
 

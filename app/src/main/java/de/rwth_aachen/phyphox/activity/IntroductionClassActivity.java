@@ -3,6 +3,7 @@ package de.rwth_aachen.phyphox.activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 
 import androidx.annotation.Nullable;
@@ -25,6 +26,10 @@ public class IntroductionClassActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityIntroductionClassBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        setSupportActionBar(binding.toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         binding.btnStart.setOnClickListener(view ->{
             updateTotalVisitingIntroduction(visitStartTime);
             Intent intent = new Intent(IntroductionClassActivity.this, QuestionActivity.class);
@@ -86,6 +91,15 @@ public class IntroductionClassActivity extends AppCompatActivity {
         }
     }
 
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
     @Override
     protected void onResume() {

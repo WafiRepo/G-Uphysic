@@ -103,13 +103,13 @@ public class ShareLocationFragment extends Fragment {
             if (!dataModel.getPhoto().isEmpty()) {
                 startActivity(new Intent(getActivity(), ExperimentList.class));
             } else {
-                Toast.makeText(getActivity(), "Upload Photo First", Toast.LENGTH_LONG).show();
+                Toast.makeText(getActivity(), "Unggah foto terlebih dahulu", Toast.LENGTH_LONG).show();
             }
         });
         binding.btnUpload.setOnClickListener(v -> {
             binding.btnUpload.setEnabled(false);
-            progressDialog.setTitle("Uploading Image");
-            progressDialog.setMessage("Please wait while the image is being uploaded...");
+            progressDialog.setTitle("Mengunggah Gambar");
+            progressDialog.setMessage("Mohon tunggu, gambar sedang diunggah...");
             progressDialog.setCancelable(false);
             progressDialog.show();
             binding.btnSave.setEnabled(false);
@@ -227,7 +227,7 @@ public class ShareLocationFragment extends Fragment {
 
     private void takePhoto() {
         if (imageCapture == null) {
-            Toast.makeText(requireContext(), "Camera not initialized", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Kamera belum diinisialisasi", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -297,7 +297,7 @@ public class ShareLocationFragment extends Fragment {
     }
 
     private void showPermissionDeniedMessage(String permission) {
-        new AlertDialog.Builder(requireContext()).setTitle(permission + " Permission Denied").setMessage("This feature requires " + permission + " permission to function. Please grant it in settings.").setPositiveButton("OK", (dialog, which) -> dialog.dismiss()).show();
+        new AlertDialog.Builder(requireContext()).setTitle("Izin Ditolak").setMessage("Fitur ini memerlukan izin " + permission + ". Silakan aktifkan di pengaturan.").setPositiveButton("OK", (dialog, which) -> dialog.dismiss()).show();
     }
 
     public byte[] convertBitmapToBytes(Bitmap bitmap) {
@@ -322,7 +322,7 @@ public class ShareLocationFragment extends Fragment {
         uploadTask.addOnProgressListener(snapshot -> {
             // Update the ProgressDialog with the upload progress
             double progress = (100.0 * snapshot.getBytesTransferred()) / snapshot.getTotalByteCount();
-            progressDialog.setMessage("Uploaded: " + (int) progress + "%");
+            progressDialog.setMessage("Terunggah: " + (int) progress + "%");
         }).addOnSuccessListener(taskSnapshot -> {
             // Get the download URL
             imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
@@ -344,7 +344,7 @@ public class ShareLocationFragment extends Fragment {
             // Handle upload failure
             progressDialog.dismiss();
             Log.e("Firebase", "Image upload failed", e);
-            Toast.makeText(requireContext(), "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(requireContext(), "Gagal mengunggah gambar: " + e.getMessage(), Toast.LENGTH_LONG).show();
         });
     }
     private void uploadImage(File file) {
@@ -363,7 +363,7 @@ public class ShareLocationFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse apiResponse = response.body();
                     Log.d(TAG, "Upload successful: " + apiResponse.getMessage());
-                    Toast.makeText(requireContext(), "Upload successful: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), "Berhasil diunggah: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
                 } else {
                     try {
                         // Ambil error body dan parse jadi JSON
@@ -371,11 +371,11 @@ public class ShareLocationFragment extends Fragment {
                         JSONObject jsonObject = new JSONObject(errorBody);
                         String errorMessage = jsonObject.optString("error", "Unknown error");
 
-                        Toast.makeText(requireContext(), "Upload failed: " + errorMessage, Toast.LENGTH_LONG).show();
+                        Toast.makeText(requireContext(), "Gagal mengunggah: " + errorMessage, Toast.LENGTH_LONG).show();
                         Log.e(TAG, "Upload failed: " + errorMessage);
                     } catch (Exception e) {
                         e.printStackTrace();
-                        Toast.makeText(requireContext(), "Upload failed: Unknown error", Toast.LENGTH_LONG).show();
+                        Toast.makeText(requireContext(), "Gagal mengunggah: Error tidak diketahui", Toast.LENGTH_LONG).show();
                     }
                 }
                 binding.btnSave.setEnabled(true);
@@ -386,7 +386,7 @@ public class ShareLocationFragment extends Fragment {
             public void onFailure(Call<ApiResponse> call, Throwable t) {
                 binding.btnSave.setEnabled(true);
                 progressDialog.dismiss();
-                Toast.makeText(requireContext(), "Image upload API failed: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(requireContext(), "API unggah gambar gagal: " + t.getMessage(), Toast.LENGTH_LONG).show();
                 Log.e(TAG, "Upload error: " + t.getMessage());
             }
         });

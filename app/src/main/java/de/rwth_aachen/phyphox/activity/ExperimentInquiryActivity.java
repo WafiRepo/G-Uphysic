@@ -121,6 +121,7 @@ public class ExperimentInquiryActivity extends AppCompatActivity {
                                 null,
                                 null,
                                 null,
+                                null,
                                 null
                         );
                     }
@@ -191,7 +192,8 @@ public class ExperimentInquiryActivity extends AppCompatActivity {
                                 responseText,
                                 fb,
                                 sessionId,
-                                jpeg
+                                jpeg,
+                                null
                         );
                     } else {
                         InquiryLogHelper.log(
@@ -201,6 +203,7 @@ public class ExperimentInquiryActivity extends AppCompatActivity {
                                 responseText,
                                 fb,
                                 sessionId,
+                                null,
                                 null,
                                 null,
                                 null,

@@ -1119,7 +1119,15 @@ public class FirestoreUtil {
         if (data.containsKey("typeQuestion")) model.setTypeQuestion((String) data.get("typeQuestion"));
         if (data.containsKey("typeData")) model.setTypeData((String) data.get("typeData"));
         if (data.containsKey("desc")) model.setDesc((String) data.get("desc"));
-        if (data.containsKey("dateTime")) model.setDateTime((String) data.get("dateTime"));
+        if (data.containsKey("dateTime")) {
+            Object dt = data.get("dateTime");
+            if (dt instanceof com.google.firebase.Timestamp) {
+                model.setDateTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+                    .format(((com.google.firebase.Timestamp) dt).toDate()));
+            } else if (dt != null) {
+                model.setDateTime(dt.toString());
+            }
+        }
         if (data.containsKey("customerName")) model.setCustomerName((String) data.get("customerName"));
         if (data.containsKey("idCustomer")) model.setIdCustomer((String) data.get("idCustomer"));
         if (data.containsKey("locationName")) model.setLocationName((String) data.get("locationName"));
@@ -1211,11 +1219,19 @@ public class FirestoreUtil {
         }
         if (data.containsKey("createdAt")) {
             Object createdAt = data.get("createdAt");
-            model.setCreatedAt(createdAt == null ? System.currentTimeMillis() : ((Number) createdAt).longValue());
+            if (createdAt instanceof com.google.firebase.Timestamp) {
+                model.setCreatedAt(((com.google.firebase.Timestamp) createdAt).toDate().getTime());
+            } else if (createdAt instanceof Number) {
+                model.setCreatedAt(((Number) createdAt).longValue());
+            }
         }
         if (data.containsKey("updatedAt")) {
             Object updatedAt = data.get("updatedAt");
-            model.setUpdatedAt(updatedAt == null ? System.currentTimeMillis() : ((Number) updatedAt).longValue());
+            if (updatedAt instanceof com.google.firebase.Timestamp) {
+                model.setUpdatedAt(((com.google.firebase.Timestamp) updatedAt).toDate().getTime());
+            } else if (updatedAt instanceof Number) {
+                model.setUpdatedAt(((Number) updatedAt).longValue());
+            }
         }
         
         return model;

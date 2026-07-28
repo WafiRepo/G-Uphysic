@@ -97,7 +97,7 @@ public class PiAnalysisActivity extends AppCompatActivity {
         java.io.File file = FileExtensions.uriToFile(this, videoUri);
         if (file == null || !file.exists()) {
             Log.e(TAG, "File not found or null after uriToFile conversion");
-            Toast.makeText(this, "Failed to prepare video file", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Gagal menyiapkan file video", Toast.LENGTH_SHORT).show();
             return;
         }
         Log.d(TAG, "File size: " + file.length() + " bytes");
@@ -125,14 +125,14 @@ public class PiAnalysisActivity extends AppCompatActivity {
                         if (response.errorBody() != null) errorBody = response.errorBody().string();
                     } catch (Exception ignored) {}
                     Log.e(TAG, "Submit failed — HTTP " + response.code() + " " + response.message() + " | body: " + errorBody);
-                    Toast.makeText(PiAnalysisActivity.this, "Submission failed (" + response.code() + ")", Toast.LENGTH_LONG).show();
+                    Toast.makeText(PiAnalysisActivity.this, "Pengiriman gagal (" + response.code() + ")", Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(Call<SubmitResponse> call, Throwable t) {
                 Log.e(TAG, "Submit onFailure — " + t.getClass().getSimpleName() + ": " + t.getMessage(), t);
-                Toast.makeText(PiAnalysisActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(PiAnalysisActivity.this, "Terjadi kesalahan: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }

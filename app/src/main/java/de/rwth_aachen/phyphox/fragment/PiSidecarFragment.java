@@ -146,7 +146,7 @@ public class PiSidecarFragment extends Fragment {
         PointF centerPoint = markerView.getCenterPoint();
 
         if (objPoint == null || centerPoint == null) {
-            Toast.makeText(requireContext(), "Please mark both object and center", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Harap tandai objek dan pusat terlebih dahulu", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -156,7 +156,7 @@ public class PiSidecarFragment extends Fragment {
         Double physSize = sizeStr.isEmpty() ? null : Double.parseDouble(sizeStr);
 
         if (objLabel.isEmpty() || refLabel.isEmpty()) {
-            Toast.makeText(requireContext(), "Please provide labels", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Harap isi label terlebih dahulu", Toast.LENGTH_SHORT).show();
             return;
         }
 

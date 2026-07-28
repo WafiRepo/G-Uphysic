@@ -136,7 +136,7 @@ public class PiProgressFragment extends Fragment {
             ((PiAnalysisActivity) requireActivity()).navigateToResults(jobId);
         } else if ("error".equalsIgnoreCase(status.status) || "failed".equalsIgnoreCase(status.status)) {
             stopPolling();
-            Toast.makeText(requireContext(), "Analysis failed: " + status.message, Toast.LENGTH_LONG).show();
+            Toast.makeText(requireContext(), "Analisis gagal: " + status.message, Toast.LENGTH_LONG).show();
             requireActivity().onBackPressed();
         }
     }

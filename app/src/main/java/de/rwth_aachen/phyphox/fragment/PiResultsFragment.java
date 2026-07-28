@@ -102,14 +102,14 @@ public class PiResultsFragment extends Fragment {
                         if (response.errorBody() != null) errorBody = response.errorBody().string();
                     } catch (Exception ignored) {}
                     Log.e(TAG, "Load results failed — HTTP " + response.code() + " " + response.message() + " | " + errorBody);
-                    Toast.makeText(requireContext(), "Failed to load results (" + response.code() + ")", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), "Gagal memuat hasil (" + response.code() + ")", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<JobResult> call, Throwable t) {
                 Log.e(TAG, "Load results onFailure: " + t.getMessage(), t);
-                Toast.makeText(requireContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Terjadi kesalahan: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

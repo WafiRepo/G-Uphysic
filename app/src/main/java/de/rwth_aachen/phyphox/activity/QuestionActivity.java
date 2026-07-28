@@ -50,7 +50,6 @@ public class QuestionActivity extends AppCompatActivity {
                 } else {
                     startActivity(new Intent(QuestionActivity.this, GeneratesActivity.class));
                 }
-                finish();
             } else {
                 Toast.makeText(this, "Silakan pilih tingkat kesulitan terlebih dahulu", Toast.LENGTH_SHORT).show();
             }
@@ -67,7 +66,6 @@ public class QuestionActivity extends AppCompatActivity {
                     intent.putExtra("isCustomQuestion", true);
                     intent.putExtra("isCustomQuestionNew", true);
                     startActivity(intent);
-                    finish();
                 } else {
                     Toast.makeText(QuestionActivity.this, "Silakan pilih tingkat kesulitan terlebih dahulu", Toast.LENGTH_SHORT).show();
                 }

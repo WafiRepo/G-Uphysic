@@ -58,7 +58,7 @@ public class HomeFragment extends Fragment {
                 App app = (App) requireActivity().getApplication();
                 DataModel dataModel = new DataModel();
                 dataModel.setId(String.valueOf(System.currentTimeMillis()));
-                dataModel.setTopics("Out Class");
+                dataModel.setTopics("SA3");
                 app.setDataModel(dataModel);
                 startActivity(new Intent(getActivity(), LinearActivity.class));
             });
@@ -82,7 +82,7 @@ public class HomeFragment extends Fragment {
                 App app = (App) requireActivity().getApplication();
                 DataModel dataModel = new DataModel();
                 dataModel.setId(String.valueOf(System.currentTimeMillis()));
-                dataModel.setTopics("Control Group");
+                dataModel.setTopics("SA1");
                 app.setDataModel(dataModel);
                 startActivity(new Intent(getActivity(), LinearActivity.class));
             });

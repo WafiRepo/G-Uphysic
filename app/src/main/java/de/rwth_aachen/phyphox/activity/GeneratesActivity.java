@@ -117,7 +117,11 @@ public class GeneratesActivity extends AppCompatActivity {
         // Ensure tvType is hidden and empty by default
         binding.tvType.setVisibility(View.GONE);
         binding.tvType.setText("");
-        
+
+        // Lanjutkan selalu di-disable sampai Simpan berhasil
+        binding.btnSave.setEnabled(false);
+        binding.btnSave.setAlpha(0.5f);
+
         if (isFromMainMenu) {
             dataModel.setDesc(SessionManager.getName(this) + " mengerjakan pertanyaan dari Sistem");
             fetchAdvancedQuestion("indonesia", dataModel.getTypeQuestion());
@@ -133,7 +137,7 @@ public class GeneratesActivity extends AppCompatActivity {
                     dataModel.setDesc(SessionManager.getName(this) + " Buat Pertanyaan Sendiri");
 
                     // Set custom title for Out Class questions
-                    if (dataModel.getTypeData() != null && dataModel.getTypeData().contains("Out Class")) {
+                    if (dataModel.getTypeData() != null && (dataModel.getTypeData().contains("Out Class") || dataModel.getTypeData().contains("SA3"))) {
                         dataModel.setTypeData("Out - Class (By AI)");
                         // Update UI if there's a TextView to show this
                         if (binding.tvType != null) {
@@ -478,15 +482,14 @@ public class GeneratesActivity extends AppCompatActivity {
                 binding.tvQuestion.setText(dataModel.getQuestion());
 
                 // Load canvas drawing if available (for Edit mode)
-                if(!dataModel.getPhotoDraw().isEmpty()){
+                if(dataModel.getPhotoDraw() != null && !dataModel.getPhotoDraw().isEmpty()){
                     binding.ivDraw.setVisibility(View.VISIBLE);
                     loadImage(dataModel.getPhotoDraw().get(dataModel.getPhotoDraw().size()-1), binding.ivDraw);
                 }
 
                 // Handle Graph Images
-                if (!dataModel.getBase64().isEmpty()) {
+                if (dataModel.getBase64() != null && !dataModel.getBase64().isEmpty()) {
                     loadImageWithGlide(base64ToDrawable(dataModel.getBase64(), GeneratesActivity.this), binding.iv);
-//                binding.iv.setBackground(base64ToDrawable(dataModel.getBase64(), GeneratesActivity.this));
                     binding.iv.setVisibility(View.VISIBLE);
                     binding.iv.setAdjustViewBounds(true);
                     binding.iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
@@ -494,7 +497,7 @@ public class GeneratesActivity extends AppCompatActivity {
                     binding.iv.bringToFront();
                     Log.d("EDIT_IMAGE_LOAD", "Edit mode: Loaded base64 (iv) - Length: " + dataModel.getBase64().length());
                 }
-                if (!dataModel.getBase64().isEmpty()) {
+                if (dataModel.getBase64() != null && !dataModel.getBase64().isEmpty()) {
                     loadImage(dataModel.getBase64(), binding.iv);
                     binding.iv.setVisibility(View.VISIBLE);
                     binding.iv.setAdjustViewBounds(true);
@@ -542,11 +545,10 @@ public class GeneratesActivity extends AppCompatActivity {
 
                 boolean table3Shown = false;
                 boolean table4Shown = false;
-                if (!dataModel.getBase64_3().isEmpty()) {
+                if (dataModel.getBase64_3() != null && !dataModel.getBase64_3().isEmpty()) {
                     Log.d("EDIT_IMAGE_LOAD", "Loading Base64_3 (iv3) - Length: " + dataModel.getBase64_3().length());
                     loadImage(dataModel.getBase64_3(), binding.iv3);
                     binding.iv3.setVisibility(View.VISIBLE);
-                    // Ensure proper layout stacking
                     binding.iv3.setAdjustViewBounds(true);
                     binding.iv3.setScaleType(ImageView.ScaleType.FIT_CENTER);
                     binding.iv3.requestLayout();
@@ -557,11 +559,10 @@ public class GeneratesActivity extends AppCompatActivity {
                     Log.w("EDIT_IMAGE_LOAD", "Base64_3 is empty - iv3 will not be shown");
                     binding.iv3.setVisibility(View.GONE);
                 }
-                if (!dataModel.getBase64_4().isEmpty()) {
+                if (dataModel.getBase64_4() != null && !dataModel.getBase64_4().isEmpty()) {
                     Log.d("EDIT_IMAGE_LOAD", "Loading Base64_4 (iv4) - Length: " + dataModel.getBase64_4().length());
                     loadImage(dataModel.getBase64_4(), binding.iv4);
                     binding.iv4.setVisibility(View.VISIBLE);
-                    // Ensure iv4 appears below iv3
                     binding.iv4.setAdjustViewBounds(true);
                     binding.iv4.setScaleType(ImageView.ScaleType.FIT_CENTER);
                     binding.iv4.requestLayout();
@@ -702,7 +703,7 @@ public class GeneratesActivity extends AppCompatActivity {
         binding.btnSave.setOnClickListener(v -> {
             // Check if data has been uploaded first
             if (dataModel.getPhotoDraw() == null || dataModel.getPhotoDraw().isEmpty()) {
-                Toast.makeText(GeneratesActivity.this, "Klik Upload terlebih dahulu untuk menyimpan gambar", Toast.LENGTH_LONG).show();
+                Toast.makeText(GeneratesActivity.this, "Klik Simpan terlebih dahulu untuk menyimpan gambar", Toast.LENGTH_LONG).show();
                 return;
             }
 
@@ -782,7 +783,7 @@ public class GeneratesActivity extends AppCompatActivity {
                         dataModel.setFinished(false);
 
                         // Set custom title for Out Class questions
-                        if (dataModel.getTypeData() != null && dataModel.getTypeData().contains("Out Class")) {
+                        if (dataModel.getTypeData() != null && (dataModel.getTypeData().contains("Out Class") || dataModel.getTypeData().contains("SA3"))) {
                             dataModel.setTypeData("Out - Class (By AI)");
                         }
                     } else {
@@ -920,7 +921,7 @@ public class GeneratesActivity extends AppCompatActivity {
 
             Toast.makeText(this, "Warna dipilih: " + colorHex, Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Toast.makeText(this, "Error memilih warna", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Terjadi kesalahan memilih warna", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -931,7 +932,7 @@ public class GeneratesActivity extends AppCompatActivity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 dispatchTakePictureIntent();
             } else {
-                Toast.makeText(this, "Camera permission is required", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Izin kamera diperlukan", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -943,7 +944,7 @@ public class GeneratesActivity extends AppCompatActivity {
 
         // Uncomment dan perbaiki package visibility check
         if (takePictureIntent.resolveActivity(getPackageManager()) == null) {
-            Toast.makeText(this, "No camera app available", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Tidak ada aplikasi kamera", Toast.LENGTH_SHORT).show();
             Log.d("btnTakePhoto", "NO camera app available");
             return;
         }
@@ -955,7 +956,7 @@ public class GeneratesActivity extends AppCompatActivity {
             photoFile = createImageFile();
         } catch (IOException ex) {
             ex.printStackTrace();
-            Toast.makeText(this, "Failed to create image file", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Gagal membuat file gambar", Toast.LENGTH_SHORT).show();
             return; // Tambahkan return untuk menghindari crash
         }
 
@@ -968,7 +969,7 @@ public class GeneratesActivity extends AppCompatActivity {
                 startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
             } catch (Exception e) {
                 Log.e("Camera", "Failed to start camera: " + e.getMessage());
-                Toast.makeText(this, "Failed to open camera", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Gagal membuka kamera", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -1060,14 +1061,14 @@ public class GeneratesActivity extends AppCompatActivity {
                             optimizedBitmap.recycle();
                         }
                     } else {
-                        Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Gagal memproses gambar", Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    Toast.makeText(this, "Image file not found", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "File gambar tidak ditemukan", Toast.LENGTH_SHORT).show();
                 }
             } catch (Exception e) {
                 Log.e("ImageProcess", "Error processing image: " + e.getMessage());
-                Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Gagal memproses gambar", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -1498,8 +1499,8 @@ public class GeneratesActivity extends AppCompatActivity {
     public void uploadImageToFirestore(byte[] imageData, String fileName) {
         // Create and configure ProgressDialog
         ProgressDialog progressDialog = new ProgressDialog(this);
-        progressDialog.setTitle("Uploading Image");
-        progressDialog.setMessage("Please wait while the image is being uploaded...");
+        progressDialog.setTitle("Mengunggah Gambar");
+        progressDialog.setMessage("Mohon tunggu, gambar sedang diunggah...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 
@@ -1550,8 +1551,12 @@ public class GeneratesActivity extends AppCompatActivity {
                 Log.d("UPLOAD_TYPE_DATA", "Setting student's typeData: '" + studentTypeData + "' (original from list was: '" + originalTypeDataFromList + "')");
                 app.setDataModel(dataModel);
 
-                // Enable only Upload here. Lanjutkan (btnSave) tetap disabled sampai Save ke Firestore sukses.
+                // Canvas sudah tersimpan ke Storage → aktifkan Lanjutkan
                 binding.btnUpload.setEnabled(true);
+                if (binding.btnSave != null) {
+                    binding.btnSave.setEnabled(true);
+                    binding.btnSave.setAlpha(1f);
+                }
 
                 // Log success
                 Log.d("Firebase", "Image uploaded successfully: " + downloadUrl);
@@ -1561,8 +1566,8 @@ public class GeneratesActivity extends AppCompatActivity {
                 
                 // Save data to Firestore after successful upload
                 ProgressDialog saveProgressDialog = new ProgressDialog(GeneratesActivity.this);
-                saveProgressDialog.setTitle("Save data to Server");
-                saveProgressDialog.setMessage("Please wait...");
+                saveProgressDialog.setTitle("Menyimpan Data");
+                saveProgressDialog.setMessage("Mohon tunggu...");
                 saveProgressDialog.setCancelable(false);
                 saveProgressDialog.show();
 
@@ -1669,7 +1674,7 @@ public class GeneratesActivity extends AppCompatActivity {
                     dataModel.setFinished(false);
 
                     // Set custom title for Out Class questions
-                    if (dataModel.getTypeData() != null && dataModel.getTypeData().contains("Out Class")) {
+                    if (dataModel.getTypeData() != null && (dataModel.getTypeData().contains("Out Class") || dataModel.getTypeData().contains("SA3"))) {
                         dataModel.setTypeData("Out - Class (By AI)");
                     }
                     
@@ -1805,11 +1810,11 @@ public class GeneratesActivity extends AppCompatActivity {
                 // Handle upload failure
                 Log.e("Firebase", "Image upload failed", e);
                 progressDialog.dismiss();
-                Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Gagal mengunggah gambar: " + e.getMessage(), Toast.LENGTH_LONG).show();
             },
             progress -> {
                 // Update progress
-                progressDialog.setMessage("Uploaded: " + (int) progress + "%");
+                progressDialog.setMessage("Terunggah: " + (int) progress + "%");
             }
         );
     }
@@ -1817,7 +1822,7 @@ public class GeneratesActivity extends AppCompatActivity {
     private void fetchAdvancedQuestion(String language, String type) {
         ProgressDialog progressDialog = new ProgressDialog(this); // Replace 'this' with 'requireContext()' if inside a Fragment
         progressDialog.setTitle("");
-        progressDialog.setMessage("Loading...");
+        progressDialog.setMessage("Memuat...");
         progressDialog.setCancelable(false);
         progressDialog.show();
         android.content.SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
@@ -2074,7 +2079,7 @@ public class GeneratesActivity extends AppCompatActivity {
             public void onFailure(Call<ApiResponse> call, Throwable t) {
                 Log.e("Retrofit", "Error: " + t.getMessage());
                 progressDialog.dismiss();
-                Toast.makeText(GeneratesActivity.this, "Failed to connect", Toast.LENGTH_SHORT).show();
+                Toast.makeText(GeneratesActivity.this, "Gagal terhubung", Toast.LENGTH_SHORT).show();
             }
         };
         if (type.equals("Easy")) {
@@ -2606,7 +2611,7 @@ public class GeneratesActivity extends AppCompatActivity {
                 },
                 e -> {
                     Log.e("PHOTO_UPLOAD", "Failed to upload experiment photo: " + e.getMessage());
-                    Toast.makeText(this, "Failed to upload photo: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Gagal mengunggah foto: " + e.getMessage(), Toast.LENGTH_SHORT).show();
 
                     // Save without photo if upload fails
                     saveToFirestoreWithBackup(table, progressData);
@@ -2615,7 +2620,7 @@ public class GeneratesActivity extends AppCompatActivity {
 
         } catch (Exception e) {
             Log.e("PHOTO_UPLOAD", "Error uploading experiment photo: " + e.getMessage());
-            Toast.makeText(this, "Error uploading photo: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Terjadi kesalahan mengunggah foto: " + e.getMessage(), Toast.LENGTH_SHORT).show();
 
             // Save without photo if upload fails
             saveToFirestoreWithBackup(table, progressData);
@@ -2671,7 +2676,7 @@ public class GeneratesActivity extends AppCompatActivity {
                 },
                 e -> {
                     Log.e("PHOTO_UPLOAD", "Failed to upload base64 experiment photo: " + e.getMessage());
-                    Toast.makeText(this, "Failed to upload photo: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Gagal mengunggah foto: " + e.getMessage(), Toast.LENGTH_SHORT).show();
 
                     // Save without photo if upload fails
                     saveToFirestoreWithBackup(table, progressData);
@@ -2681,7 +2686,7 @@ public class GeneratesActivity extends AppCompatActivity {
 
         } catch (Exception e) {
             Log.e("PHOTO_UPLOAD", "Error uploading base64 experiment photo: " + e.getMessage());
-            Toast.makeText(this, "Error uploading photo: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Terjadi kesalahan mengunggah foto: " + e.getMessage(), Toast.LENGTH_SHORT).show();
 
             // Save without photo if upload fails
             saveToFirestoreWithBackup(table, progressData);
@@ -2814,11 +2819,10 @@ public class GeneratesActivity extends AppCompatActivity {
             () -> {
                 // Success callback
                 Log.d("SAVE_TO_FIRESTORE", "Successfully saved to " + finalTable + " with documentId: " + finalDocumentId);
-                Toast.makeText(this, "Progress saved successfully!", Toast.LENGTH_SHORT).show();
 
-                // Navigate based on context
                 if (finalTable.equals("questions")) {
-                    // For custom questions, go to home
+                    // Custom questions (Buat Pertanyaan Sendiri): langsung ke home
+                    Toast.makeText(this, "Pertanyaan berhasil disimpan!", Toast.LENGTH_SHORT).show();
                     try {
                         Intent homeIntent = new Intent(GeneratesActivity.this, MainActivity.class);
                         homeIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -2829,16 +2833,21 @@ public class GeneratesActivity extends AppCompatActivity {
                         finish();
                     }
                 } else {
-                    // For regular records, go to RecordPreviewActivity
-                    Intent intent = new Intent(GeneratesActivity.this, RecordPreviewActivity.class);
-                    startActivity(intent);
-                    finish();
+                    // Regular records: aktifkan Lanjutkan, biarkan user klik sendiri
+                    Toast.makeText(this, "✅ Tersimpan! Klik Lanjutkan untuk melanjutkan.", Toast.LENGTH_SHORT).show();
+                    if (binding.btnSave != null) {
+                        binding.btnSave.setEnabled(true);
+                        binding.btnSave.setAlpha(1f);
+                    }
+                    if (binding.btnUpload != null) {
+                        binding.btnUpload.setEnabled(true);
+                    }
                 }
             },
             e -> {
                 // Failure callback
                 Log.e("FIRESTORE_SAVE", "Failed to save progress: " + e.getMessage());
-                Toast.makeText(this, "Failed to save progress: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Gagal menyimpan progress: " + e.getMessage(), Toast.LENGTH_LONG).show();
 
                 // Re-enable buttons if failed
                 if (binding.btnSave != null) {

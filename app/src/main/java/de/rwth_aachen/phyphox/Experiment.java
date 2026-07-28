@@ -2033,8 +2033,12 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
 
         // Ambil user_id dari SessionManager
         String userId = de.rwth_aachen.phyphox.Helper.SessionManager.getId(this);
+        if (userId == null || userId.trim().isEmpty()) {
+            showErrorDialog("Anda belum login. Silakan login terlebih dahulu.");
+            return;
+        }
         // Buat objek BufferData dengan data buffer yang akan dikirim
-        BufferData bufferData = new BufferData(acc, gyr, gyrSquared, t, userId);
+        BufferData bufferData = new BufferData(acc, gyr, gyrSquared, t, userId.trim());
 
         // Dapatkan instance ApiService dari Retrofit
         ApiService apiService = RetrofitClient.getRetrofitInstance().create(ApiService.class);
@@ -2052,8 +2056,15 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
                         getRadius();
                     }
                 } else {
-                    Log.e("Experiment", "Gagal mengirim data. Kode respons: " + response.code());
-                    showErrorDialog("Gagal mengirim data ke server. Silakan coba lagi.");
+                    String detail = response.message();
+                    try {
+                        if (response.errorBody() != null) {
+                            detail = response.errorBody().string();
+                        }
+                    } catch (Exception ignored) {
+                    }
+                    Log.e("Experiment", "Gagal mengirim data. HTTP " + response.code() + ": " + detail);
+                    showErrorDialog("Gagal mengirim data ke server (HTTP " + response.code() + ").\n\n" + detail);
                 }
             }
 
@@ -2081,22 +2092,10 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
         inputIp.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
         if (device2Ip != null) inputIp.setText(device2Ip);
 
-        final EditText inputLabel1 = new EditText(this);
-        inputLabel1.setHint("Label Device ini / Device 1 (contoh: roda)");
-        inputLabel1.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
-        inputLabel1.setText(device1Label);
-
-        final EditText inputLabel2 = new EditText(this);
-        inputLabel2.setHint("Label Device 2 (contoh: pedal)");
-        inputLabel2.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
-        inputLabel2.setText(device2Label);
-
         layout.addView(inputIp);
-        layout.addView(inputLabel1);
-        layout.addView(inputLabel2);
         builder.setView(layout);
 
-        builder.setMessage("Masukkan IP dan label posisi masing-masing device.\nPastikan kedua device terhubung ke WiFi yang sama.");
+        builder.setMessage("Masukkan IP Device 2.\nPastikan kedua device terhubung ke WiFi yang sama.");
 
         builder.setPositiveButton("Hubungkan", (dialog, which) -> {
             String ip = inputIp.getText().toString().trim();
@@ -2104,15 +2103,9 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
                 Toast.makeText(this, "IP tidak boleh kosong", Toast.LENGTH_SHORT).show();
                 return;
             }
-            String lbl1 = inputLabel1.getText().toString().trim();
-            String lbl2 = inputLabel2.getText().toString().trim();
-            device2Ip    = ip;
-            device1Label = lbl1.isEmpty() ? "roda"  : lbl1;
-            device2Label = lbl2.isEmpty() ? "pedal" : lbl2;
+            device2Ip = ip;
             PreferenceManager.getDefaultSharedPreferences(this).edit()
                     .putString(PREF_DEVICE2_IP, ip)
-                    .putString(PREF_DEVICE1_LABEL, device1Label)
-                    .putString(PREF_DEVICE2_LABEL, device2Label)
                     .apply();
             Toast.makeText(this, "Device 2 tersimpan: " + ip, Toast.LENGTH_SHORT).show();
         });
@@ -2124,13 +2117,13 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
             Toast.makeText(this, "Device 2 diputuskan", Toast.LENGTH_SHORT).show();
         });
 
-        builder.setNeutralButton("Scan QR", (dialog, which) ->
+        builder.setNeutralButton("Scan QR", (dialog, which) -> {
             new IntentIntegrator(this)
                 .setPrompt("Arahkan ke QR Code Phyphox Remote Server")
                 .setBeepEnabled(false)
                 .setOrientationLocked(false)
-                .initiateScan()
-        );
+                .initiateScan();
+        });
         builder.show();
     }
 
@@ -2228,9 +2221,8 @@ public class Experiment extends AppCompatActivity implements View.OnClickListene
             public void onSuccess() {
                 Log.d("Experiment", "Device 2 data saved at pencil click");
                 runOnUiThread(() -> {
-                    // Hitung radius Device 1 dulu, lalu Device 2
-                    getRadiusForDevice(1, device1Label, () ->
-                        getRadiusForDevice(2, device2Label, null));
+                    // Radius sudah disimpan di awal (camera flow), langsung lanjut
+                    takeScreenshotOnly();
                 });
             }
             @Override

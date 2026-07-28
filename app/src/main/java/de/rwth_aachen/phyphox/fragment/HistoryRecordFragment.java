@@ -13,17 +13,24 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import de.rwth_aachen.phyphox.Helper.FirestoreUtil;
 import de.rwth_aachen.phyphox.Helper.SessionManager;
+import de.rwth_aachen.phyphox.Helper.VersionHelper;
+import de.rwth_aachen.phyphox.NetworkConnection.ApiService;
+import de.rwth_aachen.phyphox.NetworkConnection.RetrofitClient;
 import de.rwth_aachen.phyphox.adapter.HistoryRecordAdapter;
 import de.rwth_aachen.phyphox.databinding.ActivityHistoryRecordBinding;
 import de.rwth_aachen.phyphox.model.DataModel;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.DocumentSnapshot;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class HistoryRecordFragment extends Fragment {
     private ActivityHistoryRecordBinding binding;
@@ -97,130 +104,40 @@ public class HistoryRecordFragment extends Fragment {
     }
 
     private void loadDataAndUpdateStats() {
-        // Fetch data from both collections: "record" (OutClass/InClass) and "questions" (Custom Questions)
+        // Fetch experiment records only — "questions" collection excluded intentionally
         loadRecordData();
     }
     
     private void loadRecordData() {
-        // Use the new method to load from multiple collections
-        List<String> collections = new ArrayList<>();
-        collections.add("record");
-        collections.add("questions");
-        
-        android.util.Log.d("HISTORY_LOAD", "Loading from collections: " + collections);
-        
-        FirestoreUtil.getAllDocumentsFromMultipleCollections(
-            collections,
-            DataModel.class,
-            "idCustomer",
-            SessionManager.getId(requireContext()),
-            data -> {
-                allData = data;
-                
-                // Log for debugging
-                android.util.Log.d("HISTORY_LOAD", "Total combined: " + allData.size() + " records from all collections");
-                
-                // Log data from each collection for debugging
-                int recordCount = 0;
-                int questionsCount = 0;
-                for (DataModel record : allData) {
-                    if (record.getTypeData() != null && record.getTypeData().contains("Buat Pertanyaan Sendiri")) {
-                        questionsCount++;
-                        android.util.Log.d("HISTORY_LOAD", "Found Buat Pertanyaan Sendiri record: ID=" + record.getId() + 
-                            ", TypeData='" + record.getTypeData() + "', Desc='" + record.getDesc() + "'");
-                    } else {
-                        recordCount++;
-                    }
-                }
-                android.util.Log.d("HISTORY_LOAD", "Records breakdown: " + recordCount + " regular records, " + questionsCount + " Buat Pertanyaan Sendiri records");
-                
-                // Filter out unwanted records before updating UI
-                List<DataModel> filteredData = filterOutUnwantedRecords(allData);
-                android.util.Log.d("HISTORY_LOAD", "After filtering: " + filteredData.size() + " records (removed " + (allData.size() - filteredData.size()) + " unwanted records)");
-                
-                // Update UI with filtered data
-                adapter.addData(filteredData);
-                updateStatistics(filteredData);
-                updateEmptyState(filteredData.isEmpty());
-                
-                // Create backup of loaded data
-                createBackupIfNeeded();
-            },
-            e -> {
-                android.util.Log.e("HISTORY_LOAD", "Failed to load from multiple collections: " + e.getMessage());
-                
-                // Try fallback: load from individual collections
-                loadRecordDataFallback();
-            }
-        );
+        String userId = SessionManager.getId(requireContext());
+        FirestoreUtil.getAllDocuments("record", DataModel.class, "idCustomer", userId, data -> {
+            allData = data;
+            android.util.Log.d("HISTORY_LOAD", "Loaded " + allData.size() + " records from record collection");
+            List<DataModel> filteredData = filterOutUnwantedRecords(allData);
+            adapter.addData(filteredData);
+            updateStatistics(filteredData);
+            updateEmptyState(filteredData.isEmpty());
+            createBackupIfNeeded();
+        }, e -> {
+            android.util.Log.e("HISTORY_LOAD", "Failed to load records: " + e.getMessage());
+            loadRecordDataFallback();
+        });
     }
-    
+
     private void loadRecordDataFallback() {
-        // Fallback: try to load from individual collections
         android.util.Log.d("HISTORY_LOAD", "Trying fallback loading method");
-        
-        // First, try to load from "record" collection
-        FirestoreUtil.getAllDocuments("record", DataModel.class, "idCustomer", SessionManager.getId(requireContext()), recordData -> {
-            // Then, try to load from "questions" collection
-            FirestoreUtil.getAllDocuments("questions", DataModel.class, "idCustomer", SessionManager.getId(requireContext()), questionsData -> {
-                // Combine both datasets
-                allData = recordData;
-                allData.addAll(questionsData);
-                
-                // Log for debugging
-                android.util.Log.d("HISTORY_LOAD", "Fallback: Loaded " + recordData.size() + " records from 'record' collection");
-                android.util.Log.d("HISTORY_LOAD", "Fallback: Loaded " + questionsData.size() + " records from 'questions' collection");
-                android.util.Log.d("HISTORY_LOAD", "Fallback: Total combined: " + allData.size() + " records");
-                
-                // Filter out unwanted records before updating UI
-                List<DataModel> filteredData = filterOutUnwantedRecords(allData);
-                android.util.Log.d("HISTORY_LOAD", "Fallback: After filtering: " + filteredData.size() + " records (removed " + (allData.size() - filteredData.size()) + " unwanted records)");
-                
-                // Update UI with filtered data
-                adapter.addData(filteredData);
-                updateStatistics(filteredData);
-                updateEmptyState(filteredData.isEmpty());
-                
-                // Create backup of loaded data
-                createBackupIfNeeded();
-            }, questionsError -> {
-                // If questions collection fails, just use record data
-                android.util.Log.w("HISTORY_LOAD", "Fallback: Failed to load questions collection: " + questionsError.getMessage());
-                allData = recordData;
-                
-                // Filter out unwanted records before updating UI
-                List<DataModel> filteredData = filterOutUnwantedRecords(allData);
-                android.util.Log.d("HISTORY_LOAD", "Fallback: After filtering record data: " + filteredData.size() + " records (removed " + (allData.size() - filteredData.size()) + " unwanted records)");
-                
-                adapter.addData(filteredData);
-                updateStatistics(filteredData);
-                updateEmptyState(filteredData.isEmpty());
-                
-                // Create backup of loaded data
-                createBackupIfNeeded();
-            });
+        String userId = SessionManager.getId(requireContext());
+        FirestoreUtil.getAllDocuments("record", DataModel.class, "idCustomer", userId, recordData -> {
+            allData = recordData;
+            android.util.Log.d("HISTORY_LOAD", "Fallback: Loaded " + recordData.size() + " records");
+            List<DataModel> filteredData = filterOutUnwantedRecords(allData);
+            adapter.addData(filteredData);
+            updateStatistics(filteredData);
+            updateEmptyState(filteredData.isEmpty());
+            createBackupIfNeeded();
         }, recordError -> {
-            // If record collection fails, try to load only questions
-            android.util.Log.w("HISTORY_LOAD", "Fallback: Failed to load record collection: " + recordError.getMessage());
-            FirestoreUtil.getAllDocuments("questions", DataModel.class, "idCustomer", SessionManager.getId(requireContext()), questionsData -> {
-                allData = questionsData;
-                android.util.Log.d("HISTORY_LOAD", "Fallback: Loaded " + questionsData.size() + " records from 'questions' collection only");
-                
-                // Filter out unwanted records before updating UI
-                List<DataModel> filteredData = filterOutUnwantedRecords(allData);
-                android.util.Log.d("HISTORY_LOAD", "Fallback: After filtering questions data: " + filteredData.size() + " records (removed " + (allData.size() - filteredData.size()) + " unwanted records)");
-                
-                adapter.addData(filteredData);
-                updateStatistics(filteredData);
-                updateEmptyState(filteredData.isEmpty());
-                
-                // Create backup of loaded data
-                createBackupIfNeeded();
-            }, questionsError -> {
-                // Both collections failed - try to restore from backup
-                android.util.Log.e("HISTORY_LOAD", "Fallback: Failed to load both collections, trying backup restore");
-                restoreFromBackup();
-            });
+            android.util.Log.e("HISTORY_LOAD", "Fallback: Failed to load records, trying backup restore");
+            restoreFromBackup();
         });
     }
     
@@ -292,10 +209,10 @@ public class HistoryRecordFragment extends Fragment {
         
         if (typeData != null) {
             // Check for Out Class - Buat Pertanyaan Sendiri/AI
-            if (typeData.contains("Out Class") || typeData.contains("Out - Class")) {
+            if (typeData.contains("Out Class") || typeData.contains("Out - Class") || typeData.contains("SA3")) {
                 // Only filter out if description also contains Buat Pertanyaan Sendiri/AI
                 if (desc != null && (desc.contains("Buat Pertanyaan Sendiri") || desc.contains("Buat Pertanyaan dengan AI"))) {
-                    android.util.Log.d("HISTORY_FILTER_LOGIC", "Filtering out: Out Class with Buat Pertanyaan Sendiri/AI");
+                    android.util.Log.d("HISTORY_FILTER_LOGIC", "Filtering out: SA1/Out Class with Buat Pertanyaan Sendiri/AI");
                     return true; // Filter out
                 }
             }
@@ -314,7 +231,7 @@ public class HistoryRecordFragment extends Fragment {
         if (typeQuestion != null && typeData != null) {
             if (typeQuestion.contains("Buat Pertanyaan Sendiri") || typeQuestion.contains("Buat Pertanyaan dengan AI")) {
                 // Only filter out if typeData is Out Class or In Class
-                if (typeData.contains("Out Class") || typeData.contains("In Class") || typeData.contains("Out - Class")) {
+                if (typeData.contains("Out Class") || typeData.contains("Out - Class") || typeData.contains("SA3") || typeData.contains("In Class")) {
                     android.util.Log.d("HISTORY_FILTER_LOGIC", "Filtering out: TypeQuestion contains Buat Pertanyaan Sendiri/AI and is Out/In Class");
                     return true; // Filter out
                 }
@@ -576,91 +493,108 @@ public class HistoryRecordFragment extends Fragment {
     private void deleteSelectedData(List<DataModel> selected) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         int totalDeleted = 0;
-        
+
         for (DataModel item : selected) {
             if (item.getId() != null && !item.getId().isEmpty()) {
-                // Try to delete from both collections since we don't know which one it's from
-                // This is safe - delete on non-existing document doesn't error
-                db.collection("record").document(item.getId()).delete()
+                db.collection(VersionHelper.getCollectionName("record")).document(item.getId()).delete()
                     .addOnSuccessListener(aVoid -> android.util.Log.d("DELETE", "Deleted from record: " + item.getId()))
                     .addOnFailureListener(e -> android.util.Log.w("DELETE", "Failed to delete from record: " + item.getId()));
-                
-                db.collection("questions").document(item.getId()).delete()
-                    .addOnSuccessListener(aVoid -> android.util.Log.d("DELETE", "Deleted from questions: " + item.getId()))
-                    .addOnFailureListener(e -> android.util.Log.w("DELETE", "Failed to delete from questions: " + item.getId()));
-                
                 totalDeleted++;
             }
         }
-        
+
         Toast.makeText(getContext(), "✅ " + totalDeleted + " data berhasil dihapus dari history", Toast.LENGTH_SHORT).show();
-        
-        // Refresh data
+
         loadDataAndUpdateStats();
         if (listener != null) listener.onRecordChanged();
     }
 
     private void clearAllData() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        
-        // Clear from "record" collection first
-        FirestoreUtil.getAllDocuments("record", DataModel.class, "idCustomer", SessionManager.getId(requireContext()), recordData -> {
-            // Clear from "questions" collection
-            FirestoreUtil.getAllDocuments("questions", DataModel.class, "idCustomer", SessionManager.getId(requireContext()), questionsData -> {
-                // Delete from both collections
-                int totalToDelete = recordData.size() + questionsData.size();
-                
-                for (DataModel item : recordData) {
-                    if (item.getId() != null && !item.getId().isEmpty()) {
-                        db.collection("record").document(item.getId()).delete();
-                    }
+        String userId = SessionManager.getId(requireContext());
+
+        FirestoreUtil.getAllDocuments("record", DataModel.class, "idCustomer", userId, recordData -> {
+            if (recordData.isEmpty()) {
+                Toast.makeText(getContext(), "Tidak ada data untuk dihapus", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            int deletable = 0;
+            for (DataModel item : recordData) {
+                if (item.getId() != null && !item.getId().isEmpty()) deletable++;
+            }
+            if (deletable == 0) {
+                Toast.makeText(getContext(), "Tidak ada data untuk dihapus", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            final int total = deletable;
+            AtomicInteger done = new AtomicInteger(0);
+
+            Runnable onEachComplete = () -> {
+                if (done.incrementAndGet() == total) {
+                    deleteBufferDataFromApi(userId, total);
                 }
-                
-                for (DataModel item : questionsData) {
-                    if (item.getId() != null && !item.getId().isEmpty()) {
-                        db.collection("questions").document(item.getId()).delete();
-                    }
+            };
+
+            for (DataModel item : recordData) {
+                if (item.getId() != null && !item.getId().isEmpty()) {
+                    db.collection(VersionHelper.getCollectionName("record")).document(item.getId()).delete()
+                        .addOnCompleteListener(t -> onEachComplete.run());
                 }
-                
-                android.util.Log.d("CLEAR_ALL", "Cleared " + recordData.size() + " from record collection");
-                android.util.Log.d("CLEAR_ALL", "Cleared " + questionsData.size() + " from questions collection");
-                
-                Toast.makeText(getContext(), "🔄 Semua data berhasil dihapus (" + totalToDelete + " items)", Toast.LENGTH_SHORT).show();
-                
-                // Refresh data
-                loadDataAndUpdateStats();
-                if (listener != null) listener.onRecordChanged();
-                
-            }, questionsError -> {
-                // If questions collection fails, only clear record collection
-                android.util.Log.w("CLEAR_ALL", "Failed to load questions collection: " + questionsError.getMessage());
-                for (DataModel item : recordData) {
-                    if (item.getId() != null && !item.getId().isEmpty()) {
-                        db.collection("record").document(item.getId()).delete();
-                    }
-                }
-                Toast.makeText(getContext(), "🔄 Data dari record collection berhasil dihapus (" + recordData.size() + " items)", Toast.LENGTH_SHORT).show();
-                loadDataAndUpdateStats();
-                if (listener != null) listener.onRecordChanged();
-            });
-            
+            }
+
         }, recordError -> {
-            // If record collection fails, try to clear only questions collection
-            android.util.Log.w("CLEAR_ALL", "Failed to load record collection: " + recordError.getMessage());
-            FirestoreUtil.getAllDocuments("questions", DataModel.class, "idCustomer", SessionManager.getId(requireContext()), questionsData -> {
-                for (DataModel item : questionsData) {
-                    if (item.getId() != null && !item.getId().isEmpty()) {
-                        db.collection("questions").document(item.getId()).delete();
-                    }
-                }
-                Toast.makeText(getContext(), "🔄 Data dari questions collection berhasil dihapus (" + questionsData.size() + " items)", Toast.LENGTH_SHORT).show();
-                loadDataAndUpdateStats();
-                if (listener != null) listener.onRecordChanged();
-            }, questionsError -> {
-                // Both collections failed
-                android.util.Log.e("CLEAR_ALL", "Failed to load both collections");
-                Toast.makeText(getContext(), "❌ Error: " + recordError.getMessage(), Toast.LENGTH_SHORT).show();
-            });
+            android.util.Log.e("CLEAR_ALL", "Failed to load record: " + recordError.getMessage());
+            Toast.makeText(getContext(), "❌ Error: " + recordError.getMessage(), Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void deleteCollectionItems(FirebaseFirestore db, List<DataModel> items, String collection, int total) {
+        if (total == 0) {
+            Toast.makeText(getContext(), "Tidak ada data untuk dihapus", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String userId = SessionManager.getId(requireContext());
+        AtomicInteger done = new AtomicInteger(0);
+        for (DataModel item : items) {
+            if (item.getId() != null && !item.getId().isEmpty()) {
+                db.collection(collection).document(item.getId()).delete()
+                    .addOnCompleteListener(t -> {
+                        if (done.incrementAndGet() == total) {
+                            deleteBufferDataFromApi(userId, total);
+                        }
+                    });
+            } else {
+                done.incrementAndGet();
+            }
+        }
+    }
+
+    private void deleteBufferDataFromApi(String userId, int firestoreDeletedCount) {
+        ApiService api = RetrofitClient.getRetrofitInstance().create(ApiService.class);
+        api.deleteBufferData(userId).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                requireActivity().runOnUiThread(() -> {
+                    String msg = response.isSuccessful()
+                            ? "Semua data berhasil dihapus (" + firestoreDeletedCount + " records)"
+                            : "Data history dihapus, namun data sensor gagal dihapus (HTTP " + response.code() + ")";
+                    Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
+                    loadDataAndUpdateStats();
+                    if (listener != null) listener.onRecordChanged();
+                });
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                requireActivity().runOnUiThread(() -> {
+                    android.util.Log.w("CLEAR_ALL", "API delete failed (offline?): " + t.getMessage());
+                    Toast.makeText(getContext(), "Data history dihapus. Gagal hapus data sensor: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                    loadDataAndUpdateStats();
+                    if (listener != null) listener.onRecordChanged();
+                });
+            }
         });
     }
 

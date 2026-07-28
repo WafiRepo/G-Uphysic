@@ -57,16 +57,27 @@ public class RecordFragment extends Fragment {
         new AlertDialog.Builder(requireContext())
                 .setView(dialogView)
                 .setCancelable(true)
-                .setPositiveButton("Lanjut ke Kamera \uD83D\uDCF7", (dialog, which) -> {
+                .setPositiveButton("Lanjut \u27A1", (dialog, which) -> {
                     String location = etLocation.getText() != null ? etLocation.getText().toString().trim() : "";
                     if (location.isEmpty()) location = "Lokasi tidak diisi";
-                    saveLocationAndOpenCamera(location);
+                    final String finalLocation = location;
+                    showDeviceCountDialog(finalLocation);
                 })
                 .setNegativeButton("Batal", null)
                 .show();
     }
 
-    private void saveLocationAndOpenCamera(String location) {
+    private void showDeviceCountDialog(String location) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("\uD83D\uDCF1 Jumlah Device")
+                .setMessage("Berapa device yang akan digunakan untuk merekam data sensor?")
+                .setPositiveButton("2 Device", (dialog, which) -> saveLocationAndOpenCamera(location, 2))
+                .setNegativeButton("1 Device", (dialog, which) -> saveLocationAndOpenCamera(location, 1))
+                .setCancelable(true)
+                .show();
+    }
+
+    private void saveLocationAndOpenCamera(String location, int deviceCount) {
         String userId = SessionManager.getId(requireContext());
         if (userId == null) userId = "default";
 
@@ -84,6 +95,7 @@ public class RecordFragment extends Fragment {
                     }
                     Intent intent = new Intent(getActivity(), FeedbackActivity.class);
                     intent.putExtra("experiment_location", location);
+                    intent.putExtra(FeedbackActivity.EXTRA_DEVICE_COUNT, deviceCount);
                     startActivity(intent);
                 });
             }
@@ -95,6 +107,7 @@ public class RecordFragment extends Fragment {
                     Toast.makeText(requireContext(), "Koneksi gagal. Coba lagi atau lanjut ke kamera.", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(getActivity(), FeedbackActivity.class);
                     intent.putExtra("experiment_location", "");
+                    intent.putExtra(FeedbackActivity.EXTRA_DEVICE_COUNT, deviceCount);
                     startActivity(intent);
                 });
             }

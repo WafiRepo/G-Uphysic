@@ -13,8 +13,12 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 
+import android.content.Context;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -68,6 +72,7 @@ public class DrawActivity extends AppCompatActivity {
     private String stage2SessionId;
     private String stage2GraphContext = "Screenshot phyphox + canvas: baca label sumbu dari gambar (contoh umum: ω vs t).";
     private String cachedGraphImageBase64;
+    private EditText etTulis;
 
     private static String stripQuestionFieldFromFeedback(String feedback) {
         if (feedback == null) return "";
@@ -88,6 +93,9 @@ public class DrawActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_draw);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
 
         // Initialize DrawingView
         mDrawingView = new DrawingView(this);
@@ -133,8 +141,42 @@ public class DrawActivity extends AppCompatActivity {
             startActivity(calculatorIntent);
         });
 
-        // Tombol next: kompres JPEG (sama seperti API) lalu unggah ke Firebase Storage
+        // Tombol Tulis: toggle text note input
+        FloatingActionButton btnTulis = findViewById(R.id.fab_tulis);
+        LinearLayout tulisOverlay = findViewById(R.id.tulis_overlay);
+        etTulis = findViewById(R.id.et_tulis);
+
+        // Pre-fill with existing typeData if any
+        App appForTulis = (App) getApplication();
+        DataModel dmForTulis = appForTulis.getDataModel();
+        if (dmForTulis != null && dmForTulis.getTypeData() != null && !dmForTulis.getTypeData().isEmpty()) {
+            etTulis.setText(dmForTulis.getTypeData());
+        }
+
+        btnTulis.setOnClickListener(v -> {
+            if (tulisOverlay.getVisibility() == View.VISIBLE) {
+                tulisOverlay.setVisibility(View.GONE);
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) imm.hideSoftInputFromWindow(etTulis.getWindowToken(), 0);
+            } else {
+                tulisOverlay.setVisibility(View.VISIBLE);
+                etTulis.requestFocus();
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) imm.showSoftInput(etTulis, InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
+
+        // Tombol next: simpan teks, kompres JPEG lalu unggah ke Firebase Storage
         btnNext.setOnClickListener(v -> {
+            // Simpan catatan tulis ke dataModel
+            String tulisText = etTulis.getText() != null ? etTulis.getText().toString().trim() : "";
+            App appNext = (App) getApplication();
+            DataModel dmNext = appNext.getDataModel();
+            if (dmNext != null && !tulisText.isEmpty()) {
+                dmNext.setTypeData(tulisText);
+                appNext.setDataModel(dmNext);
+            }
+
             Bitmap bmp = getViewAsBitmap(imageScreenshot);
             byte[] data = compressBitmapToJpeg(bmp, 2048, 85);
             if (bmp != null && !bmp.isRecycled()) {
@@ -154,6 +196,18 @@ public class DrawActivity extends AppCompatActivity {
         // Setup color selection buttons
         setupColorButtons();
         setupInquiryInputSubmission(imageScreenshot);
+
+        // SA3 (Control Group): sembunyikan seluruh panel inquiry
+        App appCtx = (App) getApplication();
+        DataModel dm = appCtx.getDataModel();
+        String topics = dm != null ? dm.getTopics() : "";
+        boolean isSA3 = "SA1".equals(topics) || "Control Group".equals(topics);
+        if (isSA3) {
+            View topToolbar = findViewById(R.id.top_toolbar);
+            View inquiryInputCard = findViewById(R.id.inquiry_input_card);
+            if (topToolbar != null) topToolbar.setVisibility(View.GONE);
+            if (inquiryInputCard != null) inquiryInputCard.setVisibility(View.GONE);
+        }
     }
 
     private void showIntroductionDialog() {
@@ -306,13 +360,16 @@ public class DrawActivity extends AppCompatActivity {
                         graphJpeg = android.util.Base64.decode(b64, android.util.Base64.NO_WRAP);
                     } catch (Exception ignored) {
                     }
+                    String currentTypeData = etTulis != null && etTulis.getText() != null
+                            ? etTulis.getText().toString().trim() : "";
                     InquiryLogHelper.logExploringStage2WithCanvasUpload(
                             DrawActivity.this,
                             stage2GraphContext != null ? stage2GraphContext : "Canvas / graph inquiry",
                             userInquiry,
                             fbSummary,
                             stage2SessionId,
-                            graphJpeg
+                            graphJpeg,
+                            currentTypeData.isEmpty() ? null : currentTypeData
                     );
                     tvInquiryFeedbackResult.setText(feedbackHistoryBuilder.toString());
                     svInquiryFeedbackResult.setVisibility(View.VISIBLE);
@@ -537,6 +594,15 @@ public class DrawActivity extends AppCompatActivity {
         drawable.setColor(color);
         drawable.setStroke(4, Color.WHITE);
         currentColorIndicator.setBackground(drawable);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
 }

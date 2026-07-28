@@ -243,7 +243,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Experiment Group"
+                                android:text="SA3"
                                 android:textColor="@color/phyphox_black_80"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />
@@ -322,7 +322,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Control Group"
+                                android:text="SA1"
                                 android:textColor="@color/phyphox_black_80"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />

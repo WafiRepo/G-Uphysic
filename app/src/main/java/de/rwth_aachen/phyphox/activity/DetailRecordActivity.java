@@ -100,8 +100,8 @@ public class DetailRecordActivity extends AppCompatActivity {
     private void loadImageIntoView(String base64Data, ImageView imageView, View cardView) {
         if (base64Data != null && !base64Data.isEmpty()) {
             // Check if it's from class questions (uses drawable resources)
-            if (dataModel.getTopics() != null && 
-                (dataModel.getTopics().equals("Out Class") || dataModel.getTopics().equals("In Class"))) {
+            if (dataModel.getTopics() != null &&
+                (dataModel.getTopics().equals("Out Class") || dataModel.getTopics().equals("SA3") || dataModel.getTopics().equals("In Class"))) {
                 
                 try {
                     int index = Integer.parseInt(base64Data);

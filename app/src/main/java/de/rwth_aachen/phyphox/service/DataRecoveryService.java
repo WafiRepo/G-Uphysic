@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
 
 import de.rwth_aachen.phyphox.Helper.FirestoreUtil;
 import de.rwth_aachen.phyphox.Helper.SessionManager;
+import de.rwth_aachen.phyphox.Helper.VersionHelper;
 import de.rwth_aachen.phyphox.model.DataModel;
 
 public class DataRecoveryService extends Service {
@@ -93,7 +94,7 @@ public class DataRecoveryService extends Service {
 
     private void checkUserDataIntegrity(String userId, String backupCollectionName) {
         // Check record collection
-        db.collection("record")
+        db.collection(VersionHelper.getCollectionName("record"))
             .whereEqualTo("idCustomer", userId)
             .get()
             .addOnSuccessListener(recordSnapshot -> {

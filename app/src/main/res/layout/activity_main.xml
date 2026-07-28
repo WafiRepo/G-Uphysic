@@ -44,25 +44,24 @@
 
             <!-- Banner Section -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cvBanner"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
+                android:visibility="gone"
                 app:cardBackgroundColor="@color/phyphox_white_100"
                 app:cardCornerRadius="20dp"
-                app:cardElevation="12dp">
+                app:cardElevation="8dp">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/clBanner"
                     android:layout_width="match_parent"
-                    android:layout_height="320dp"
-                    android:padding="8dp">
+                    android:layout_height="220dp">
 
                     <androidx.viewpager2.widget.ViewPager2
                         android:id="@+id/artifactSlider"
                         android:layout_width="0dp"
                         android:layout_height="0dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginBottom="8dp"
                         app:layout_constraintBottom_toTopOf="@id/dotsIndicator"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -72,8 +71,7 @@
                         android:id="@+id/dotsIndicator"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_marginBottom="16dp"
+                        android:layout_marginBottom="8dp"
                         app:dotsColor="@color/phyphox_black_20"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
@@ -85,40 +83,31 @@
             </androidx.cardview.widget.CardView>
 
             <!-- Main Content Container -->
-            <androidx.cardview.widget.CardView
+            <FrameLayout
+                android:id="@+id/flFragment"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/phyphox_white_100"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
-
-                <FrameLayout
-                    android:id="@+id/flFragment"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:minHeight="400dp"
-                    android:padding="8dp" />
-
-            </androidx.cardview.widget.CardView>
+                android:minHeight="400dp" />
 
         </LinearLayout>
 
     </ScrollView>
 
-    <!-- Modern Bottom Navigation -->
+    <!-- Bottom Navigation -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        app:cardBackgroundColor="@color/ic_launcher_background"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="12dp">
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="10dp"
+        app:cardBackgroundColor="@color/phyphox_purple"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="16dp">
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNavigationView"
             android:layout_width="match_parent"
-            android:layout_height="75dp"
+            android:layout_height="64dp"
             android:background="@android:color/transparent"
             android:elevation="0dp"
             app:itemIconTint="@color/bottom_nav_color"

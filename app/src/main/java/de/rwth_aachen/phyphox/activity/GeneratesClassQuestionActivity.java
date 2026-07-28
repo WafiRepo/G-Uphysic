@@ -456,7 +456,7 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 dispatchTakePictureIntent();
             } else {
-                Toast.makeText(this, "Camera permission is required", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Izin kamera diperlukan", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -479,7 +479,7 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
             photoFile = createImageFile();
         } catch (IOException ex) {
             ex.printStackTrace();
-            Toast.makeText(this, "Failed to create image file", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Gagal membuat file gambar", Toast.LENGTH_SHORT).show();
         }
 
         if (photoFile != null) {
@@ -564,11 +564,11 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
                         optimizedBitmap.recycle();
                     }
                 } else {
-                    Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Gagal memproses gambar", Toast.LENGTH_SHORT).show();
                 }
             } catch (Exception e) {
                 Log.e("ImageProcess", "Error processing image: " + e.getMessage());
-                Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Gagal memproses gambar", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -1132,8 +1132,8 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
         
         // Create and configure ProgressDialog
         ProgressDialog progressDialog = new ProgressDialog(this);
-        progressDialog.setTitle("Uploading Image");
-        progressDialog.setMessage("Please wait while the image is being uploaded...");
+        progressDialog.setTitle("Mengunggah Gambar");
+        progressDialog.setMessage("Mohon tunggu, gambar sedang diunggah...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 
@@ -1173,8 +1173,8 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
 
                 // Save data to Firestore after successful upload
                 ProgressDialog saveProgressDialog = new ProgressDialog(GeneratesClassQuestionActivity.this);
-                saveProgressDialog.setTitle("Save data to Server");
-                saveProgressDialog.setMessage("Please wait...");
+                saveProgressDialog.setTitle("Menyimpan Data");
+                saveProgressDialog.setMessage("Mohon tunggu...");
                 saveProgressDialog.setCancelable(false);
                 saveProgressDialog.show();
 
@@ -1230,11 +1230,11 @@ public class GeneratesClassQuestionActivity extends AppCompatActivity {
                 // Handle upload failure
                 Log.e("Firebase", "Image upload failed", e);
                 progressDialog.dismiss();
-                Toast.makeText(this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Gagal mengunggah gambar: " + e.getMessage(), Toast.LENGTH_LONG).show();
             },
             progress -> {
                 // Update progress
-                progressDialog.setMessage("Uploaded: " + (int) progress + "%");
+                progressDialog.setMessage("Terunggah: " + (int) progress + "%");
             }
         );
     }

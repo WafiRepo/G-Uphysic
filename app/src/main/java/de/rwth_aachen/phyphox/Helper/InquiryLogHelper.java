@@ -60,7 +60,8 @@ public final class InquiryLogHelper {
             @Nullable String objectName,
             @Nullable String experimentLocation,
             @Nullable String problemImageUrl,
-            @Nullable String graphCanvasImageUrl
+            @Nullable String graphCanvasImageUrl,
+            @Nullable String typeData
     ) {
         if (ctx == null || kind == null) return;
         String uid = SessionManager.getId(ctx);
@@ -83,6 +84,9 @@ public final class InquiryLogHelper {
         if (graphCanvasImageUrl != null && !graphCanvasImageUrl.trim().isEmpty()) {
             doc.put("graphCanvasImageUrl", clip(graphCanvasImageUrl.trim()));
         }
+        if (typeData != null && !typeData.trim().isEmpty()) {
+            doc.put("typeData", clip(typeData.trim()));
+        }
         doc.put("createdAt", FieldValue.serverTimestamp());
 
         writeDoc(doc);
@@ -98,12 +102,13 @@ public final class InquiryLogHelper {
             @Nullable String userResponse,
             @Nullable String feedbackSummary,
             @Nullable String sessionId,
-            @Nullable byte[] graphJpegBytes
+            @Nullable byte[] graphJpegBytes,
+            @Nullable String typeData
     ) {
         if (ctx == null) return;
         if (graphJpegBytes == null || graphJpegBytes.length == 0) {
             log(ctx, KIND_EXPLORING_STAGE2, inquiryText, userResponse, feedbackSummary, sessionId,
-                    null, null, null, null);
+                    null, null, null, null, typeData);
             return;
         }
         String uid = SessionManager.getId(ctx);
@@ -117,16 +122,16 @@ public final class InquiryLogHelper {
         ref.putBytes(graphJpegBytes)
                 .addOnSuccessListener(taskSnapshot -> ref.getDownloadUrl()
                         .addOnSuccessListener(uri -> log(ctx, KIND_EXPLORING_STAGE2, inquiryText, userResponse,
-                                feedbackSummary, sessionId, null, null, null, uri.toString()))
+                                feedbackSummary, sessionId, null, null, null, uri.toString(), typeData))
                         .addOnFailureListener(e -> {
                             Log.w(TAG, "getDownloadUrl canvas preview failed", e);
                             log(ctx, KIND_EXPLORING_STAGE2, inquiryText, userResponse, feedbackSummary, sessionId,
-                                    null, null, null, null);
+                                    null, null, null, null, typeData);
                         }))
                 .addOnFailureListener(e -> {
                     Log.w(TAG, "putBytes canvas preview failed", e);
                     log(ctx, KIND_EXPLORING_STAGE2, inquiryText, userResponse, feedbackSummary, sessionId,
-                            null, null, null, null);
+                            null, null, null, null, typeData);
                 });
     }
 }

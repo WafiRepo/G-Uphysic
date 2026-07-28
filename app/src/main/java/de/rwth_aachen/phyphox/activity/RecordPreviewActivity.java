@@ -97,117 +97,14 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
             Log.d("PREVIEW_DEBUG", "No canvas drawing available");
         }
 
-        // Load question images - prefer URL fields (questionImageUrl*), fallback to legacy base64*
-        // Only display if there is a valid value
-        Log.d("PREVIEW_DEBUG", "=== LOADING QUESTION IMAGES ===");
-        
-        // iv - same approach as Preview Jawaban
-        String questionUrl1 = dataModel.getQuestionImageUrl1();
-        String base64_1 = dataModel.getBase64();
-        Log.d("PREVIEW_DEBUG", "questionImageUrl1: " + (questionUrl1 != null ? (questionUrl1.length() > 50 ? questionUrl1.substring(0, 50) + "..." : questionUrl1) : "null"));
-        Log.d("PREVIEW_DEBUG", "base64_1: " + (base64_1 != null ? (base64_1.length() > 50 ? base64_1.substring(0, 50) + "..." : base64_1) : "null"));
-        
-        String img1 = null;
-        if (questionUrl1 != null && !questionUrl1.trim().isEmpty()) {
-            img1 = questionUrl1;
-            Log.d("PREVIEW_DEBUG", "Using questionImageUrl1 for image 1");
-        } else if (base64_1 != null && !base64_1.trim().isEmpty()) {
-            img1 = base64_1;
-            Log.d("PREVIEW_DEBUG", "Using base64_1 (legacy) for image 1");
-        } else {
-            Log.d("PREVIEW_DEBUG", "No image 1 data available");
-        }
-        
-        if (img1 != null && !img1.trim().isEmpty() && binding.iv != null) {
-            Log.d("PREVIEW_DEBUG", "Loading question image 1 - URL length: " + (img1.length() > 100 ? img1.substring(0, 100) + "..." : img1));
-            binding.iv.setVisibility(View.VISIBLE);
-            loadImage(img1, binding.iv);
-        } else {
-            Log.d("PREVIEW_DEBUG", "Hiding image 1 - img1: " + (img1 != null ? "not null but empty" : "null") + ", binding.iv: " + (binding.iv != null ? "not null" : "null"));
-            if (binding.iv != null) {
-                binding.iv.setVisibility(View.GONE);
-            }
-        }
-        
-        // iv2 - same approach as Preview Jawaban
-        String questionUrl2 = dataModel.getQuestionImageUrl2();
-        String base64_2 = dataModel.getBase64_2();
-        String img2 = null;
-        if (questionUrl2 != null && !questionUrl2.trim().isEmpty()) {
-            img2 = questionUrl2;
-            Log.d("PREVIEW_DEBUG", "Using questionImageUrl2 for image 2");
-        } else if (base64_2 != null && !base64_2.trim().isEmpty()) {
-            img2 = base64_2;
-            Log.d("PREVIEW_DEBUG", "Using base64_2 (legacy) for image 2");
-        }
-        if (img2 != null && !img2.trim().isEmpty() && binding.iv2 != null) {
-            Log.d("PREVIEW_DEBUG", "Loading question image 2");
-            binding.iv2.setVisibility(View.VISIBLE);
-            loadImage(img2, binding.iv2);
-        } else {
-            if (binding.iv2 != null) {
-                binding.iv2.setVisibility(View.GONE);
-            }
-        }
-        
-        // iv3 - same approach as Preview Jawaban
-        String questionUrl3 = dataModel.getQuestionImageUrl3();
-        String base64_3 = dataModel.getBase64_3();
-        String img3 = null;
-        if (questionUrl3 != null && !questionUrl3.trim().isEmpty()) {
-            img3 = questionUrl3;
-        } else if (base64_3 != null && !base64_3.trim().isEmpty()) {
-            img3 = base64_3;
-        }
-        if (img3 != null && !img3.trim().isEmpty() && binding.iv3 != null) {
-            Log.d("PREVIEW_DEBUG", "Loading question image 3");
-            binding.iv3.setVisibility(View.VISIBLE);
-            loadImage(img3, binding.iv3);
-        } else {
-            if (binding.iv3 != null) {
-                binding.iv3.setVisibility(View.GONE);
-            }
-        }
-        
-        // iv4 - same approach as Preview Jawaban
-        String questionUrl4 = dataModel.getQuestionImageUrl4();
-        String base64_4 = dataModel.getBase64_4();
-        String img4 = null;
-        if (questionUrl4 != null && !questionUrl4.trim().isEmpty()) {
-            img4 = questionUrl4;
-        } else if (base64_4 != null && !base64_4.trim().isEmpty()) {
-            img4 = base64_4;
-        }
-        if (img4 != null && !img4.trim().isEmpty() && binding.iv4 != null) {
-            Log.d("PREVIEW_DEBUG", "Loading question image 4");
-            binding.iv4.setVisibility(View.VISIBLE);
-            loadImage(img4, binding.iv4);
-        } else {
-            if (binding.iv4 != null) {
-                binding.iv4.setVisibility(View.GONE);
-            }
-        }
-        
-        // iv5 - same approach as Preview Jawaban
-        String questionUrl5 = dataModel.getQuestionImageUrl5();
-        String base64_5 = dataModel.getBase64_5();
-        String img5 = null;
-        if (questionUrl5 != null && !questionUrl5.trim().isEmpty()) {
-            img5 = questionUrl5;
-        } else if (base64_5 != null && !base64_5.trim().isEmpty()) {
-            img5 = base64_5;
-        }
-        if (img5 != null && !img5.trim().isEmpty() && binding.iv5 != null) {
-            Log.d("PREVIEW_DEBUG", "Loading question image 5");
-            binding.iv5.setVisibility(View.VISIBLE);
-            loadImage(img5, binding.iv5);
-        } else {
-            if (binding.iv5 != null) {
-                binding.iv5.setVisibility(View.GONE);
-            }
-        }
-        
-        Log.d("PREVIEW_DEBUG", "=== FINISHED LOADING QUESTION IMAGES ===");
+        // Load question images.
+        // Priority: in-memory base64 first (instant, no network/auth issues),
+        // then Firebase Storage URL as fallback (used when viewing from history where base64 is absent).
+        loadQuestionImage(dataModel.getBase64(),    dataModel.getQuestionImageUrl1(), binding.iv);
+        loadQuestionImage(dataModel.getBase64_2(),  dataModel.getQuestionImageUrl2(), binding.iv2);
+        loadQuestionImage(dataModel.getBase64_3(),  dataModel.getQuestionImageUrl3(), binding.iv3);
+        loadQuestionImage(dataModel.getBase64_4(),  dataModel.getQuestionImageUrl4(), binding.iv4);
+        loadQuestionImage(dataModel.getBase64_5(),  dataModel.getQuestionImageUrl5(), binding.iv5);
 
         // Load documentation photo if available - ONLY from student's work (record collection), NOT from questions collection
         // Priority: photoAnswerUrl (Firebase Storage) > photoAnswer (Base64 from student)
@@ -1069,6 +966,58 @@ public class RecordPreviewActivity extends AppCompatActivity implements Location
                 Toast.makeText(this, "❌ Izin lokasi diperlukan untuk menyimpan data. Lokasi tidak akan tersimpan.", Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    private void loadQuestionImage(String base64, String urlFallback, android.widget.ImageView imageView) {
+        if (imageView == null) return;
+
+        // Try base64 first — decode synchronously so we know immediately if it works
+        if (base64 != null && !base64.trim().isEmpty()) {
+            Bitmap bitmap = tryDecodeBase64(base64);
+            if (bitmap != null) {
+                imageView.setVisibility(View.VISIBLE);
+                imageView.setImageBitmap(bitmap);
+                imageView.setBackground(null);
+                return;
+            }
+            android.util.Log.w("loadQuestionImage", "base64 decode failed, trying URL fallback");
+        }
+
+        // Fall back to URL (Firebase Storage download URL)
+        if (urlFallback != null && !urlFallback.trim().isEmpty()) {
+            imageView.setVisibility(View.VISIBLE);
+            loadImage(urlFallback, imageView);
+            return;
+        }
+
+        imageView.setVisibility(View.GONE);
+    }
+
+    private Bitmap tryDecodeBase64(String base64) {
+        try {
+            String clean = base64;
+            if (clean.contains(",")) clean = clean.substring(clean.indexOf(",") + 1);
+            clean = clean.replaceAll("\\s+", "").trim();
+            int mod = clean.length() % 4;
+            if (mod != 0) {
+                StringBuilder sb = new StringBuilder(clean);
+                for (int i = 0; i < 4 - mod; i++) sb.append('=');
+                clean = sb.toString();
+            }
+            for (int flag : new int[]{Base64.NO_WRAP, Base64.DEFAULT, Base64.URL_SAFE}) {
+                try {
+                    byte[] bytes = Base64.decode(clean, flag);
+                    if (bytes == null || bytes.length == 0) continue;
+                    BitmapFactory.Options opts = new BitmapFactory.Options();
+                    opts.inPreferredConfig = Bitmap.Config.RGB_565;
+                    Bitmap bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opts);
+                    if (bmp != null) return bmp;
+                } catch (Exception ignore) {}
+            }
+        } catch (Exception e) {
+            android.util.Log.w("tryDecodeBase64", "decode error: " + e.getMessage());
+        }
+        return null;
     }
 
     private void loadImage(String url, android.widget.ImageView imageView) {

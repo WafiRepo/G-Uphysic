@@ -213,6 +213,7 @@ public class InquiryFeedbackActivity extends AppCompatActivity {
                             getIntent().getStringExtra(EXTRA_OBJECT_NAME),
                             null,
                             null,
+                            null,
                             null
                     );
                     Log.d(TAG, "Inquiry OK: " + response.body().getInquiry().substring(0, Math.min(50, response.body().getInquiry().length())) + "...");
@@ -275,6 +276,7 @@ public class InquiryFeedbackActivity extends AppCompatActivity {
                             summarizeSubmitResponse(response.body()),
                             null,
                             getIntent().getStringExtra(EXTRA_OBJECT_NAME),
+                            null,
                             null,
                             null,
                             null

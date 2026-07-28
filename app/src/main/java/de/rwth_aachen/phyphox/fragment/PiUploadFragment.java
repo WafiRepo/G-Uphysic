@@ -94,7 +94,7 @@ public class PiUploadFragment extends Fragment {
         String url = PiAnalysisSettings.getServerUrl(requireContext());
         String key = PiAnalysisSettings.getApiKey(requireContext());
         if (url.isEmpty() || key.isEmpty()) {
-            Toast.makeText(requireContext(), "Configure Server URL and API Key in Settings first", Toast.LENGTH_LONG).show();
+            Toast.makeText(requireContext(), "Konfigurasikan URL Server dan API Key di Pengaturan terlebih dahulu", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -105,13 +105,13 @@ public class PiUploadFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null && response.body().jobs != null) {
                     showJobsDialog(response.body().jobs);
                 } else {
-                    Toast.makeText(requireContext(), "Failed to load jobs", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), "Gagal memuat pekerjaan", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<JobsListResponse> call, Throwable t) {
-                Toast.makeText(requireContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Terjadi kesalahan: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -130,14 +130,14 @@ public class PiUploadFragment extends Fragment {
         }
 
         new AlertDialog.Builder(requireContext())
-                .setTitle("Job History")
+                .setTitle("Riwayat Pekerjaan")
                 .setItems(items, (dialog, which) -> {
                     JobEntry entry = jobs.get(which);
                     if (isAdded()) {
                         ((PiAnalysisActivity) requireActivity()).navigateToResults(entry.jobId);
                     }
                 })
-                .setPositiveButton("Close", null)
+                .setPositiveButton("Tutup", null)
                 .show();
     }
 
@@ -150,7 +150,7 @@ public class PiUploadFragment extends Fragment {
         String url = PiAnalysisSettings.getServerUrl(requireContext());
         String key = PiAnalysisSettings.getApiKey(requireContext());
         if (url.isEmpty() || key.isEmpty()) {
-            Toast.makeText(requireContext(), "Please configure Server URL and API Key in Settings", Toast.LENGTH_LONG).show();
+            Toast.makeText(requireContext(), "Silakan konfigurasikan URL Server dan API Key di Pengaturan", Toast.LENGTH_LONG).show();
             // Optionally navigate to settings or show a warning banner
         }
     }

@@ -1999,7 +1999,7 @@ public class ExperimentList extends AppCompatActivity {
 
         String themePreference = PreferenceManager
                 .getDefaultSharedPreferences(this)
-                .getString(getString(R.string.setting_dark_mode_key), SettingsFragment.DARK_MODE_ON);
+                .getString(getString(R.string.setting_dark_mode_key), SettingsFragment.DARK_MODE_OFF);
         SettingsFragment.setApplicationTheme(themePreference);
 
         //Basics. Call super-constructor and inflate the layout.

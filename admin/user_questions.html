@@ -850,6 +850,7 @@
                                 <div class="text-answer">${escapeHtml(iq)}</div>
                                 ${ur ? `<p class="mt-2 mb-1"><strong>Jawaban / inquiry pengguna</strong></p><div class="text-answer">${escapeHtml(ur)}</div>` : ''}
                                 ${fb ? `<p class="mt-2 mb-1"><strong>Ringkasan feedback (API)</strong></p><div class="text-answer">${escapeHtml(fb)}</div>` : ''}
+                                ${it.typeData ? `<p class="mt-2 mb-1"><strong>✏️ Catatan Tulis Siswa</strong></p><div class="text-answer">${escapeHtml(it.typeData)}</div>` : ''}
                             </div>
                         </div>`;
                 }).join('');
@@ -1106,34 +1107,23 @@
             let computedDescription = data.desc || '';
             if (isFromQuestionList) {
                 const workerName = currentSelectedUserName || 'Unknown';
-                // Prefer explicit 'Dibuat Oleh' field names if present
-                const createdByFields = [
-                    'dibuatOleh', 'Dibuat Oleh', 'createdBy', 'creator', 'creatorName', 'author', 'authorName', 'pembuat', 'namaPembuat'
-                ];
-                let creatorName = '';
-                for (const key of createdByFields) {
+                // creatorName/dibuatOleh/createdBy in v2_record are always set to the answerer's name,
+                // not the original question creator — so we do NOT look them up here.
+                computedDescription = `${workerName} Mengerjakan pertanyaan dari daftar pertanyaan`;
+            }
+
+            // originalCreator: only meaningful for non-question-list items.
+            // For question list items, creatorName/dibuatOleh/createdBy are always the answerer's name
+            // (set by DataModel constructor), so we must not use them as the question creator.
+            let originalCreator = '';
+            if (!isFromQuestionList) {
+                const creatorFieldPriority = ['dibuatOleh', 'Dibuat Oleh', 'createdBy', 'creator', 'creatorName', 'author', 'authorName', 'pembuat', 'namaPembuat'];
+                for (const key of creatorFieldPriority) {
                     if (data[key] && String(data[key]).trim()) {
-                        creatorName = String(data[key]).trim();
+                        originalCreator = String(data[key]).trim();
                         break;
                     }
                 }
-                if (!creatorName) {
-                    creatorName = (data.customerName && data.customerName.trim()) ? data.customerName : 'Unknown';
-                }
-                computedDescription = `${workerName} Mengerjakan pertanyaan dari ${creatorName}`;
-            }
-
-            // Determine original creator name for display (independent from description)
-            const creatorFieldPriority = ['dibuatOleh', 'Dibuat Oleh', 'createdBy', 'creator', 'creatorName', 'author', 'authorName', 'pembuat', 'namaPembuat'];
-            let originalCreator = '';
-            for (const key of creatorFieldPriority) {
-                if (data[key] && String(data[key]).trim()) {
-                    originalCreator = String(data[key]).trim();
-                    break;
-                }
-            }
-            if (!originalCreator) {
-                originalCreator = (data.customerName && data.customerName.trim()) ? data.customerName : '';
             }
 
             // Determine display question/answer per requirement

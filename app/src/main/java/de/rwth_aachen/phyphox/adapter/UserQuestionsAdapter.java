@@ -134,9 +134,10 @@ public class UserQuestionsAdapter extends RecyclerView.Adapter<UserQuestionsAdap
             };
 
             Date date = null;
+            Locale idLocale = new Locale("id", "ID");
             for (String format : formats) {
                 try {
-                    SimpleDateFormat inputFormat = new SimpleDateFormat(format, Locale.getDefault());
+                    SimpleDateFormat inputFormat = new SimpleDateFormat(format, idLocale);
                     date = inputFormat.parse(dateString);
                     break;
                 } catch (Exception ignored) {
@@ -157,7 +158,7 @@ public class UserQuestionsAdapter extends RecyclerView.Adapter<UserQuestionsAdap
                     } else if (daysDiff < 7) {
                         return daysDiff + " hari lalu";
                     } else {
-                        SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+                        SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM yyyy", new Locale("id", "ID"));
                         return outputFormat.format(date);
                     }
                 } else if (hoursDiff > 0) {

@@ -52,11 +52,11 @@ public class RegisterActivity extends AppCompatActivity {
         password = binding.etPassword.getText().toString().trim();
 
         if (TextUtils.isEmpty(email)) {
-            Toast.makeText(this, "Please input your email", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Harap masukkan email Anda", Toast.LENGTH_SHORT).show();
             return;
         }
         if (TextUtils.isEmpty(password)) {
-            Toast.makeText(this, "Please input your password", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Harap masukkan password Anda", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -108,14 +108,14 @@ public class RegisterActivity extends AppCompatActivity {
                 binding.etEmail.getText().toString()
         );
         ProgressDialog progressDialog = new ProgressDialog(this);
-        progressDialog.setTitle("Save data to Server");
-        progressDialog.setMessage("Please wait...");
+        progressDialog.setTitle("Menyimpan Data");
+        progressDialog.setMessage("Mohon tunggu...");
         progressDialog.setCancelable(false);
         progressDialog.show();
         FirestoreUtil.addOrUpdateDocument("user",id, usermodel,
                 () -> {
                     progressDialog.dismiss();
-                    Toast.makeText(RegisterActivity.this, "Registration Success", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RegisterActivity.this, "Registrasi berhasil", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
                     startActivity(intent);
                 },

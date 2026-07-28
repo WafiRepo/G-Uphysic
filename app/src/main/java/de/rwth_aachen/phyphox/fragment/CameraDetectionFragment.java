@@ -216,8 +216,8 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
             // Device tunggal atau device 2 selesai → cek mode
             App appCtxNav = (App) requireActivity().getApplication();
             String topics = appCtxNav.getDataModel() != null ? appCtxNav.getDataModel().getTopics() : "";
-            if ("Control Group".equals(topics)) {
-                // Control Group: langsung ke generate soal, skip inquiry stage
+            if ("SA1".equals(topics) || "Control Group".equals(topics)) {
+                // SA1 (Control Group): langsung ke generate soal, skip inquiry stage
                 startActivity(new Intent(requireContext(), ExperimentList.class));
             } else {
                 Intent intent = new Intent(requireContext(), InquiryFeedbackActivity.class);
@@ -228,8 +228,8 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
             }
         });
         binding.btnUpload.setOnClickListener(v -> {
-            progressDialog.setTitle("Uploading Image");
-            progressDialog.setMessage("Please wait while the image is being uploaded...");
+            progressDialog.setTitle("Mengunggah Gambar");
+            progressDialog.setMessage("Mohon tunggu, gambar sedang diunggah...");
             progressDialog.setCancelable(false);
             progressDialog.show();
             binding.btnSave.setEnabled(false);
@@ -350,7 +350,7 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
 
         App appCtxInit = (App) requireActivity().getApplication();
         String topicsInit = appCtxInit.getDataModel() != null ? appCtxInit.getDataModel().getTopics() : "";
-        if ("Control Group".equals(topicsInit)) {
+        if ("SA1".equals(topicsInit) || "Control Group".equals(topicsInit)) {
             View overlay = binding.getRoot().findViewById(R.id.inquiry_overlay);
             if (overlay != null) overlay.setVisibility(View.GONE);
         } else {
@@ -540,6 +540,7 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
                 null,
                 lastExperimentLocationForLog,
                 url.trim(),
+                null,
                 null
         );
     }
@@ -565,8 +566,8 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
                     Manifest.permission.CAMERA)) {
                 // Tampilkan penjelasan mengapa perlu permission
                 new AlertDialog.Builder(requireContext())
-                        .setTitle("Camera Permission Needed")
-                        .setMessage("This app needs camera permission to function")
+                        .setTitle("Izin Kamera Diperlukan")
+                        .setMessage("Aplikasi ini memerlukan izin kamera untuk berfungsi")
                         .setPositiveButton("OK", (d, w) -> requestPermissions(
                                 new String[]{Manifest.permission.CAMERA},
                                 CAMERA_PERMISSION_REQUEST_CODE))
@@ -580,7 +581,7 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
 
         // Pastikan OpenCV sudah terload
         if (!OpenCVLoader.initDebug()) {
-            Toast.makeText(getContext(), "OpenCV failed to load", Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), "Gagal memuat OpenCV", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -612,7 +613,7 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
     }
 
     private void showPermissionDeniedMessage(String permission) {
-        new AlertDialog.Builder(requireContext()).setTitle(permission + " Permission Denied").setMessage("This feature requires " + permission + " permission to function. Please grant it in settings.").setPositiveButton("OK", (dialog, which) -> dialog.dismiss()).show();
+        new AlertDialog.Builder(requireContext()).setTitle("Izin Ditolak").setMessage("Fitur ini memerlukan izin " + permission + ". Silakan aktifkan di pengaturan.").setPositiveButton("OK", (dialog, which) -> dialog.dismiss()).show();
     }
 
     public byte[] convertBitmapToBytes(Bitmap bitmap) {
@@ -654,7 +655,7 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
         uploadTask.addOnProgressListener(snapshot -> {
             // Update the ProgressDialog with the upload progress
             double progress = (100.0 * snapshot.getBytesTransferred()) / snapshot.getTotalByteCount();
-            progressDialog.setMessage("Uploaded: " + (int) progress + "%");
+            progressDialog.setMessage("Terunggah: " + (int) progress + "%");
         }).addOnSuccessListener(taskSnapshot -> {
             // Get the download URL
             imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
@@ -729,7 +730,7 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
                     // Simpan image_path dari server untuk overwrite-label
                     serverImagePath = apiResponse.getImage_path();
                     Log.d(TAG, "Upload successful: " + apiResponse.getMessage());
-                    Toast.makeText(requireContext(), "Upload successful: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), "Berhasil diunggah: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
                     tryLogProblemFindingIfReady();
                     // Validasi objek centripetal: hanya enable Selanjutnya jika valid
                     validateObjectAndEnableNext(label);
@@ -740,11 +741,11 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
                         JSONObject jsonObject = new JSONObject(errorBody);
                         String errorMessage = jsonObject.optString("error", "Unknown error");
 
-                        Toast.makeText(requireContext(), "Upload failed: " + errorMessage, Toast.LENGTH_LONG).show();
+                        Toast.makeText(requireContext(), "Gagal mengunggah: " + errorMessage, Toast.LENGTH_LONG).show();
                         Log.e(TAG, "Upload failed: " + errorMessage);
                     } catch (Exception e) {
                         e.printStackTrace();
-                        Toast.makeText(requireContext(), "Upload failed: Unknown error", Toast.LENGTH_LONG).show();
+                        Toast.makeText(requireContext(), "Gagal mengunggah: Error tidak diketahui", Toast.LENGTH_LONG).show();
                     }
                 }
                 progressDialog.dismiss();
@@ -753,7 +754,7 @@ public class CameraDetectionFragment extends Fragment implements CameraBridgeVie
             public void onFailure(Call<ApiResponse> call, Throwable t) {
                 binding.btnSave.setEnabled(true);
                 progressDialog.dismiss();
-                Toast.makeText(requireContext(), "Image upload API failed: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(requireContext(), "API unggah gambar gagal: " + t.getMessage(), Toast.LENGTH_LONG).show();
                 Log.e(TAG, "Upload error: " + t.getMessage());
             }
         });

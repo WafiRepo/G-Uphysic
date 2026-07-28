@@ -14,8 +14,11 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import de.rwth_aachen.phyphox.App;
 import de.rwth_aachen.phyphox.R;
@@ -68,8 +71,15 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
         String topicTitle = item.getTopics();
         if (topicTitle == null || topicTitle.isEmpty()) {
             topicTitle = "Eksperimen Fisika";
+        } else if (topicTitle.equalsIgnoreCase("Out Class") || topicTitle.equalsIgnoreCase("Out - Class") || topicTitle.equalsIgnoreCase("SA1") || topicTitle.equalsIgnoreCase("SA3")) {
+            topicTitle = "SA3";
+        } else if (topicTitle.equalsIgnoreCase("Control Group") || topicTitle.equalsIgnoreCase("SA1")) {
+            topicTitle = "SA1";
         }
         holder.tvTopic.setText(topicTitle);
+
+        // Set relative time
+        holder.tvTime.setText("🕐 " + formatRelativeTime(item.getDateTime()));
 
         // Set type info with consistent difficulty format
         String typeInfo = item.getTypeQuestion();
@@ -123,7 +133,12 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
 
     private void navigateToExperiment(DataModel item, boolean isFromMainMenu) {
         Intent intent;
-        if (item.getTopics().equals("Out Class") || item.getTopics().equals("In Class")) {
+        String topics = item.getTopics();
+        String typeData = item.getTypeData();
+        boolean isClassActivity =
+            (topics != null && (topics.equals("Out Class") || topics.equals("SA3"))) ||
+            (typeData != null && (typeData.contains("Out Class") || typeData.contains("Out - Class") || typeData.contains("SA3")));
+        if (isClassActivity) {
             intent = new Intent(context, GeneratesClassQuestionActivity.class);
         } else {
             intent = new Intent(context, GeneratesActivity.class);
@@ -147,6 +162,36 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
         return selected;
     }
 
+    private String formatRelativeTime(String dateString) {
+        if (dateString == null || dateString.isEmpty()) return "Waktu tidak diketahui";
+        String[] formats = {
+            "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss",
+            "dd/MM/yyyy HH:mm:ss", "yyyy-MM-dd"
+        };
+        Date date = null;
+        for (String fmt : formats) {
+            try {
+                date = new SimpleDateFormat(fmt, new Locale("id", "ID")).parse(dateString);
+                break;
+            } catch (Exception ignored) {}
+        }
+        if (date == null) return dateString;
+
+        long diff = System.currentTimeMillis() - date.getTime();
+        long seconds = diff / 1000;
+        long minutes = seconds / 60;
+        long hours   = minutes / 60;
+        long days    = hours / 24;
+
+        if (seconds < 60)       return seconds + " detik yang lalu";
+        if (minutes < 60)       return minutes + " menit yang lalu";
+        if (hours < 24)         return hours + " jam yang lalu";
+        if (days < 7)           return days + " hari yang lalu";
+        if (days < 30)          return (days / 7) + " minggu yang lalu";
+        if (days < 365)         return (days / 30) + " bulan yang lalu";
+        return new SimpleDateFormat("dd MMM yyyy", new Locale("id", "ID")).format(date);
+    }
+
     private String getDifficultyWithEmoji(String difficulty) {
         switch (difficulty.toLowerCase()) {
             case "easy":
@@ -167,7 +212,7 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTopic, tvType, tvStatus, tvDifficultyBadge;
+        TextView tvTopic, tvType, tvStatus, tvDifficultyBadge, tvTime;
         ImageView ivCompletedAction;
         CheckBox cbSelect;
         CardView cvAdvanced, cvContinue, cvEdit;
@@ -178,6 +223,7 @@ public class HistoryRecordAdapter extends RecyclerView.Adapter<HistoryRecordAdap
             tvType = itemView.findViewById(R.id.tvType);
             tvStatus = itemView.findViewById(R.id.tvStatus);
             tvDifficultyBadge = itemView.findViewById(R.id.tvDifficultyBadge);
+            tvTime = itemView.findViewById(R.id.tvTime);
             ivCompletedAction = itemView.findViewById(R.id.ivCompletedAction);
             cbSelect = itemView.findViewById(R.id.cbSelect);
             cvAdvanced = itemView.findViewById(R.id.cvAdvanced);

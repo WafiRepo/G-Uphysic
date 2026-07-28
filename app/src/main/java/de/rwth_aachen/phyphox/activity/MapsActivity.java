@@ -10,6 +10,7 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -66,6 +67,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
         App app = (App) getApplication();
@@ -99,11 +103,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         binding.btnShareLocation.setOnClickListener(view -> {
             if (dataModel.getLongitude() != 0.0 && dataModel.getLatitude() != 0.0 && !dataModel.getLocationName().isEmpty()) {
                 ProgressDialog progressDialog = new ProgressDialog(this);
-                progressDialog.setTitle("Save data to Server");
-                progressDialog.setMessage("Please wait...");
+                progressDialog.setTitle("Menyimpan Data");
+                progressDialog.setMessage("Mohon tunggu...");
                 progressDialog.setCancelable(false);
                 progressDialog.show();
-                
+
                 String userId = SessionManager.getId(MapsActivity.this);
                 String userName = SessionManager.getName(MapsActivity.this);
                 
@@ -111,7 +115,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         userId, userName,
                         () -> {
                             progressDialog.dismiss();
-                            Toast.makeText(MapsActivity.this, "Record success Saved", Toast.LENGTH_LONG).show();
+                            Toast.makeText(MapsActivity.this, "Rekaman berhasil disimpan", Toast.LENGTH_LONG).show();
                             Intent intent = new Intent(MapsActivity.this, MainActivity.class);
                             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                             startActivity(intent);
@@ -121,7 +125,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             Toast.makeText(MapsActivity.this, e.getMessage(), Toast.LENGTH_LONG).show();
                         });
             } else {
-                Toast.makeText(MapsActivity.this, "Update Location First", Toast.LENGTH_LONG).show();
+                Toast.makeText(MapsActivity.this, "Perbarui lokasi terlebih dahulu", Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -197,6 +201,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onPause();
         // Stop location updates when the activity is paused to save resources
         fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override

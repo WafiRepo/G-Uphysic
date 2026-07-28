@@ -55,7 +55,7 @@ public class PiSettingsFragment extends Fragment {
         PiAnalysisSettings.setServerUrl(requireContext(), url);
         PiAnalysisSettings.setApiKey(requireContext(), key);
 
-        Toast.makeText(requireContext(), "Settings saved", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), "Pengaturan disimpan", Toast.LENGTH_SHORT).show();
     }
 
     private void testConnection() {
@@ -63,7 +63,7 @@ public class PiSettingsFragment extends Fragment {
         String key = etApiKey.getText().toString();
 
         if (url.isEmpty()) {
-            Toast.makeText(requireContext(), "Enter Server URL first", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Masukkan URL Server terlebih dahulu", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -72,15 +72,15 @@ public class PiSettingsFragment extends Fragment {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
-                    Toast.makeText(requireContext(), "Connection successful!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), "Koneksi berhasil!", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(requireContext(), "Connection failed: " + response.code(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), "Koneksi gagal: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Toast.makeText(requireContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Terjadi kesalahan: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

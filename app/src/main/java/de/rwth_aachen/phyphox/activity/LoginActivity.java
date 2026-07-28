@@ -74,17 +74,17 @@ public class LoginActivity extends AppCompatActivity {
         password = binding.etPassword.getText().toString();
 
         if (TextUtils.isEmpty(email)) {
-            Toast.makeText(this, "Please input your email", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Harap masukkan email Anda", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (TextUtils.isEmpty(password)) {
-            Toast.makeText(this, "Please input your password", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Harap masukkan password Anda", Toast.LENGTH_SHORT).show();
             return;
         }
         progressDialog = new ProgressDialog(this); // Replace 'this' with 'requireContext()' if inside a Fragment
         progressDialog.setTitle("");
-        progressDialog.setMessage("Loading...");
+        progressDialog.setMessage("Memuat...");
         progressDialog.setCancelable(false);
         progressDialog.show();
         auth.signInWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
@@ -169,7 +169,7 @@ public class LoginActivity extends AppCompatActivity {
                     });
                     return;
                 }
-                Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
+                Toast.makeText(LoginActivity.this, "Login berhasil", Toast.LENGTH_SHORT).show();
                 Log.d("getUser","--> "+data.getId());
                 Log.d("getUser","--> "+data.getName());
                 Log.d("getUser","--> "+data.getEmail());
@@ -183,7 +183,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onFailure(Exception e) {
                 progressDialog.dismiss();
-                Toast.makeText(LoginActivity.this, "Login Failed! Please try again", Toast.LENGTH_SHORT).show();
+                Toast.makeText(LoginActivity.this, "Login gagal! Silakan coba lagi", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -209,9 +209,9 @@ public class LoginActivity extends AppCompatActivity {
     private void forgotPassword(String email) {
         auth.sendPasswordResetEmail(email).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                Toast.makeText(this, "Check email to reset password", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Cek email untuk mereset password", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(this, "Failed to reset password", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Gagal mereset password", Toast.LENGTH_SHORT).show();
             }
         });
     }
